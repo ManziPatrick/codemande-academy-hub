@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Target, Lightbulb } from "lucide-react";
+import { ImageWithSkeleton } from "@/components/ui/image-skeleton";
 import aboutImage from "@/assets/about-training.jpg";
 
 export function AboutSection() {
@@ -65,13 +66,14 @@ export function AboutSection() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative"
           >
-            <div className="aspect-[4/3] rounded-lg overflow-hidden bg-card shadow-card">
-              <img
+            <div className="aspect-[4/3] rounded-lg overflow-hidden bg-card shadow-card relative">
+              <ImageWithSkeleton
                 src={aboutImage}
                 alt="CODEMANDE training center"
                 className="w-full h-full object-cover"
+                containerClassName="w-full h-full"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-card/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-card/40 to-transparent pointer-events-none" />
             </div>
             
             {/* Decorative element */}

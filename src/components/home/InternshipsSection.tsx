@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Award, Briefcase, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ImageWithSkeleton } from "@/components/ui/image-skeleton";
 import internshipImage from "@/assets/internship-work.jpg";
 
 export function InternshipsSection() {
@@ -18,10 +19,11 @@ export function InternshipsSection() {
             className="relative order-2 lg:order-1"
           >
             <div className="aspect-[4/3] rounded-lg overflow-hidden bg-background/10 shadow-card">
-              <img
+              <ImageWithSkeleton
                 src={internshipImage}
                 alt="Internship program"
                 className="w-full h-full object-cover"
+                containerClassName="w-full h-full"
               />
             </div>
             
