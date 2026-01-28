@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Target, Lightbulb } from "lucide-react";
+import aboutImage from "@/assets/about-training.jpg";
 
 export function AboutSection() {
   return (
@@ -66,11 +67,11 @@ export function AboutSection() {
           >
             <div className="aspect-[4/3] rounded-lg overflow-hidden bg-card shadow-card">
               <img
-                src="/placeholder.svg"
+                src={aboutImage}
                 alt="CODEMANDE training center"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-card/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-card/40 to-transparent" />
             </div>
             
             {/* Decorative element */}
