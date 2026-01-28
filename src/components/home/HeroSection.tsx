@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { ImageWithSkeleton } from "@/components/ui/image-skeleton";
 import heroImage from "@/assets/hero-training.jpg";
 
 export function HeroSection() {
@@ -8,10 +9,11 @@ export function HeroSection() {
     <section className="relative min-h-[90vh] flex items-center pt-20 lg:pt-0 overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
-        <img
+        <ImageWithSkeleton
           src={heroImage}
           alt="CODEMANDE training session"
           className="w-full h-full object-cover object-center"
+          containerClassName="w-full h-full"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/40" />
       </div>

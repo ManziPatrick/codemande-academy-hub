@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
+import { ImageWithSkeleton } from "@/components/ui/image-skeleton";
 import testimonialEmmanuel from "@/assets/testimonial-emmanuel.jpg";
 import testimonialMarie from "@/assets/testimonial-marie.jpg";
 import testimonialJean from "@/assets/testimonial-jean.jpg";
@@ -88,10 +89,11 @@ export function TestimonialsSection() {
                       transition={{ duration: 0.3 }}
                     >
                       <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-3 border-accent/30 shadow-lg group">
-                        <img 
+                        <ImageWithSkeleton 
                           src={currentTestimonial.image} 
                           alt={currentTestimonial.author}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          containerClassName="w-full h-full"
                         />
                       </div>
                     </motion.div>
