@@ -5,26 +5,22 @@ const services = [
   {
     icon: Code,
     title: "Software Development",
-    description: "Build modern web & mobile applications.",
-    gradient: "from-card to-card",
+    description: "Design and build modern web and mobile applications using industry best practices.",
   },
   {
     icon: Database,
     title: "Data Science & AI",
-    description: "Learn data analysis & machine learning.",
-    gradient: "from-card to-card",
+    description: "Learn data analysis, machine learning, model training, and intelligent systems development.",
   },
   {
     icon: Wifi,
-    title: "IoT Solutions",
-    description: "Create smart, connected devices.",
-    gradient: "from-card to-card",
+    title: "Internet of Things (IoT)",
+    description: "Develop smart, connected systems using sensors, devices, and automation.",
   },
   {
     icon: Briefcase,
-    title: "Tech Internships",
-    description: "Get real-world industry experience.",
-    gradient: "from-card to-card",
+    title: "Internships & Projects",
+    description: "Gain hands-on experience through supervised internships and industry-based projects.",
   },
 ];
 
@@ -33,17 +29,26 @@ export function ServicesSection() {
     <section className="py-20 lg:py-28 bg-background">
       <div className="container mx-auto px-4 lg:px-8">
         {/* Section Header with decorative lines */}
-        <div className="flex items-center justify-center gap-4 mb-16">
+        <div className="flex items-center justify-center gap-4 mb-6">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent to-accent/50" />
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rotate-45 border border-accent" />
             <h2 className="font-heading text-3xl lg:text-4xl font-medium text-foreground text-center">
-              What We Offer
+              What We Do
             </h2>
             <div className="w-2 h-2 rotate-45 border border-accent" />
           </div>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent to-accent/50" />
         </div>
+
+        <motion.p
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          className="text-center text-muted-foreground mb-16 max-w-xl mx-auto"
+        >
+          Our Core Focus Areas
+        </motion.p>
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -85,7 +90,7 @@ export function ServicesSection() {
                   <h3 className="font-heading text-lg font-semibold text-card-foreground mb-2">
                     {service.title}
                   </h3>
-                  <p className="text-sm text-card-foreground/70">
+                  <p className="text-sm text-card-foreground/70 leading-relaxed">
                     {service.description}
                   </p>
                 </div>
