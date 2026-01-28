@@ -4,10 +4,11 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, MapPin, Phone, Clock, MessageSquare, Users, Briefcase, GraduationCap } from "lucide-react";
+import { Mail, MapPin, Phone, Clock, MessageSquare, Users, Briefcase, GraduationCap, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import heroImage from "@/assets/hero-training.jpg";
+import { supabase } from "@/integrations/supabase/client";
 
 const contactInfo = [
   { icon: MapPin, label: "Address", value: "KG 123 Street, Kigali Innovation City, Kigali, Rwanda" },
@@ -31,6 +32,7 @@ const faqs = [
 ];
 
 const Contact = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -40,10 +42,30 @@ const Contact = () => {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Thank you for reaching out! We'll get back to you within 24 hours.");
-    setFormData({ name: "", email: "", phone: "", subject: "", inquiryType: "", message: "" });
+    setIsSubmitting(true);
+
+    try {
+      const { error } = await supabase.from("leads").insert({
+        full_name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim() || null,
+        interest: formData.inquiryType || null,
+        message: `${formData.subject}\n\n${formData.message}`.trim(),
+        source_page: "contact",
+      });
+
+      if (error) throw error;
+
+      toast.success("Thank you for reaching out! We'll get back to you within 24 hours.");
+      setFormData({ name: "", email: "", phone: "", subject: "", inquiryType: "", message: "" });
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -232,8 +254,15 @@ const Contact = () => {
                       />
                     </div>
                     
-                    <Button type="submit" variant="gold" size="lg" className="w-full">
-                      Send Message
+                    <Button type="submit" variant="gold" size="lg" className="w-full" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        "Send Message"
+                      )}
                     </Button>
                     
                     <p className="text-xs text-card-foreground/50 text-center">
