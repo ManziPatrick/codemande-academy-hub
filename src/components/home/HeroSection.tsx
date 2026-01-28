@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-training.jpg";
 
@@ -38,12 +39,11 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-medium text-foreground leading-tight mb-4">
+            <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-medium text-foreground leading-tight mb-6">
               Empowering Africa
               <br />
               <span className="text-foreground">Through Technology</span>
-              <br />
-              <span className="italic text-accent">&</span>{" "}
+              <span className="italic text-accent ml-2">&</span>{" "}
               <span className="italic">Innovation</span>
             </h1>
           </motion.div>
@@ -52,35 +52,27 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-            className="text-xl text-foreground/90 font-medium mb-4"
+            className="text-lg text-muted-foreground mb-8 max-w-xl leading-relaxed"
           >
-            Building skills. Creating opportunities. Delivering real-world solutions.
-          </motion.p>
-
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-            className="text-base text-muted-foreground mb-8 max-w-2xl leading-relaxed"
-          >
-            CODEMANDE is a technology and training company dedicated to equipping individuals 
-            and institutions with practical, industry-ready digital skills. Through expert-led 
-            training, mentorship, and real-world projects, we bridge the gap between learning 
-            and employment.
+            Building skills. Creating opportunities. Delivering real-world solutions through expert training and mentorship.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
+            transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Button variant="gold" size="lg">
-              Explore Programs
-            </Button>
-            <Button variant="heroOutline" size="lg">
-              Get Started
-            </Button>
+            <Link to="/training">
+              <Button variant="gold" size="lg">
+                Explore Programs
+              </Button>
+            </Link>
+            <Link to="/contact">
+              <Button variant="heroOutline" size="lg">
+                Get Started
+              </Button>
+            </Link>
           </motion.div>
         </div>
       </div>

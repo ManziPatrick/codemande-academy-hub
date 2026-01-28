@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
 export function CTASection() {
   return (
-    <section className="py-20 lg:py-28 bg-card relative overflow-hidden">
+    <section className="py-16 lg:py-20 bg-card relative overflow-hidden">
       {/* Background decoration */}
       <div className="absolute inset-0 opacity-10">
         <svg className="w-full h-full" viewBox="0 0 800 400" preserveAspectRatio="none">
@@ -27,28 +28,32 @@ export function CTASection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center"
+          className="max-w-2xl mx-auto text-center"
         >
-          <h2 className="font-heading text-3xl lg:text-4xl xl:text-5xl font-medium text-card-foreground mb-6">
+          <h2 className="font-heading text-2xl lg:text-3xl xl:text-4xl font-medium text-card-foreground mb-4">
             Join the Future of Technology in Africa
           </h2>
           
-          <p className="text-lg text-card-foreground/80 mb-8 max-w-2xl mx-auto">
+          <p className="text-card-foreground/80 mb-6 max-w-xl mx-auto">
             Whether you want to learn, build, or collaborate, CODEMANDE is your partner in digital growth.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button variant="gold" size="lg" className="group">
-              View Programs
-              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <Button 
-              variant="heroOutline" 
-              size="lg"
-              className="bg-transparent text-card-foreground border-card-foreground/30 hover:border-accent hover:text-accent"
-            >
-              Contact Us
-            </Button>
+            <Link to="/training">
+              <Button variant="gold" size="lg" className="group">
+                View Programs
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+            <Link to="/contact">
+              <Button 
+                variant="heroOutline" 
+                size="lg"
+                className="bg-transparent text-card-foreground border-card-foreground/30 hover:border-accent hover:text-accent"
+              >
+                Contact Us
+              </Button>
+            </Link>
           </div>
         </motion.div>
       </div>
