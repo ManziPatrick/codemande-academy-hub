@@ -32,7 +32,7 @@ export function HeroSection() {
       </div>
 
       <div className="container mx-auto px-4 lg:px-8 relative z-10">
-        <div className="max-w-2xl">
+        <div className="max-w-3xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -52,9 +52,21 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-            className="text-lg text-muted-foreground mb-8 max-w-lg"
+            className="text-xl text-foreground/90 font-medium mb-4"
           >
-            Bridging Education and Industry for a Brighter Future.
+            Building skills. Creating opportunities. Delivering real-world solutions.
+          </motion.p>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+            className="text-base text-muted-foreground mb-8 max-w-2xl leading-relaxed"
+          >
+            CODEMANDE is a technology and training company dedicated to equipping individuals 
+            and institutions with practical, industry-ready digital skills. Through expert-led 
+            training, mentorship, and real-world projects, we bridge the gap between learning 
+            and employment.
           </motion.p>
 
           <motion.div
@@ -64,10 +76,10 @@ export function HeroSection() {
             className="flex flex-col sm:flex-row gap-4"
           >
             <Button variant="gold" size="lg">
-              Explore Courses
+              Explore Programs
             </Button>
             <Button variant="heroOutline" size="lg">
-              Learn More
+              Get Started
             </Button>
           </motion.div>
         </div>

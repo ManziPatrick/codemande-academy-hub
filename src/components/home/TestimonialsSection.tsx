@@ -7,24 +7,24 @@ const testimonials = [
   {
     id: 1,
     quote:
-      "CODEMANDE helped me launch my tech career. The hands-on training and internships prepared me for the real world!",
-    author: "Sarah K.",
+      "CODEMANDE helped me transition from learning to real-world development. The mentorship and projects prepared me for industry work.",
+    author: "Emmanuel R.",
     role: "Software Developer",
     image: testimonialSarah,
   },
   {
     id: 2,
     quote:
-      "The Data Science program gave me practical skills that I use every day. The instructors are truly world-class.",
-    author: "Jean Pierre M.",
+      "The Data Science program gave me practical skills that I use every day. The online classes were flexible and the instructors are truly world-class.",
+    author: "Marie Claire M.",
     role: "Data Analyst",
     image: testimonialSarah,
   },
   {
     id: 3,
     quote:
-      "From internship to full-time employment, CODEMANDE's network opened doors I never knew existed.",
-    author: "Grace N.",
+      "From training to internship to full-time employment, CODEMANDE's network opened doors I never knew existed. The certificate helped my career.",
+    author: "Jean Paul N.",
     role: "IoT Engineer",
     image: testimonialSarah,
   },

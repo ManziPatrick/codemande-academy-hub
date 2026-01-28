@@ -1,41 +1,23 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 
 export function CTASection() {
   return (
-    <section className="relative py-20 lg:py-28 bg-card overflow-hidden">
-      {/* Circuit decorations */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Top left circuit */}
-        <svg
-          className="absolute top-0 left-0 w-64 h-64 -translate-x-1/3 -translate-y-1/3"
-          viewBox="0 0 200 200"
-        >
+    <section className="py-20 lg:py-28 bg-card relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute inset-0 opacity-10">
+        <svg className="w-full h-full" viewBox="0 0 800 400" preserveAspectRatio="none">
           <path
-            d="M100,0 L100,60 L140,100 L200,100"
+            d="M0,200 L100,200 L120,180 L200,180 L220,200 L400,200 L420,180 L500,180 L520,200 L700,200 L720,180 L800,180"
             fill="none"
             stroke="currentColor"
             strokeWidth="1"
-            className="text-accent/30"
+            className="text-accent"
           />
-          <circle cx="100" cy="60" r="3" className="fill-accent/50" />
-          <circle cx="140" cy="100" r="3" className="fill-accent/50" />
-        </svg>
-
-        {/* Bottom right circuit */}
-        <svg
-          className="absolute bottom-0 right-0 w-64 h-64 translate-x-1/3 translate-y-1/3"
-          viewBox="0 0 200 200"
-        >
-          <path
-            d="M0,100 L60,100 L100,140 L100,200"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1"
-            className="text-accent/30"
-          />
-          <circle cx="60" cy="100" r="3" className="fill-accent/50" />
-          <circle cx="100" cy="140" r="3" className="fill-accent/50" />
+          <circle cx="120" cy="180" r="4" className="fill-accent" />
+          <circle cx="420" cy="180" r="4" className="fill-accent" />
+          <circle cx="720" cy="180" r="4" className="fill-accent" />
         </svg>
       </div>
 
@@ -45,40 +27,28 @@ export function CTASection() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center max-w-3xl mx-auto"
+          className="max-w-3xl mx-auto text-center"
         >
-          {/* Decorative line */}
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent to-accent/50" />
-            <div className="w-3 h-3 rotate-45 border border-accent" />
-            <div className="flex-1 h-px bg-gradient-to-l from-transparent to-accent/50" />
-          </div>
-
-          <h2 className="font-heading text-3xl lg:text-4xl xl:text-5xl font-medium text-card-foreground mb-4">
-            Join the Future of Tech in Africa
+          <h2 className="font-heading text-3xl lg:text-4xl xl:text-5xl font-medium text-card-foreground mb-6">
+            Join the Future of Technology in Africa
           </h2>
-          <p className="text-lg text-card-foreground/80 mb-10 font-heading italic">
-            Get Started with CODEMANDE Today!
+          
+          <p className="text-lg text-card-foreground/80 mb-8 max-w-2xl mx-auto">
+            Whether you want to learn, build, or collaborate, CODEMANDE is your partner in digital growth.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button variant="gold" size="xl">
-              Get Started
-            </Button>
-            <Button
-              variant="heroOutline"
-              size="xl"
-              className="border-card-foreground/30 text-card-foreground hover:border-accent hover:text-accent"
-            >
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button variant="gold" size="lg" className="group">
               View Programs
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </Button>
-          </div>
-
-          {/* Decorative line */}
-          <div className="flex items-center justify-center gap-4 mt-10">
-            <div className="flex-1 h-px bg-gradient-to-r from-transparent to-accent/50" />
-            <div className="w-3 h-3 rotate-45 border border-accent" />
-            <div className="flex-1 h-px bg-gradient-to-l from-transparent to-accent/50" />
+            <Button 
+              variant="heroOutline" 
+              size="lg"
+              className="bg-transparent text-card-foreground border-card-foreground/30 hover:border-accent hover:text-accent"
+            >
+              Contact Us
+            </Button>
           </div>
         </motion.div>
       </div>
