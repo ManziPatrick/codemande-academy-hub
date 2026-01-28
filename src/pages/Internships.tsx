@@ -3,18 +3,69 @@ import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Code, Database, Wifi, Award, FolderOpen, Users } from "lucide-react";
+import { Briefcase, Code, Database, Wifi, Award, FolderOpen, Users, Clock, CheckCircle, ArrowRight, Target, Calendar, Globe } from "lucide-react";
+import internshipImage from "@/assets/internship-work.jpg";
+import heroImage from "@/assets/hero-training.jpg";
 
 const internships = [
-  { icon: Code, title: "Software Development Intern", duration: "3 months", type: "Online" },
-  { icon: Database, title: "Data Science Intern", duration: "3 months", type: "Online" },
-  { icon: Wifi, title: "IoT Development Intern", duration: "3 months", type: "Online" },
+  { 
+    icon: Code, 
+    title: "Software Development Intern", 
+    duration: "3 months", 
+    type: "Online / Hybrid",
+    description: "Work on real web and mobile application projects under the guidance of senior developers.",
+    skills: ["React/Vue.js", "Node.js", "Python", "Git", "Agile"],
+    projects: ["E-commerce platform", "Mobile app features", "API integrations"]
+  },
+  { 
+    icon: Database, 
+    title: "Data Science Intern", 
+    duration: "3 months", 
+    type: "Online",
+    description: "Apply data analysis and machine learning techniques to solve real business problems.",
+    skills: ["Python", "SQL", "Machine Learning", "Tableau", "Statistics"],
+    projects: ["Customer analytics", "Predictive models", "Data dashboards"]
+  },
+  { 
+    icon: Wifi, 
+    title: "IoT Development Intern", 
+    duration: "3 months", 
+    type: "Hybrid",
+    description: "Design and build connected devices and smart systems for agriculture and industry.",
+    skills: ["Arduino", "Raspberry Pi", "Cloud IoT", "Sensors", "MQTT"],
+    projects: ["Smart agriculture system", "Environmental monitoring", "Automation solutions"]
+  },
 ];
 
 const benefits = [
-  { icon: FolderOpen, title: "Real Projects", description: "Work on industry-level projects" },
-  { icon: Users, title: "Mentorship", description: "Guidance from experienced professionals" },
-  { icon: Award, title: "Certification", description: "Earn a certificate upon completion" },
+  { icon: FolderOpen, title: "Real Projects", description: "Work on actual client projects and products, not simulated exercises. Your work will have real impact." },
+  { icon: Users, title: "Mentorship", description: "One-on-one guidance from experienced professionals who are invested in your growth and success." },
+  { icon: Award, title: "Certification", description: "Receive a recognized internship certificate that validates your experience to future employers." },
+  { icon: Clock, title: "Flexible Schedule", description: "Balance your internship with other commitments. We offer part-time and flexible arrangements." },
+  { icon: Globe, title: "Remote-Friendly", description: "Participate from anywhere with our online and hybrid internship options." },
+  { icon: Target, title: "Career Pathway", description: "Top performers get priority access to full-time positions and advanced opportunities." },
+];
+
+const process = [
+  { step: "1", title: "Apply Online", description: "Submit your application with resume and a brief statement of interest." },
+  { step: "2", title: "Skills Assessment", description: "Complete a short technical assessment relevant to your chosen track." },
+  { step: "3", title: "Interview", description: "Meet with our team to discuss your goals and expectations." },
+  { step: "4", title: "Onboarding", description: "Get set up with tools, meet your mentor, and start your internship journey." },
+];
+
+const testimonials = [
+  {
+    name: "Emmanuel R.",
+    role: "Former Software Intern",
+    current: "Now Junior Developer at TechCorp",
+    quote: "The internship gave me real project experience that made all the difference in my job interviews. The mentorship was invaluable."
+  },
+  {
+    name: "Grace M.",
+    role: "Former Data Science Intern",
+    current: "Now Data Analyst at FinanceHub",
+    quote: "Working on actual business problems taught me more in 3 months than years of self-study. Highly recommend!"
+  },
 ];
 
 const Internships = () => {
@@ -23,26 +74,56 @@ const Internships = () => {
       <Header />
       <main className="pt-20">
         {/* Hero */}
-        <section className="py-16 lg:py-24 bg-card">
-          <div className="container mx-auto px-4 lg:px-8 text-center">
-            <motion.h1
+        <section className="py-16 lg:py-24 bg-card relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <img src={heroImage} alt="" className="w-full h-full object-cover" />
+          </div>
+          <div className="container mx-auto px-4 lg:px-8 relative z-10 text-center">
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="font-heading text-3xl lg:text-5xl font-medium text-card-foreground mb-4"
             >
-              Internships & Work Experience
-            </motion.h1>
-            <p className="text-card-foreground/80 max-w-2xl mx-auto">
-              Gain hands-on experience through structured online internships. 
-              Work on real projects under professional supervision.
-            </p>
+              <span className="inline-block px-4 py-1 bg-accent/20 text-accent text-sm font-medium rounded-full mb-4">
+                Internship Programs
+              </span>
+              <h1 className="font-heading text-3xl lg:text-5xl font-medium text-card-foreground mb-6">
+                Gain Real-World Experience That Matters
+              </h1>
+              <p className="text-card-foreground/80 max-w-2xl mx-auto text-lg">
+                Bridge the gap between learning and employment with our structured internship programs. 
+                Work on real projects, get mentored by experts, and build a portfolio that stands out.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4 mt-8">
+                <Link to="/contact">
+                  <Button variant="gold" size="lg">Apply for Internship</Button>
+                </Link>
+                <Link to="/training">
+                  <Button variant="outline" size="lg">View Training First</Button>
+                </Link>
+              </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* Benefits */}
-        <section className="py-12 bg-background">
+        {/* Benefits Grid */}
+        <section className="py-16 lg:py-20 bg-background">
           <div className="container mx-auto px-4 lg:px-8">
-            <div className="grid md:grid-cols-3 gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <span className="text-accent text-sm font-medium uppercase tracking-wider">Why Intern With Us</span>
+              <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground mt-2 mb-4">
+                What You'll Gain
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Our internships are designed to give you the practical experience employers want to see, 
+                combined with the support you need to succeed.
+              </p>
+            </motion.div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {benefits.map((benefit, index) => (
                 <motion.div
                   key={benefit.title}
@@ -50,28 +131,63 @@ const Internships = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="flex items-start gap-4 p-4"
+                  className="bg-card p-6 rounded-xl shadow-card border border-border/30 group hover:shadow-card-hover transition-all"
                 >
-                  <div className="w-12 h-12 rounded-full bg-card flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 mb-4 rounded-full bg-background flex items-center justify-center group-hover:bg-accent/20 transition-colors">
                     <benefit.icon className="w-6 h-6 text-accent" strokeWidth={1.5} />
                   </div>
-                  <div>
-                    <h3 className="font-heading font-semibold text-foreground mb-1">{benefit.title}</h3>
-                    <p className="text-sm text-muted-foreground">{benefit.description}</p>
-                  </div>
+                  <h3 className="font-heading font-semibold text-card-foreground mb-2">{benefit.title}</h3>
+                  <p className="text-sm text-card-foreground/70 leading-relaxed">{benefit.description}</p>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
 
+        {/* Image Section */}
+        <section className="py-8">
+          <div className="container mx-auto px-4 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="relative h-64 lg:h-96 rounded-xl overflow-hidden group"
+            >
+              <img 
+                src={internshipImage} 
+                alt="Interns collaborating on a project" 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/40 to-transparent flex items-end">
+                <div className="p-8 lg:p-12 max-w-2xl">
+                  <h3 className="font-heading text-2xl lg:text-3xl font-semibold text-card-foreground mb-3">
+                    Collaborate. Create. Grow.
+                  </h3>
+                  <p className="text-card-foreground/80">
+                    Join a community of driven individuals working together to build real solutions 
+                    while developing skills that will define your career.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
         {/* Available Internships */}
         <section className="py-16 lg:py-20 bg-card">
           <div className="container mx-auto px-4 lg:px-8">
-            <h2 className="font-heading text-2xl lg:text-3xl font-medium text-card-foreground text-center mb-10">
-              Available Internships
-            </h2>
-            <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <span className="text-accent text-sm font-medium uppercase tracking-wider">Open Positions</span>
+              <h2 className="font-heading text-2xl lg:text-3xl font-medium text-card-foreground mt-2">
+                Available Internships
+              </h2>
+            </motion.div>
+            <div className="grid lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
               {internships.map((internship, index) => (
                 <motion.div
                   key={internship.title}
@@ -79,20 +195,155 @@ const Internships = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-background p-6 rounded-lg shadow-card border border-border/30 text-center group hover:shadow-card-hover transition-all"
+                  className="bg-background p-6 rounded-xl shadow-card border border-border/30 group hover:shadow-card-hover transition-all flex flex-col"
                 >
-                  <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-card flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                    <internship.icon className="w-7 h-7 text-accent" strokeWidth={1.5} />
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 rounded-full bg-card flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+                      <internship.icon className="w-7 h-7 text-accent" strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-semibold text-foreground">{internship.title}</h3>
+                      <p className="text-xs text-muted-foreground">{internship.duration} • {internship.type}</p>
+                    </div>
                   </div>
-                  <h3 className="font-heading font-semibold text-foreground mb-2">{internship.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-1">{internship.duration}</p>
-                  <p className="text-xs text-muted-foreground/70 mb-4">{internship.type}</p>
-                  <Link to="/contact">
-                    <Button variant="gold" size="sm">Apply</Button>
-                  </Link>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">{internship.description}</p>
+                  
+                  <div className="mb-4">
+                    <p className="text-xs font-medium text-foreground mb-2">Skills You'll Use:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {internship.skills.map((skill) => (
+                        <span key={skill} className="text-xs bg-card px-2 py-1 rounded text-muted-foreground">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <p className="text-xs font-medium text-foreground mb-2">Sample Projects:</p>
+                    <ul className="space-y-1">
+                      {internship.projects.map((project) => (
+                        <li key={project} className="text-xs text-muted-foreground flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3 text-accent" /> {project}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mt-auto">
+                    <Link to="/contact">
+                      <Button variant="gold" size="sm" className="w-full">
+                        Apply Now <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
+                    </Link>
+                  </div>
                 </motion.div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Application Process */}
+        <section className="py-16 lg:py-20 bg-background">
+          <div className="container mx-auto px-4 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <span className="text-accent text-sm font-medium uppercase tracking-wider">How to Apply</span>
+              <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground mt-2">
+                Application Process
+              </h2>
+            </motion.div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+              {process.map((step, index) => (
+                <motion.div
+                  key={step.step}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-accent text-accent-foreground flex items-center justify-center font-heading font-bold text-lg">
+                    {step.step}
+                  </div>
+                  <h3 className="font-heading font-semibold text-foreground mb-2">{step.title}</h3>
+                  <p className="text-sm text-muted-foreground">{step.description}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials */}
+        <section className="py-16 lg:py-20 bg-card">
+          <div className="container mx-auto px-4 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <span className="text-accent text-sm font-medium uppercase tracking-wider">Success Stories</span>
+              <h2 className="font-heading text-2xl lg:text-3xl font-medium text-card-foreground mt-2">
+                What Our Interns Say
+              </h2>
+            </motion.div>
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {testimonials.map((testimonial, index) => (
+                <motion.div
+                  key={testimonial.name}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-background p-6 rounded-xl shadow-card border border-border/30"
+                >
+                  <p className="text-muted-foreground italic mb-4">"{testimonial.quote}"</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-accent" />
+                    </div>
+                    <div>
+                      <p className="font-heading font-semibold text-foreground text-sm">{testimonial.name}</p>
+                      <p className="text-xs text-muted-foreground">{testimonial.role}</p>
+                      <p className="text-xs text-accent">{testimonial.current}</p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="py-16 lg:py-20 bg-background">
+          <div className="container mx-auto px-4 lg:px-8 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground mb-4">
+                Ready to Start Your Internship?
+              </h2>
+              <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
+                Applications are reviewed on a rolling basis. Apply early to secure your spot 
+                in our next cohort of interns.
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <Link to="/contact">
+                  <Button variant="gold" size="lg">Apply Now</Button>
+                </Link>
+                <Link to="/training">
+                  <Button variant="outline" size="lg">Explore Training First</Button>
+                </Link>
+              </div>
+            </motion.div>
           </div>
         </section>
       </main>
