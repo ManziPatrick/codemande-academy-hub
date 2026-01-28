@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -90,38 +90,36 @@ export function Header() {
       </div>
 
       {/* Mobile Menu */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="lg:hidden bg-card border-t border-card-foreground/10"
-          >
-            <nav className="container mx-auto px-4 py-4 flex flex-col gap-3">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.href}
-                  className={`py-2 text-base font-medium transition-colors duration-300 ${
-                    location.pathname === link.href
-                      ? "text-accent"
-                      : "text-card-foreground/80 hover:text-accent"
-                  }`}
-                >
-                  {link.name}
-                </Link>
-              ))}
-              <Link to="/contact">
-                <Button variant="gold" size="lg" className="mt-2 w-full">
-                  Get Started
-                </Button>
+      {isMobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.3 }}
+          className="lg:hidden bg-card border-t border-card-foreground/10"
+        >
+          <nav className="container mx-auto px-4 py-4 flex flex-col gap-3">
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                to={link.href}
+                className={`py-2 text-base font-medium transition-colors duration-300 ${
+                  location.pathname === link.href
+                    ? "text-accent"
+                    : "text-card-foreground/80 hover:text-accent"
+                }`}
+              >
+                {link.name}
               </Link>
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            ))}
+            <Link to="/contact">
+              <Button variant="gold" size="lg" className="mt-2 w-full">
+                Get Started
+              </Button>
+            </Link>
+          </nav>
+        </motion.div>
+      )}
     </header>
   );
 }
