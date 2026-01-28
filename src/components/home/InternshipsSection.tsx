@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Award, Briefcase, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import internshipImage from "@/assets/internship-work.jpg";
 
 export function InternshipsSection() {
   return (
@@ -18,7 +19,7 @@ export function InternshipsSection() {
           >
             <div className="aspect-[4/3] rounded-lg overflow-hidden bg-background/10 shadow-card">
               <img
-                src="/placeholder.svg"
+                src={internshipImage}
                 alt="Internship program"
                 className="w-full h-full object-cover"
               />
