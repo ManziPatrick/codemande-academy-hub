@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
-import testimonialSarah from "@/assets/testimonial-sarah.jpg";
+import testimonialEmmanuel from "@/assets/testimonial-emmanuel.jpg";
+import testimonialMarie from "@/assets/testimonial-marie.jpg";
+import testimonialJean from "@/assets/testimonial-jean.jpg";
 
 const testimonials = [
   {
@@ -10,7 +12,7 @@ const testimonials = [
     author: "Emmanuel R.",
     role: "Software Developer",
     company: "TechCorp Rwanda",
-    image: testimonialSarah,
+    image: testimonialEmmanuel,
   },
   {
     id: 2,
@@ -18,7 +20,7 @@ const testimonials = [
     author: "Marie Claire M.",
     role: "Data Analyst",
     company: "FinanceHub Ltd",
-    image: testimonialSarah,
+    image: testimonialMarie,
   },
   {
     id: 3,
@@ -26,7 +28,7 @@ const testimonials = [
     author: "Jean Paul N.",
     role: "IoT Engineer",
     company: "SmartFarm Solutions",
-    image: testimonialSarah,
+    image: testimonialJean,
   },
 ];
 
