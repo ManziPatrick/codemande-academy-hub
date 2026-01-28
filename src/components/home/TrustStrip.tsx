@@ -10,34 +10,28 @@ const trustIndicators = [
 
 export function TrustStrip() {
   return (
-    <section className="py-8 bg-card border-y border-border/20">
+    <section className="py-6 bg-card border-y border-border/20">
       <div className="container mx-auto px-4 lg:px-8">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center"
+          className="flex flex-wrap justify-center items-center gap-6 md:gap-10"
         >
-          <p className="text-card-foreground/80 text-sm md:text-base mb-6">
-            Trusted by students, professionals, institutions, and organizations across Rwanda and Africa.
-          </p>
-          
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-12">
-            {trustIndicators.map((item, index) => (
-              <motion.div
-                key={item.label}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="flex items-center gap-2 text-card-foreground/70"
-              >
-                <item.icon className="w-5 h-5 text-accent" strokeWidth={1.5} />
-                <span className="text-sm font-medium">{item.label}</span>
-              </motion.div>
-            ))}
-          </div>
+          {trustIndicators.map((item, index) => (
+            <motion.div
+              key={item.label}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+              className="flex items-center gap-2 text-card-foreground/70"
+            >
+              <item.icon className="w-4 h-4 text-accent" strokeWidth={1.5} />
+              <span className="text-sm font-medium">{item.label}</span>
+            </motion.div>
+          ))}
         </motion.div>
       </div>
     </section>

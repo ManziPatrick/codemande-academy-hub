@@ -43,18 +43,14 @@ const audiences = [
 
 export function WhoWeServe() {
   return (
-    <section className="py-20 lg:py-28 bg-background">
+    <section className="py-16 lg:py-20 bg-background">
       <div className="container mx-auto px-4 lg:px-8">
         {/* Section Header */}
-        <div className="flex items-center justify-center gap-4 mb-16">
+        <div className="flex items-center justify-center gap-4 mb-10">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent to-accent/50" />
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rotate-45 border border-accent" />
-            <h2 className="font-heading text-3xl lg:text-4xl font-medium text-foreground text-center">
-              Who We Serve
-            </h2>
-            <div className="w-2 h-2 rotate-45 border border-accent" />
-          </div>
+          <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground text-center">
+            Who We Serve
+          </h2>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent to-accent/50" />
         </div>
 

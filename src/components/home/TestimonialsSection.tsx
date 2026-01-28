@@ -6,24 +6,21 @@ import testimonialSarah from "@/assets/testimonial-sarah.jpg";
 const testimonials = [
   {
     id: 1,
-    quote:
-      "CODEMANDE helped me transition from learning to real-world development. The mentorship and projects prepared me for industry work.",
+    quote: "CODEMANDE helped me transition from learning to real-world development. The mentorship prepared me for industry work.",
     author: "Emmanuel R.",
     role: "Software Developer",
     image: testimonialSarah,
   },
   {
     id: 2,
-    quote:
-      "The Data Science program gave me practical skills that I use every day. The online classes were flexible and the instructors are truly world-class.",
+    quote: "The Data Science program gave me practical skills I use every day. Online classes were flexible with world-class instructors.",
     author: "Marie Claire M.",
     role: "Data Analyst",
     image: testimonialSarah,
   },
   {
     id: 3,
-    quote:
-      "From training to internship to full-time employment, CODEMANDE's network opened doors I never knew existed. The certificate helped my career.",
+    quote: "From training to internship to full-time employment, CODEMANDE's network opened doors I never knew existed.",
     author: "Jean Paul N.",
     role: "IoT Engineer",
     image: testimonialSarah,
@@ -44,39 +41,31 @@ export function TestimonialsSection() {
   const currentTestimonial = testimonials[currentIndex];
 
   return (
-    <section className="py-20 lg:py-28 bg-secondary/30">
+    <section className="py-16 lg:py-20 bg-secondary/30">
       <div className="container mx-auto px-4 lg:px-8">
         {/* Section Header */}
-        <div className="flex items-center justify-center gap-4 mb-4">
+        <div className="flex items-center justify-center gap-4 mb-10">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent to-accent/50" />
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rotate-45 border border-accent" />
-            <h2 className="font-heading text-3xl lg:text-4xl font-medium text-foreground text-center">
-              Success Stories
-            </h2>
-            <div className="w-2 h-2 rotate-45 border border-accent" />
-          </div>
+          <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground text-center">
+            Success Stories
+          </h2>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent to-accent/50" />
         </div>
 
-        <p className="text-center text-muted-foreground mb-12 font-heading italic">
-          Transforming Careers Across Africa
-        </p>
-
         {/* Testimonial Carousel */}
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 lg:gap-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex items-center gap-4">
             {/* Prev Button */}
             <button
               onClick={prev}
-              className="w-12 h-12 rounded-full border border-foreground/20 flex items-center justify-center text-foreground/60 hover:text-accent hover:border-accent transition-all duration-300 flex-shrink-0"
+              className="w-10 h-10 rounded-full border border-foreground/20 flex items-center justify-center text-foreground/60 hover:text-accent hover:border-accent transition-all duration-300 flex-shrink-0"
               aria-label="Previous testimonial"
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft size={20} />
             </button>
 
             {/* Testimonial Content */}
-            <div className="flex-1 relative min-h-[200px]">
+            <div className="flex-1 relative min-h-[150px]">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentTestimonial.id}
@@ -84,37 +73,23 @@ export function TestimonialsSection() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.4 }}
-                  className="bg-background rounded-lg p-6 lg:p-8 shadow-card"
+                  className="bg-background rounded-lg p-5 shadow-card"
                 >
-                  <div className="flex flex-col lg:flex-row items-center gap-6">
-                    {/* Quote */}
-                    <div className="flex-1">
-                      <div className="flex items-start gap-2 mb-4">
-                        <Quote className="w-6 h-6 text-accent flex-shrink-0 transform rotate-180" />
-                        <p className="text-foreground text-lg lg:text-xl leading-relaxed font-heading italic">
-                          {currentTestimonial.quote}
-                        </p>
-                        <Quote className="w-6 h-6 text-accent flex-shrink-0 self-end" />
-                      </div>
-                      <div className="flex items-center gap-2 ml-8">
-                        <span className="text-accent">—</span>
-                        <span className="font-semibold text-foreground">
-                          {currentTestimonial.author},
-                        </span>
-                        <span className="text-muted-foreground">
-                          {currentTestimonial.role}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Image */}
-                    <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-full overflow-hidden border-2 border-accent/30 flex-shrink-0">
-                      <img
-                        src={currentTestimonial.image}
-                        alt={currentTestimonial.author}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                  <div className="flex items-start gap-2 mb-3">
+                    <Quote className="w-5 h-5 text-accent flex-shrink-0 transform rotate-180" />
+                    <p className="text-foreground leading-relaxed font-heading italic text-sm">
+                      {currentTestimonial.quote}
+                    </p>
+                    <Quote className="w-5 h-5 text-accent flex-shrink-0 self-end" />
+                  </div>
+                  <div className="flex items-center gap-2 ml-7">
+                    <span className="text-accent">—</span>
+                    <span className="font-semibold text-foreground text-sm">
+                      {currentTestimonial.author},
+                    </span>
+                    <span className="text-muted-foreground text-sm">
+                      {currentTestimonial.role}
+                    </span>
                   </div>
                 </motion.div>
               </AnimatePresence>
@@ -123,15 +98,15 @@ export function TestimonialsSection() {
             {/* Next Button */}
             <button
               onClick={next}
-              className="w-12 h-12 rounded-full border border-foreground/20 flex items-center justify-center text-foreground/60 hover:text-accent hover:border-accent transition-all duration-300 flex-shrink-0"
+              className="w-10 h-10 rounded-full border border-foreground/20 flex items-center justify-center text-foreground/60 hover:text-accent hover:border-accent transition-all duration-300 flex-shrink-0"
               aria-label="Next testimonial"
             >
-              <ChevronRight size={24} />
+              <ChevronRight size={20} />
             </button>
           </div>
 
           {/* Dots Indicator */}
-          <div className="flex items-center justify-center gap-2 mt-8">
+          <div className="flex items-center justify-center gap-2 mt-6">
             {testimonials.map((_, index) => (
               <button
                 key={index}

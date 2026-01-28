@@ -44,20 +44,20 @@ const reasons = [
 
 export function WhyChooseSection() {
   return (
-    <section className="py-20 lg:py-28 bg-card">
+    <section className="py-16 lg:py-20 bg-card">
       <div className="container mx-auto px-4 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="font-heading text-3xl lg:text-4xl font-medium text-card-foreground mb-4">
+            <h2 className="font-heading text-2xl lg:text-3xl font-medium text-card-foreground mb-2">
               Why Choose CODEMANDE
             </h2>
-            <p className="text-card-foreground/70 max-w-2xl mx-auto">
+            <p className="text-card-foreground/70 text-sm">
               Learning That Leads to Real Impact
             </p>
           </motion.div>

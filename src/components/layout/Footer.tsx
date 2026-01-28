@@ -4,21 +4,19 @@ import { Facebook, Twitter, Linkedin, Mail, MapPin, Phone } from "lucide-react";
 const footerLinks = {
   company: [
     { name: "About Us", href: "/about" },
-    { name: "Our Team", href: "/team" },
-    { name: "Careers", href: "/careers" },
+    { name: "Services", href: "/services" },
+    { name: "Projects", href: "/projects" },
     { name: "Partners", href: "/partners" },
   ],
   programs: [
-    { name: "Software Development", href: "/courses/software" },
-    { name: "Data Science & AI", href: "/courses/data-science" },
-    { name: "IoT Solutions", href: "/courses/iot" },
+    { name: "Training Programs", href: "/training" },
     { name: "Internships", href: "/internships" },
+    { name: "Software Development", href: "/training" },
+    { name: "Data Science & AI", href: "/training" },
   ],
   resources: [
     { name: "Blog", href: "/blog" },
-    { name: "Documentation", href: "/docs" },
-    { name: "Student Portal", href: "/portal" },
-    { name: "FAQs", href: "/faq" },
+    { name: "Contact", href: "/contact" },
   ],
 };
 
@@ -45,7 +43,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-card-foreground/70 text-sm leading-relaxed mb-6 max-w-sm">
-              Empowering Africa through technology education and innovation. Building the next generation of tech leaders in Rwanda and beyond.
+              Empowering Africa through technology education and innovation.
             </p>
             
             {/* Contact Info */}

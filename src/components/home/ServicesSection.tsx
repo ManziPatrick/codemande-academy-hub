@@ -26,29 +26,16 @@ const services = [
 
 export function ServicesSection() {
   return (
-    <section className="py-20 lg:py-28 bg-background">
+    <section className="py-16 lg:py-20 bg-background">
       <div className="container mx-auto px-4 lg:px-8">
-        {/* Section Header with decorative lines */}
-        <div className="flex items-center justify-center gap-4 mb-6">
+        {/* Section Header */}
+        <div className="flex items-center justify-center gap-4 mb-10">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent to-accent/50" />
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rotate-45 border border-accent" />
-            <h2 className="font-heading text-3xl lg:text-4xl font-medium text-foreground text-center">
-              What We Do
-            </h2>
-            <div className="w-2 h-2 rotate-45 border border-accent" />
-          </div>
+          <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground text-center">
+            What We Do
+          </h2>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent to-accent/50" />
         </div>
-
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="text-center text-muted-foreground mb-16 max-w-xl mx-auto"
-        >
-          Our Core Focus Areas
-        </motion.p>
 
         {/* Services Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

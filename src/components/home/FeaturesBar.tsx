@@ -21,14 +21,14 @@ const features = [
 
 export function FeaturesBar() {
   return (
-    <section className="relative py-8 -mt-16 z-20">
+    <section className="relative py-6 -mt-12 z-20">
       <div className="container mx-auto px-4 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="bg-background rounded-lg shadow-card border border-border/50 p-6 lg:p-8"
+          className="bg-background rounded-lg shadow-card border border-border/50 p-5 lg:p-6"
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {features.map((feature, index) => (
