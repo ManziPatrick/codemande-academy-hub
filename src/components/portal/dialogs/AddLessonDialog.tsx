@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Video, FileText, Clock, Upload } from "lucide-react";
 import { toast } from "sonner";
 
@@ -94,12 +95,13 @@ export function AddLessonDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle>Create New Lesson</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 mt-4">
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
           {/* Lesson Title */}
           <div>
             <label className="text-sm font-medium mb-2 block">
@@ -170,7 +172,7 @@ export function AddLessonDialog({
           </div>
 
           {/* Lesson Type & Duration */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">
                 Lesson Type
@@ -224,26 +226,27 @@ export function AddLessonDialog({
               You can upload content after creating the lesson
             </p>
           </div>
-
-          {/* Actions */}
-          <div className="flex gap-2 pt-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="gold"
-              className="flex-1"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Creating..." : "Create Lesson"}
-            </Button>
           </div>
+        </ScrollArea>
+
+        {/* Actions */}
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+          Cancel
+          </Button>
+          <Button
+            variant="gold"
+            className="flex-1"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Creating..." : "Create Lesson"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

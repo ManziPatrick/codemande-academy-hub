@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Share2, Copy, Linkedin, Twitter, Facebook, Mail, Check } from "lucide-react";
 import { toast } from "sonner";
 
@@ -62,14 +63,15 @@ export function ShareCertificateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5 text-accent" />
             Share Certificate
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
           {/* Certificate Info */}
           <div className="p-4 bg-accent/10 rounded-lg border border-accent/30 text-center">
             <h3 className="font-heading font-semibold text-card-foreground">
@@ -133,6 +135,10 @@ export function ShareCertificateDialog({
             </div>
           </div>
 
+          </div>
+        </ScrollArea>
+
+        <div className="p-4 sm:p-6 border-t border-border">
           <Button variant="outline" className="w-full" onClick={() => onOpenChange(false)}>
             Close
           </Button>

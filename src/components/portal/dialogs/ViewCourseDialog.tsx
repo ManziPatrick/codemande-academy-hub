@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookOpen, Users, Clock, DollarSign, Star } from "lucide-react";
 
 interface Course {
@@ -29,17 +30,18 @@ export function ViewCourseDialog({ open, onOpenChange, course }: ViewCourseDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle className="flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-accent" />
             {course.title}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
-          <p className="text-muted-foreground text-sm">{course.description}</p>
-          
-          <div className="grid grid-cols-2 gap-4">
+        <ScrollArea className="flex-1 px-4 pb-4 sm:px-6 sm:pb-6">
+          <div className="space-y-4 py-4">
+            <p className="text-muted-foreground text-sm">{course.description}</p>
+            
+            <div className="grid grid-cols-2 gap-4">
             <div className="p-3 bg-background/50 rounded-lg">
               <div className="flex items-center gap-2 text-card-foreground/60 text-xs mb-1">
                 <Users className="w-4 h-4" />
@@ -90,14 +92,15 @@ export function ViewCourseDialog({ open, onOpenChange, course }: ViewCourseDialo
             </Badge>
           </div>
 
-          {!course.isFree && (
-            <div className="p-3 bg-accent/10 rounded-lg">
-              <p className="text-sm text-accent">
-                {course.freeTrialLessons} free trial lessons available
-              </p>
-            </div>
-          )}
-        </div>
+            {!course.isFree && (
+              <div className="p-3 bg-accent/10 rounded-lg">
+                <p className="text-sm text-accent">
+                  {course.freeTrialLessons} free trial lessons available
+                </p>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Filter, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -76,15 +77,16 @@ export function FilterCoursesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-accent" />
             Filter Courses
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-6 mt-4">
-          {/* Categories */}
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-6 py-4">
+            {/* Categories */}
           <div>
             <Label className="text-sm font-medium mb-3 block">Categories</Label>
             <div className="grid grid-cols-2 gap-2">
@@ -180,16 +182,18 @@ export function FilterCoursesDialog({
             </Select>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={handleReset}>
-              <RotateCcw className="w-4 h-4 mr-2" />
-              Reset
-            </Button>
-            <Button variant="gold" className="flex-1" onClick={handleApply}>
-              Apply Filters
-            </Button>
           </div>
+        </ScrollArea>
+
+        {/* Actions */}
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button variant="outline" className="flex-1" onClick={handleReset}>
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Reset
+          </Button>
+          <Button variant="gold" className="flex-1" onClick={handleApply}>
+            Apply Filters
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

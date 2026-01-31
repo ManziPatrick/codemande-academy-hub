@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Video, Copy, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -142,27 +143,28 @@ export function AddSessionDialog({ open, onOpenChange, onAdd }: AddSessionDialog
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle className="flex items-center gap-2">
             <Video className="w-5 h-5 text-accent" />
             Schedule New Session
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
-          <div>
-            <Label htmlFor="title">Session Title *</Label>
-            <Input
-              id="title"
-              placeholder="e.g., React Advanced Patterns"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="mt-1.5"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
             <div>
+              <Label htmlFor="title">Session Title *</Label>
+              <Input
+                id="title"
+                placeholder="e.g., React Advanced Patterns"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
               <Label htmlFor="course">Course *</Label>
               <Select
                 value={formData.course}
@@ -200,30 +202,30 @@ export function AddSessionDialog({ open, onOpenChange, onAdd }: AddSessionDialog
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="date">Date *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="mt-1.5"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="date">Date *</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="time">Time</Label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={formData.time}
+                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  className="mt-1.5"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="time">Time</Label>
-              <Input
-                id="time"
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                className="mt-1.5"
-              />
-            </div>
-          </div>
 
-          <div>
+            <div>
             <Label htmlFor="duration">Duration (hours)</Label>
             <Input
               id="duration"
@@ -285,27 +287,28 @@ export function AddSessionDialog({ open, onOpenChange, onAdd }: AddSessionDialog
             </p>
           </div>
 
-          <div>
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="What will you cover in this session?"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows={3}
-              className="mt-1.5"
-            />
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="What will you cover in this session?"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows={3}
+                className="mt-1.5"
+              />
+            </div>
           </div>
+        </ScrollArea>
 
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button variant="gold" className="flex-1" onClick={handleSubmit}>
-              <Video className="w-4 h-4 mr-2" />
-              Schedule Session
-            </Button>
-          </div>
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button variant="outline" className="flex-1" onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button variant="gold" className="flex-1" onClick={handleSubmit}>
+            <Video className="w-4 h-4 mr-2" />
+            Schedule Session
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

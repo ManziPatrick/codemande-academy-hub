@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Building2, User, Calendar, CheckCircle, Clock } from "lucide-react";
 
 interface Internship {
@@ -29,11 +30,12 @@ export function ViewInternshipDialog({ open, onOpenChange, internship }: ViewInt
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle>Internship Details</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
+        <ScrollArea className="flex-1 px-4 pb-4 sm:px-6 sm:pb-6">
+          <div className="space-y-4 py-4">
           <div className="flex items-center gap-4 p-4 bg-background/50 rounded-lg">
             <Avatar className="w-14 h-14">
               <AvatarFallback className="bg-accent/20 text-accent text-lg">
@@ -95,7 +97,8 @@ export function ViewInternshipDialog({ open, onOpenChange, internship }: ViewInt
               )}
             </Badge>
           </div>
-        </div>
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

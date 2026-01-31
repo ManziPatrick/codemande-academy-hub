@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Video, Users, Copy, ExternalLink, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -91,8 +92,8 @@ export function StartLiveSessionDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle className="flex items-center gap-2">
             <Video className="w-5 h-5 text-accent" />
             {step === "setup" ? "Start Live Session" : "Session Ready"}
@@ -100,7 +101,9 @@ export function StartLiveSessionDialog({
         </DialogHeader>
 
         {step === "setup" ? (
-          <div className="space-y-4 mt-4">
+          <>
+            <ScrollArea className="flex-1 px-4 sm:px-6">
+              <div className="space-y-4 py-4">
             {/* Session Title */}
             <div>
               <label className="text-sm font-medium mb-2 block">
@@ -158,9 +161,11 @@ export function StartLiveSessionDialog({
                 </p>
               </div>
             </div>
+              </div>
+            </ScrollArea>
 
             {/* Actions */}
-            <div className="flex gap-2 pt-2">
+            <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
               <Button
                 variant="outline"
                 className="flex-1"
@@ -177,9 +182,9 @@ export function StartLiveSessionDialog({
                 Start Session
               </Button>
             </div>
-          </div>
+          </>
         ) : (
-          <div className="space-y-4 mt-4">
+          <div className="space-y-4 p-4 sm:p-6">
             {/* Success State */}
             <div className="text-center py-4">
               <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-4">

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { BookOpen, Clock, Users, Star, CheckCircle } from "lucide-react";
 
@@ -41,11 +42,12 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: EnrollCourseD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle>Enroll in Course</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
           <div className="p-4 bg-background/50 rounded-lg">
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
@@ -98,14 +100,16 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: EnrollCourseD
             </div>
           )}
 
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button variant="gold" className="flex-1" onClick={handleEnroll} disabled={isEnrolling}>
-              {isEnrolling ? "Enrolling..." : course.isFree ? "Enroll Free" : "Enroll Now"}
-            </Button>
           </div>
+        </ScrollArea>
+
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant="gold" className="flex-1" onClick={handleEnroll} disabled={isEnrolling}>
+            {isEnrolling ? "Enrolling..." : course.isFree ? "Enroll Free" : "Enroll Now"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
