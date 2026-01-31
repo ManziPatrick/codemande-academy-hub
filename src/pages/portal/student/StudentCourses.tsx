@@ -20,8 +20,40 @@ import {
   Star,
   ArrowRight,
 } from "lucide-react";
+import { EnrollCourseDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
-const enrolledCourses = [
+interface EnrolledCourse {
+  id: string;
+  title: string;
+  description: string;
+  progress: number;
+  totalLessons: number;
+  completedLessons: number;
+  duration: string;
+  instructor: string;
+  rating: number;
+  students: number;
+  image: string;
+  status: string;
+}
+
+interface AvailableCourse {
+  id: string;
+  title: string;
+  description: string;
+  totalLessons: number;
+  duration: string;
+  instructor: string;
+  rating: number;
+  students: number;
+  price: string;
+  image: string;
+  isFree: boolean;
+  freeTrialLessons: number;
+}
+
+const enrolledCourses: EnrolledCourse[] = [
   {
     id: "software-dev",
     title: "Software Development",
@@ -52,7 +84,7 @@ const enrolledCourses = [
   },
 ];
 
-const availableCourses = [
+const availableCourses: AvailableCourse[] = [
   {
     id: "iot",
     title: "Internet of Things (IoT)",
@@ -100,6 +132,14 @@ const availableCourses = [
 export default function StudentCourses() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  
+  // Dialog state
+  const [enrollCourse, setEnrollCourse] = useState<AvailableCourse | null>(null);
+
+  const handleBrowseCourses = () => {
+    const tabTrigger = document.querySelector('[value="available"]') as HTMLElement;
+    tabTrigger?.click();
+  };
 
   return (
     <PortalLayout>
@@ -177,7 +217,9 @@ export default function StudentCourses() {
                   <p className="text-muted-foreground mb-4">
                     Start your learning journey by exploring our course catalog
                   </p>
-                  <Button variant="gold">Browse Courses</Button>
+                  <Button variant="gold" onClick={handleBrowseCourses}>
+                    Browse Courses
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
@@ -294,7 +336,11 @@ export default function StudentCourses() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-accent">{course.price}</span>
-                        <Button variant="gold" size="sm">
+                        <Button 
+                          variant="gold" 
+                          size="sm"
+                          onClick={() => setEnrollCourse(course)}
+                        >
                           Enroll <ArrowRight className="w-4 h-4 ml-1" />
                         </Button>
                       </div>
@@ -321,6 +367,13 @@ export default function StudentCourses() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialogs */}
+      <EnrollCourseDialog
+        open={!!enrollCourse}
+        onOpenChange={(open) => !open && setEnrollCourse(null)}
+        course={enrollCourse}
+      />
     </PortalLayout>
   );
 }

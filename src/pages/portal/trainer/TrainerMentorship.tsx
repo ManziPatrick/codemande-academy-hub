@@ -21,6 +21,8 @@ import {
   Briefcase,
   Star,
 } from "lucide-react";
+import { AddFeedbackDialog, ViewProgressDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
 const mentees = [
   {
@@ -90,9 +92,29 @@ const internshipStudents = [
 export default function TrainerMentorship() {
   const [selectedMentee, setSelectedMentee] = useState<number | null>(null);
   const [message, setMessage] = useState("");
+  
+  // Dialog states
+  const [feedbackStudent, setFeedbackStudent] = useState<{ name: string; type: "mentorship" | "internship" } | null>(null);
+  const [progressStudent, setProgressStudent] = useState<{ name: string; progress: number; type: "mentorship" | "internship" } | null>(null);
 
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase();
+  };
+
+  const handleSendMessage = () => {
+    if (!message.trim() || !selectedMentee) return;
+    
+    const mentee = mentees.find(m => m.id === selectedMentee);
+    toast.success(`Message sent to ${mentee?.name}`);
+    setMessage("");
+  };
+
+  const handleScheduleSession = (menteeName: string) => {
+    toast.info(`Opening scheduler for ${menteeName}...`);
+  };
+
+  const handleStartCall = (menteeName: string) => {
+    toast.success(`Starting video call with ${menteeName}...`);
   };
 
   return (
@@ -266,18 +288,33 @@ export default function TrainerMentorship() {
                                   onChange={(e) => setMessage(e.target.value)}
                                   rows={3}
                                 />
-                                <Button variant="gold" size="sm" className="w-full mt-2">
+                                <Button 
+                                  variant="gold" 
+                                  size="sm" 
+                                  className="w-full mt-2"
+                                  onClick={handleSendMessage}
+                                >
                                   <Send className="w-4 h-4 mr-1" />
                                   Send Message
                                 </Button>
                               </div>
 
                               <div className="flex gap-2">
-                                <Button variant="outline" size="sm" className="flex-1">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="flex-1"
+                                  onClick={() => handleScheduleSession(mentee.name)}
+                                >
                                   <Calendar className="w-4 h-4 mr-1" />
                                   Schedule
                                 </Button>
-                                <Button variant="outline" size="sm" className="flex-1">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="flex-1"
+                                  onClick={() => handleStartCall(mentee.name)}
+                                >
                                   <Video className="w-4 h-4 mr-1" />
                                   Call
                                 </Button>
@@ -351,11 +388,26 @@ export default function TrainerMentorship() {
                           Started: {student.startDate}
                         </span>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setProgressStudent({ 
+                              name: student.name, 
+                              progress: student.progress, 
+                              type: "internship" 
+                            })}
+                          >
                             <TrendingUp className="w-4 h-4 mr-1" />
                             View Progress
                           </Button>
-                          <Button variant="gold" size="sm">
+                          <Button 
+                            variant="gold" 
+                            size="sm"
+                            onClick={() => setFeedbackStudent({ 
+                              name: student.name, 
+                              type: "internship" 
+                            })}
+                          >
                             <Star className="w-4 h-4 mr-1" />
                             Add Feedback
                           </Button>
@@ -369,6 +421,21 @@ export default function TrainerMentorship() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialogs */}
+      <AddFeedbackDialog
+        open={!!feedbackStudent}
+        onOpenChange={(open) => !open && setFeedbackStudent(null)}
+        studentName={feedbackStudent?.name || ""}
+        type={feedbackStudent?.type || "mentorship"}
+      />
+      <ViewProgressDialog
+        open={!!progressStudent}
+        onOpenChange={(open) => !open && setProgressStudent(null)}
+        studentName={progressStudent?.name || ""}
+        progress={progressStudent?.progress || 0}
+        type={progressStudent?.type || "mentorship"}
+      />
     </PortalLayout>
   );
 }

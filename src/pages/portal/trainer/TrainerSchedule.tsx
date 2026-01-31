@@ -24,9 +24,23 @@ import {
   MapPin,
   Edit,
   Trash2,
+  ExternalLink,
 } from "lucide-react";
+import { EditSessionDialog, DeleteConfirmDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
-const upcomingSessions = [
+interface Session {
+  id: number;
+  title: string;
+  course: string;
+  date: string;
+  time: string;
+  type: string;
+  attendees: number;
+  link: string;
+}
+
+const initialSessions: Session[] = [
   {
     id: 1,
     title: "React Hooks Deep Dive",
@@ -69,7 +83,6 @@ const upcomingSessions = [
   },
 ];
 
-const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const currentWeek = [
   { day: "Mon", date: 27, hasSession: false },
   { day: "Tue", date: 28, hasSession: true },
@@ -90,6 +103,55 @@ const sessionTypeColors: Record<string, string> = {
 export default function TrainerSchedule() {
   const [selectedDate, setSelectedDate] = useState(28);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [sessions, setSessions] = useState<Session[]>(initialSessions);
+  
+  // Dialog states
+  const [editSession, setEditSession] = useState<Session | null>(null);
+  const [deleteSession, setDeleteSession] = useState<Session | null>(null);
+
+  // Create session form state
+  const [newSession, setNewSession] = useState({
+    title: "",
+    date: "",
+    time: "",
+    duration: "2",
+    description: "",
+  });
+
+  const handleCreateSession = () => {
+    if (!newSession.title || !newSession.date) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    const session: Session = {
+      id: Date.now(),
+      title: newSession.title,
+      course: "Software Development",
+      date: newSession.date,
+      time: newSession.time || "TBD",
+      type: "live",
+      attendees: 0,
+      link: `https://meet.google.com/new-session-${Date.now()}`,
+    };
+
+    setSessions([...sessions, session]);
+    toast.success("Session scheduled successfully!");
+    setNewSession({ title: "", date: "", time: "", duration: "2", description: "" });
+    setIsCreateOpen(false);
+  };
+
+  const handleStartSession = (session: Session) => {
+    toast.success(`Starting session: ${session.title}`);
+    window.open(session.link, "_blank");
+  };
+
+  const handleDeleteSession = () => {
+    if (!deleteSession) return;
+    setSessions(sessions.filter(s => s.id !== deleteSession.id));
+    toast.success("Session deleted successfully!");
+    setDeleteSession(null);
+  };
 
   return (
     <PortalLayout>
@@ -121,32 +183,54 @@ export default function TrainerSchedule() {
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Session Title</label>
-                  <Input placeholder="e.g., React Advanced Patterns" />
+                  <label className="text-sm font-medium mb-2 block">Session Title *</label>
+                  <Input 
+                    placeholder="e.g., React Advanced Patterns"
+                    value={newSession.title}
+                    onChange={(e) => setNewSession({ ...newSession, title: e.target.value })}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Date</label>
-                    <Input type="date" />
+                    <label className="text-sm font-medium mb-2 block">Date *</label>
+                    <Input 
+                      type="date"
+                      value={newSession.date}
+                      onChange={(e) => setNewSession({ ...newSession, date: e.target.value })}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Time</label>
-                    <Input type="time" />
+                    <Input 
+                      type="time"
+                      value={newSession.time}
+                      onChange={(e) => setNewSession({ ...newSession, time: e.target.value })}
+                    />
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Duration (hours)</label>
-                  <Input type="number" min="0.5" step="0.5" defaultValue="2" />
+                  <Input 
+                    type="number" 
+                    min="0.5" 
+                    step="0.5" 
+                    value={newSession.duration}
+                    onChange={(e) => setNewSession({ ...newSession, duration: e.target.value })}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Description</label>
-                  <Textarea placeholder="What will you cover in this session?" />
+                  <Textarea 
+                    placeholder="What will you cover in this session?"
+                    value={newSession.description}
+                    onChange={(e) => setNewSession({ ...newSession, description: e.target.value })}
+                  />
                 </div>
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" className="flex-1" onClick={() => setIsCreateOpen(false)}>
                     Cancel
                   </Button>
-                  <Button variant="gold" className="flex-1" onClick={() => setIsCreateOpen(false)}>
+                  <Button variant="gold" className="flex-1" onClick={handleCreateSession}>
                     Schedule
                   </Button>
                 </div>
@@ -174,7 +258,9 @@ export default function TrainerSchedule() {
                   <ChevronRight className="w-5 h-5" />
                 </Button>
               </div>
-              <Button variant="outline" size="sm">Today</Button>
+              <Button variant="outline" size="sm" onClick={() => setSelectedDate(28)}>
+                Today
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-7 gap-2">
@@ -216,7 +302,7 @@ export default function TrainerSchedule() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {upcomingSessions.map((session) => (
+                {sessions.map((session) => (
                   <div
                     key={session.id}
                     className="p-4 bg-background/50 rounded-lg border border-border/30"
@@ -249,18 +335,38 @@ export default function TrainerSchedule() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs text-card-foreground/60">
+                      <button 
+                        className="flex items-center gap-2 text-xs text-card-foreground/60 hover:text-accent transition-colors"
+                        onClick={() => {
+                          navigator.clipboard.writeText(session.link);
+                          toast.success("Link copied to clipboard!");
+                        }}
+                      >
                         <MapPin className="w-3 h-3" />
                         <span className="truncate max-w-[200px]">{session.link}</span>
-                      </div>
+                        <ExternalLink className="w-3 h-3" />
+                      </button>
                       <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setEditSession(session)}
+                        >
                           <Edit className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-destructive"
+                          onClick={() => setDeleteSession(session)}
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
-                        <Button variant="gold" size="sm">
+                        <Button 
+                          variant="gold" 
+                          size="sm"
+                          onClick={() => handleStartSession(session)}
+                        >
                           <Video className="w-4 h-4 mr-1" />
                           Start
                         </Button>
@@ -286,7 +392,7 @@ export default function TrainerSchedule() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
                   <span className="text-sm text-card-foreground/70">Total Sessions</span>
-                  <span className="font-bold text-card-foreground">4</span>
+                  <span className="font-bold text-card-foreground">{sessions.length}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
                   <span className="text-sm text-card-foreground/70">Teaching Hours</span>
@@ -294,7 +400,9 @@ export default function TrainerSchedule() {
                 </div>
                 <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
                   <span className="text-sm text-card-foreground/70">Students Reached</span>
-                  <span className="font-bold text-card-foreground">70</span>
+                  <span className="font-bold text-card-foreground">
+                    {sessions.reduce((sum, s) => sum + s.attendees, 0)}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -318,7 +426,12 @@ export default function TrainerSchedule() {
                   </div>
                   <p className="text-xs text-card-foreground/60">10:00 AM - 12:00 PM</p>
                 </div>
-                <Button variant="outline" size="sm" className="w-full">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={() => setIsCreateOpen(true)}
+                >
                   <Plus className="w-4 h-4 mr-1" />
                   Add Office Hours
                 </Button>
@@ -327,6 +440,20 @@ export default function TrainerSchedule() {
           </motion.div>
         </div>
       </div>
+
+      {/* Dialogs */}
+      <EditSessionDialog
+        open={!!editSession}
+        onOpenChange={(open) => !open && setEditSession(null)}
+        session={editSession}
+      />
+      <DeleteConfirmDialog
+        open={!!deleteSession}
+        onOpenChange={(open) => !open && setDeleteSession(null)}
+        title="Delete Session"
+        description={`Are you sure you want to delete "${deleteSession?.title}"? All registered attendees will be notified.`}
+        onConfirm={handleDeleteSession}
+      />
     </PortalLayout>
   );
 }

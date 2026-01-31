@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,17 +9,44 @@ import {
   FolderOpen,
   Users,
   Calendar,
-  Clock,
   CheckCircle,
   AlertCircle,
-  ArrowRight,
   MessageSquare,
   Upload,
   FileText,
   ExternalLink,
 } from "lucide-react";
+import { SubmitProjectDialog, TeamChatDialog, ViewGuidelinesDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
-const projects = [
+interface TeamMember {
+  name: string;
+  role: string;
+}
+
+interface Task {
+  title: string;
+  completed: boolean;
+}
+
+interface Project {
+  id: string;
+  title: string;
+  course: string;
+  type: string;
+  status: string;
+  progress: number;
+  deadline?: string;
+  daysLeft?: number;
+  submittedAt?: string;
+  grade?: string;
+  feedback?: string;
+  team?: TeamMember[];
+  tasks?: Task[];
+  description: string;
+}
+
+const projects: Project[] = [
   {
     id: "p1",
     title: "E-Commerce Dashboard",
@@ -82,6 +110,15 @@ const getStatusBadge = (status: string) => {
 };
 
 export default function StudentProjects() {
+  // Dialog states
+  const [submitProject, setSubmitProject] = useState<Project | null>(null);
+  const [chatProject, setChatProject] = useState<Project | null>(null);
+  const [guidelinesProject, setGuidelinesProject] = useState<Project | null>(null);
+
+  const handleViewSubmission = (projectTitle: string) => {
+    toast.info(`Opening submission for ${projectTitle}...`);
+  };
+
   return (
     <PortalLayout>
       <div className="space-y-6">
@@ -207,7 +244,7 @@ export default function StudentProjects() {
                     {/* Sidebar */}
                     <div className="lg:w-64 space-y-4">
                       {/* Deadline */}
-                      {project.status === "in_progress" && (
+                      {project.status === "in_progress" && project.deadline && (
                         <div className="p-4 bg-background/50 rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
                             <Calendar className="w-4 h-4 text-accent" />
@@ -249,23 +286,45 @@ export default function StudentProjects() {
                       <div className="space-y-2">
                         {project.status === "in_progress" && (
                           <>
-                            <Button variant="gold" size="sm" className="w-full">
+                            <Button 
+                              variant="gold" 
+                              size="sm" 
+                              className="w-full"
+                              onClick={() => setSubmitProject(project)}
+                            >
                               <Upload className="w-4 h-4 mr-2" />
                               Submit Project
                             </Button>
-                            <Button variant="outline" size="sm" className="w-full">
-                              <MessageSquare className="w-4 h-4 mr-2" />
-                              Team Chat
-                            </Button>
+                            {project.team && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full"
+                                onClick={() => setChatProject(project)}
+                              >
+                                <MessageSquare className="w-4 h-4 mr-2" />
+                                Team Chat
+                              </Button>
+                            )}
                           </>
                         )}
                         {project.status === "completed" && (
-                          <Button variant="outline" size="sm" className="w-full">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full"
+                            onClick={() => handleViewSubmission(project.title)}
+                          >
                             <ExternalLink className="w-4 h-4 mr-2" />
                             View Submission
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm" className="w-full">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => setGuidelinesProject(project)}
+                        >
                           <FileText className="w-4 h-4 mr-2" />
                           View Guidelines
                         </Button>
@@ -278,6 +337,24 @@ export default function StudentProjects() {
           ))}
         </div>
       </div>
+
+      {/* Dialogs */}
+      <SubmitProjectDialog
+        open={!!submitProject}
+        onOpenChange={(open) => !open && setSubmitProject(null)}
+        projectTitle={submitProject?.title || ""}
+      />
+      <TeamChatDialog
+        open={!!chatProject}
+        onOpenChange={(open) => !open && setChatProject(null)}
+        projectTitle={chatProject?.title || ""}
+        teamMembers={chatProject?.team || []}
+      />
+      <ViewGuidelinesDialog
+        open={!!guidelinesProject}
+        onOpenChange={(open) => !open && setGuidelinesProject(null)}
+        projectTitle={guidelinesProject?.title || ""}
+      />
     </PortalLayout>
   );
 }

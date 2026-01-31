@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +25,6 @@ import {
   Eye,
   MoreVertical,
   TrendingUp,
-  Clock,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,8 +32,25 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ViewCourseDialog, EditCourseDialog, DeleteConfirmDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
-const courses = [
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  instructor: string;
+  students: number;
+  lessons: number;
+  price: string;
+  isFree: boolean;
+  freeTrialLessons: number;
+  status: string;
+  revenue: string;
+  completion: number;
+}
+
+const initialCourses: Course[] = [
   {
     id: "software-dev",
     title: "Software Development",
@@ -97,6 +112,65 @@ const courses = [
 export default function AdminCourses() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [courses, setCourses] = useState<Course[]>(initialCourses);
+  
+  // Dialog states
+  const [viewCourse, setViewCourse] = useState<Course | null>(null);
+  const [editCourse, setEditCourse] = useState<Course | null>(null);
+  const [deleteCourse, setDeleteCourse] = useState<Course | null>(null);
+  const [editPricingCourse, setEditPricingCourse] = useState<Course | null>(null);
+
+  // Create course form state
+  const [newCourse, setNewCourse] = useState({
+    title: "",
+    description: "",
+    price: "",
+    freeTrialLessons: 2,
+    isFree: false,
+  });
+
+  const handleCreateCourse = () => {
+    if (!newCourse.title || !newCourse.description) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    const course: Course = {
+      id: `course-${Date.now()}`,
+      title: newCourse.title,
+      description: newCourse.description,
+      instructor: "To be assigned",
+      students: 0,
+      lessons: 0,
+      price: newCourse.isFree ? "Free" : `${newCourse.price} RWF`,
+      isFree: newCourse.isFree,
+      freeTrialLessons: newCourse.isFree ? 0 : newCourse.freeTrialLessons,
+      status: "active",
+      revenue: "0 RWF",
+      completion: 0,
+    };
+
+    setCourses([...courses, course]);
+    toast.success("Course created successfully!");
+    setNewCourse({ title: "", description: "", price: "", freeTrialLessons: 2, isFree: false });
+    setIsCreateOpen(false);
+  };
+
+  const handleDeleteCourse = () => {
+    if (!deleteCourse) return;
+    setCourses(courses.filter(c => c.id !== deleteCourse.id));
+    toast.success("Course deleted successfully!");
+    setDeleteCourse(null);
+  };
+
+  const handleSaveCourse = (updatedCourse: Course) => {
+    setCourses(courses.map(c => c.id === updatedCourse.id ? updatedCourse : c));
+  };
+
+  const filteredCourses = courses.filter(course =>
+    course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.instructor.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <PortalLayout>
@@ -128,21 +202,41 @@ export default function AdminCourses() {
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Course Title</label>
-                  <Input placeholder="e.g., Advanced JavaScript" />
+                  <label className="text-sm font-medium mb-2 block">Course Title *</label>
+                  <Input 
+                    placeholder="e.g., Advanced JavaScript"
+                    value={newCourse.title}
+                    onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Description</label>
-                  <Textarea placeholder="Course description..." rows={3} />
+                  <label className="text-sm font-medium mb-2 block">Description *</label>
+                  <Textarea 
+                    placeholder="Course description..." 
+                    rows={3}
+                    value={newCourse.description}
+                    onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium mb-2 block">Price (RWF)</label>
-                    <Input type="number" placeholder="150000" />
+                    <Input 
+                      type="number" 
+                      placeholder="150000"
+                      value={newCourse.price}
+                      onChange={(e) => setNewCourse({ ...newCourse, price: e.target.value })}
+                      disabled={newCourse.isFree}
+                    />
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Free Trial Lessons</label>
-                    <Input type="number" defaultValue="2" />
+                    <Input 
+                      type="number" 
+                      value={newCourse.freeTrialLessons}
+                      onChange={(e) => setNewCourse({ ...newCourse, freeTrialLessons: parseInt(e.target.value) })}
+                      disabled={newCourse.isFree}
+                    />
                   </div>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
@@ -150,13 +244,16 @@ export default function AdminCourses() {
                     <p className="font-medium text-sm">Make Course Free</p>
                     <p className="text-xs text-muted-foreground">All lessons will be accessible</p>
                   </div>
-                  <Switch />
+                  <Switch 
+                    checked={newCourse.isFree}
+                    onCheckedChange={(checked) => setNewCourse({ ...newCourse, isFree: checked })}
+                  />
                 </div>
                 <div className="flex gap-2 pt-2">
                   <Button variant="outline" className="flex-1" onClick={() => setIsCreateOpen(false)}>
                     Cancel
                   </Button>
-                  <Button variant="gold" className="flex-1" onClick={() => setIsCreateOpen(false)}>
+                  <Button variant="gold" className="flex-1" onClick={handleCreateCourse}>
                     Create Course
                   </Button>
                 </div>
@@ -192,7 +289,9 @@ export default function AdminCourses() {
                   <Users className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-card-foreground">902</p>
+                  <p className="text-2xl font-bold text-card-foreground">
+                    {courses.reduce((sum, c) => sum + c.students, 0)}
+                  </p>
                   <p className="text-xs text-card-foreground/60">Total Students</p>
                 </div>
               </div>
@@ -265,7 +364,7 @@ export default function AdminCourses() {
                     </tr>
                   </thead>
                   <tbody>
-                    {courses.map((course) => (
+                    {filteredCourses.map((course) => (
                       <tr key={course.id} className="border-b border-border/30 hover:bg-background/50">
                         <td className="p-4">
                           <div>
@@ -300,16 +399,19 @@ export default function AdminCourses() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setViewCourse(course)}>
                                 <Eye className="w-4 h-4 mr-2" /> View
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditCourse(course)}>
                                 <Edit className="w-4 h-4 mr-2" /> Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditPricingCourse(course)}>
                                 <DollarSign className="w-4 h-4 mr-2" /> Edit Pricing
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => setDeleteCourse(course)}
+                              >
                                 <Trash2 className="w-4 h-4 mr-2" /> Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -324,6 +426,31 @@ export default function AdminCourses() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Dialogs */}
+      <ViewCourseDialog
+        open={!!viewCourse}
+        onOpenChange={(open) => !open && setViewCourse(null)}
+        course={viewCourse}
+      />
+      <EditCourseDialog
+        open={!!editCourse || !!editPricingCourse}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditCourse(null);
+            setEditPricingCourse(null);
+          }
+        }}
+        course={editCourse || editPricingCourse}
+        onSave={handleSaveCourse}
+      />
+      <DeleteConfirmDialog
+        open={!!deleteCourse}
+        onOpenChange={(open) => !open && setDeleteCourse(null)}
+        title="Delete Course"
+        description={`Are you sure you want to delete "${deleteCourse?.title}"? This action cannot be undone and will remove all associated data.`}
+        onConfirm={handleDeleteCourse}
+      />
     </PortalLayout>
   );
 }
