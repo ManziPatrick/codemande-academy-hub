@@ -24,6 +24,8 @@ import {
   HelpCircle,
   Video,
 } from "lucide-react";
+import { RequestHelpDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
 // Mock course data
 const courseData = {
@@ -123,11 +125,68 @@ const getLessonIcon = (type: string) => {
 export default function CourseDetail() {
   const { courseId } = useParams();
   const [activeLesson, setActiveLesson] = useState("l16");
+  const [notes, setNotes] = useState("");
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [completedLessons, setCompletedLessons] = useState<string[]>(
+    courseData.modules.flatMap(m => m.lessons.filter(l => l.completed).map(l => l.id))
+  );
 
   const currentModule = courseData.modules.find((m) =>
     m.lessons.some((l) => l.id === activeLesson)
   );
   const currentLesson = currentModule?.lessons.find((l) => l.id === activeLesson);
+
+  // Find all lessons in order with proper typing
+  type Lesson = { id: string; title: string; duration: string; completed: boolean; type: string; locked?: boolean; current?: boolean };
+  const allLessons: Lesson[] = courseData.modules.flatMap(m => m.lessons as Lesson[]);
+  const currentIndex = allLessons.findIndex(l => l.id === activeLesson);
+
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      const prevLesson = allLessons[currentIndex - 1];
+      if (!(prevLesson as { locked?: boolean }).locked) {
+        setActiveLesson(prevLesson.id);
+      }
+    }
+  };
+
+  const handleNext = () => {
+    if (currentIndex < allLessons.length - 1) {
+      const nextLesson = allLessons[currentIndex + 1];
+      if (!(nextLesson as { locked?: boolean }).locked) {
+        setActiveLesson(nextLesson.id);
+      }
+    }
+  };
+
+  const handleMarkComplete = () => {
+    if (!completedLessons.includes(activeLesson)) {
+      setCompletedLessons([...completedLessons, activeLesson]);
+      toast.success("Lesson marked as complete!");
+    }
+    // Move to next lesson
+    if (currentIndex < allLessons.length - 1) {
+      const nextLesson = allLessons[currentIndex + 1];
+      if (!(nextLesson as { locked?: boolean }).locked) {
+        setActiveLesson(nextLesson.id);
+      }
+    }
+  };
+
+  const handleDownload = (resourceTitle: string) => {
+    toast.success(`Downloading ${resourceTitle}...`);
+    setTimeout(() => {
+      toast.success("Download complete!");
+    }, 1000);
+  };
+
+  const handleSaveNotes = () => {
+    toast.success("Notes saved successfully!");
+  };
+
+  const handleStartDiscussion = () => {
+    toast.success("Opening discussion forum...");
+  };
 
   return (
     <PortalLayout>
@@ -225,11 +284,16 @@ export default function CourseDetail() {
 
                     {/* Navigation */}
                     <div className="flex items-center justify-between mt-6 pt-6 border-t border-border/50">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handlePrevious}
+                        disabled={currentIndex === 0}
+                      >
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         Previous
                       </Button>
-                      <Button variant="gold" size="sm">
+                      <Button variant="gold" size="sm" onClick={handleMarkComplete}>
                         Mark Complete & Next
                         <ChevronRight className="w-4 h-4 ml-1" />
                       </Button>
@@ -257,7 +321,7 @@ export default function CourseDetail() {
                               <p className="text-xs text-card-foreground/60">{resource.type.toUpperCase()} • {resource.size}</p>
                             </div>
                           </div>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleDownload(resource.title)}>
                             <Download className="w-4 h-4" />
                           </Button>
                         </div>
@@ -277,7 +341,7 @@ export default function CourseDetail() {
                     <p className="text-muted-foreground mb-4">
                       Ask questions and interact with other students
                     </p>
-                    <Button variant="gold">Start Discussion</Button>
+                    <Button variant="gold" onClick={handleStartDiscussion}>Start Discussion</Button>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -291,9 +355,11 @@ export default function CourseDetail() {
                     <textarea
                       placeholder="Take notes while watching the lesson..."
                       className="w-full h-40 p-3 bg-background border border-border rounded-lg resize-none text-sm focus:outline-none focus:ring-2 focus:ring-accent"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
                     />
                     <div className="flex justify-end mt-3">
-                      <Button variant="gold" size="sm">Save Notes</Button>
+                      <Button variant="gold" size="sm" onClick={handleSaveNotes}>Save Notes</Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -359,7 +425,7 @@ export default function CourseDetail() {
 
                 {/* Request Help */}
                 <div className="mt-4 pt-4 border-t border-border/50">
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => setHelpOpen(true)}>
                     <HelpCircle className="w-4 h-4 mr-2" />
                     Request Help
                   </Button>
@@ -369,6 +435,14 @@ export default function CourseDetail() {
           </motion.div>
         </div>
       </div>
+
+      {/* Dialogs */}
+      <RequestHelpDialog
+        open={helpOpen}
+        onOpenChange={setHelpOpen}
+        context={courseData.title}
+        lessonTitle={currentLesson?.title}
+      />
     </PortalLayout>
   );
 }

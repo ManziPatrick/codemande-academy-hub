@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,15 +13,31 @@ import {
   Calendar,
   Share2,
 } from "lucide-react";
+import { ShareCertificateDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
-const certificates = [
+interface Certificate {
+  id: string;
+  courseTitle: string;
+  issueDate: string | null;
+  credentialId?: string;
+  status: string;
+  progress?: number;
+  requirements?: Array<{
+    title: string;
+    completed: boolean;
+    current?: number;
+    total?: number;
+  }>;
+}
+
+const certificates: Certificate[] = [
   {
     id: "cert-1",
     courseTitle: "JavaScript Fundamentals",
     issueDate: "Dec 15, 2025",
     credentialId: "CMD-2025-JS-1234",
     status: "issued",
-    image: "/placeholder.svg",
   },
   {
     id: "cert-2",
@@ -49,8 +66,39 @@ const certificates = [
 ];
 
 export default function StudentCertificates() {
+  const [shareCertificate, setShareCertificate] = useState<{
+    id: string;
+    courseName: string;
+    completedDate: string;
+    credentialId: string;
+  } | null>(null);
+
   const issuedCerts = certificates.filter((c) => c.status === "issued");
   const inProgressCerts = certificates.filter((c) => c.status === "in_progress");
+
+  const handleDownload = (cert: Certificate) => {
+    toast.success(`Downloading certificate for ${cert.courseTitle}...`);
+    // Simulate download
+    setTimeout(() => {
+      toast.success("Certificate downloaded successfully!");
+    }, 1000);
+  };
+
+  const handleViewOnline = (cert: Certificate) => {
+    window.open(`https://codemande.com/verify/${cert.credentialId}`, "_blank");
+    toast.success("Opening certificate verification page...");
+  };
+
+  const handleShare = (cert: Certificate) => {
+    if (cert.credentialId && cert.issueDate) {
+      setShareCertificate({
+        id: cert.id,
+        courseName: cert.courseTitle,
+        completedDate: cert.issueDate,
+        credentialId: cert.credentialId,
+      });
+    }
+  };
 
   return (
     <PortalLayout>
@@ -109,14 +157,27 @@ export default function StudentCertificates() {
                       Credential ID: {cert.credentialId}
                     </p>
                     <div className="flex gap-2">
-                      <Button variant="gold" size="sm" className="flex-1">
+                      <Button 
+                        variant="gold" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleDownload(cert)}
+                      >
                         <Download className="w-4 h-4 mr-2" />
                         Download
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleShare(cert)}
+                      >
                         <Share2 className="w-4 h-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleViewOnline(cert)}
+                      >
                         <ExternalLink className="w-4 h-4" />
                       </Button>
                     </div>
@@ -200,6 +261,13 @@ export default function StudentCertificates() {
           </Card>
         )}
       </div>
+
+      {/* Share Dialog */}
+      <ShareCertificateDialog
+        open={!!shareCertificate}
+        onOpenChange={(open) => !open && setShareCertificate(null)}
+        certificate={shareCertificate}
+      />
     </PortalLayout>
   );
 }

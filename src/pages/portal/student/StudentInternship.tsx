@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +20,8 @@ import {
   AlertCircle,
   Lock,
 } from "lucide-react";
+import { ApplyInternshipDialog, BookCallDialog, TeamChatDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
 const internshipData = {
   eligible: true,
@@ -77,6 +80,15 @@ const getTaskStatusBadge = (status: string) => {
 
 export default function StudentInternship() {
   const { eligible, enrolled, status, payment, details, progress, milestones, tasks, meetings } = internshipData;
+  
+  // Dialog states
+  const [applyOpen, setApplyOpen] = useState(false);
+  const [bookCallOpen, setBookCallOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+
+  const handleMessage = () => {
+    setChatOpen(true);
+  };
 
   return (
     <PortalLayout>
@@ -183,7 +195,7 @@ export default function StudentInternship() {
                       20,000 <span className="text-lg font-normal">RWF</span>
                     </div>
                     <p className="text-sm text-card-foreground/60 mb-6">One-time payment</p>
-                    <Button variant="gold" className="w-full">
+                    <Button variant="gold" className="w-full" onClick={() => setApplyOpen(true)}>
                       Apply Now <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                     <p className="text-xs text-card-foreground/50 text-center mt-3">
@@ -357,11 +369,11 @@ export default function StudentInternship() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="gold" size="sm" className="flex-1">
+                      <Button variant="gold" size="sm" className="flex-1" onClick={handleMessage}>
                         <MessageSquare className="w-4 h-4 mr-1" />
                         Message
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => setBookCallOpen(true)}>
                         Book Call
                       </Button>
                     </div>
@@ -389,6 +401,28 @@ export default function StudentInternship() {
           </>
         )}
       </div>
+
+      {/* Dialogs */}
+      <ApplyInternshipDialog
+        open={applyOpen}
+        onOpenChange={setApplyOpen}
+        onApply={() => toast.success("Application submitted!")}
+      />
+      <BookCallDialog
+        open={bookCallOpen}
+        onOpenChange={setBookCallOpen}
+        mentorName={details.mentor.name}
+        purpose="mentorship"
+      />
+      <TeamChatDialog
+        open={chatOpen}
+        onOpenChange={setChatOpen}
+        projectTitle="Internship Discussion"
+        teamMembers={[
+          { name: details.mentor.name, role: "Mentor" },
+          { name: "You", role: "Intern" },
+        ]}
+      />
     </PortalLayout>
   );
 }

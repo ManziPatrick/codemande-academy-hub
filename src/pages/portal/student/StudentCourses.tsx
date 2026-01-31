@@ -19,8 +19,14 @@ import {
   Users,
   Star,
   ArrowRight,
+  Eye,
 } from "lucide-react";
-import { EnrollCourseDialog } from "@/components/portal/dialogs";
+import { 
+  EnrollCourseDialog, 
+  FilterCoursesDialog,
+  ViewCourseDetailDialog,
+} from "@/components/portal/dialogs";
+import type { CourseFilters } from "@/components/portal/dialogs/FilterCoursesDialog";
 import { toast } from "sonner";
 
 interface EnrolledCourse {
@@ -133,12 +139,25 @@ export default function StudentCourses() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   
-  // Dialog state
+  // Dialog states
   const [enrollCourse, setEnrollCourse] = useState<AvailableCourse | null>(null);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [viewCourse, setViewCourse] = useState<EnrolledCourse | null>(null);
+  const [filters, setFilters] = useState<CourseFilters>({
+    categories: [],
+    level: "All Levels",
+    duration: "Any Duration",
+    rating: 0,
+    priceRange: "Any Price",
+  });
 
   const handleBrowseCourses = () => {
     const tabTrigger = document.querySelector('[value="available"]') as HTMLElement;
     tabTrigger?.click();
+  };
+
+  const handleApplyFilters = (newFilters: CourseFilters) => {
+    setFilters(newFilters);
   };
 
   return (
@@ -177,7 +196,7 @@ export default function StudentCourses() {
             />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" onClick={() => setFilterOpen(true)}>
               <Filter className="w-5 h-5" />
             </Button>
             <Button
@@ -268,12 +287,21 @@ export default function StudentCourses() {
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-card-foreground/70">by {course.instructor}</span>
                             </div>
-                            <Link to={`/portal/student/courses/${course.id}`}>
-                              <Button variant="gold" size="sm">
-                                <PlayCircle className="w-4 h-4 mr-1" />
-                                Continue
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setViewCourse(course)}
+                              >
+                                <Eye className="w-4 h-4" />
                               </Button>
-                            </Link>
+                              <Link to={`/portal/student/courses/${course.id}`}>
+                                <Button variant="gold" size="sm">
+                                  <PlayCircle className="w-4 h-4 mr-1" />
+                                  Continue
+                                </Button>
+                              </Link>
+                            </div>
                           </div>
                         </CardContent>
                       </div>
@@ -373,6 +401,17 @@ export default function StudentCourses() {
         open={!!enrollCourse}
         onOpenChange={(open) => !open && setEnrollCourse(null)}
         course={enrollCourse}
+      />
+      <FilterCoursesDialog
+        open={filterOpen}
+        onOpenChange={setFilterOpen}
+        filters={filters}
+        onApplyFilters={handleApplyFilters}
+      />
+      <ViewCourseDetailDialog
+        open={!!viewCourse}
+        onOpenChange={(open) => !open && setViewCourse(null)}
+        course={viewCourse}
       />
     </PortalLayout>
   );
