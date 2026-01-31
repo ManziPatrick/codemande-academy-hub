@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import {
 
 export default function PortalSettings() {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = () => {
@@ -248,7 +250,10 @@ export default function PortalSettings() {
                       <p className="font-medium text-card-foreground">Dark Mode</p>
                       <p className="text-sm text-card-foreground/60">Use dark theme</p>
                     </div>
-                    <Switch />
+                    <Switch 
+                      checked={theme === "dark"} 
+                      onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")} 
+                    />
                   </div>
                   <div className="flex items-center justify-between p-4 bg-background/50 rounded-lg">
                     <div>
