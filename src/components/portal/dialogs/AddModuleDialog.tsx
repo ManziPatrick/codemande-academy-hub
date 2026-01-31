@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Layers } from "lucide-react";
 import { toast } from "sonner";
 
@@ -79,16 +80,17 @@ export function AddModuleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle className="flex items-center gap-2">
             <Layers className="w-5 h-5 text-accent" />
             Add New Module
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4 mt-4">
-          {/* Module Title */}
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
+            {/* Module Title */}
           <div>
             <label className="text-sm font-medium mb-2 block">
               Module Title *
@@ -152,25 +154,27 @@ export function AddModuleDialog({
             </p>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-2 pt-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => onOpenChange(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="gold"
-              className="flex-1"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? "Adding..." : "Add Module"}
-            </Button>
           </div>
+        </ScrollArea>
+        
+        {/* Actions */}
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="gold"
+            className="flex-1"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Adding..." : "Add Module"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

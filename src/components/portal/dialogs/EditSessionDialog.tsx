@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Video, Copy, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -129,26 +130,27 @@ export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle className="flex items-center gap-2">
             <Video className="w-5 h-5 text-accent" />
             Edit Session
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
-          <div>
-            <Label htmlFor="edit-title">Session Title *</Label>
-            <Input
-              id="edit-title"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="mt-1.5"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
             <div>
+              <Label htmlFor="edit-title">Session Title *</Label>
+              <Input
+                id="edit-title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
               <Label htmlFor="edit-course">Course *</Label>
               <Select
                 value={formData.course}
@@ -186,30 +188,30 @@ export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditS
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="edit-date">Date</Label>
-              <Input
-                id="edit-date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="mt-1.5"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-date">Date</Label>
+                <Input
+                  id="edit-date"
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-time">Time</Label>
+                <Input
+                  id="edit-time"
+                  type="time"
+                  value={formData.time}
+                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                  className="mt-1.5"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="edit-time">Time</Label>
-              <Input
-                id="edit-time"
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                className="mt-1.5"
-              />
-            </div>
-          </div>
 
-          {/* Google Meet Link Section */}
+            {/* Google Meet Link Section */}
           <div className="p-4 bg-muted/50 rounded-lg border border-border/50">
             <Label className="text-sm font-medium">Google Meet Link</Label>
             <div className="flex items-center gap-2 mt-2">
@@ -255,26 +257,27 @@ export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditS
             </Button>
           </div>
 
-          <div>
-            <Label htmlFor="edit-description">Description</Label>
-            <Textarea
-              id="edit-description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Session description..."
-              rows={3}
-              className="mt-1.5"
-            />
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Session description..."
+                rows={3}
+                className="mt-1.5"
+              />
+            </div>
           </div>
+        </ScrollArea>
 
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button variant="gold" className="flex-1" onClick={handleSave}>
-              Save Changes
-            </Button>
-          </div>
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant="gold" className="flex-1" onClick={handleSave}>
+            Save Changes
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
 
@@ -37,16 +38,17 @@ export function SendEmailDialog({ open, onOpenChange, recipientName, recipientEm
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle>Send Email</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
-          <div className="p-3 bg-background/50 rounded-lg">
-            <p className="text-xs text-card-foreground/60">To:</p>
-            <p className="font-medium text-card-foreground">{recipientName}</p>
-            <p className="text-sm text-card-foreground/70">{recipientEmail}</p>
-          </div>
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
+            <div className="p-3 bg-background/50 rounded-lg">
+              <p className="text-xs text-card-foreground/60">To:</p>
+              <p className="font-medium text-card-foreground">{recipientName}</p>
+              <p className="text-sm text-card-foreground/70">{recipientEmail}</p>
+            </div>
           <div>
             <label className="text-sm font-medium mb-2 block">Subject</label>
             <Input
@@ -64,15 +66,16 @@ export function SendEmailDialog({ open, onOpenChange, recipientName, recipientEm
               rows={5}
             />
           </div>
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button variant="gold" className="flex-1" onClick={handleSend} disabled={isSending}>
-              <Send className="w-4 h-4 mr-2" />
-              {isSending ? "Sending..." : "Send Email"}
-            </Button>
           </div>
+        </ScrollArea>
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant="gold" className="flex-1" onClick={handleSend} disabled={isSending}>
+            <Send className="w-4 h-4 mr-2" />
+            {isSending ? "Sending..." : "Send Email"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

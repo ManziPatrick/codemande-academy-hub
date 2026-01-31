@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 interface AddUserDialogProps {
@@ -38,11 +39,12 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle>Add New User</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
           <div>
             <label className="text-sm font-medium mb-2 block">Full Name *</label>
             <Input
@@ -76,14 +78,15 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
               </SelectContent>
             </Select>
           </div>
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button variant="gold" className="flex-1" onClick={handleSubmit}>
-              Add User
-            </Button>
           </div>
+        </ScrollArea>
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant="gold" className="flex-1" onClick={handleSubmit}>
+            Add User
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

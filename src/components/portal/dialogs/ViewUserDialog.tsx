@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Mail, Calendar, BookOpen, Shield, GraduationCap, UserCog } from "lucide-react";
 
 interface User {
@@ -46,11 +47,12 @@ export function ViewUserDialog({ open, onOpenChange, user, onSendEmail }: ViewUs
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle>User Details</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
+        <ScrollArea className="flex-1 px-4 pb-4 sm:px-6 sm:pb-6">
+          <div className="space-y-4 py-4">
           <div className="flex items-center gap-4">
             <Avatar className="w-16 h-16">
               <AvatarFallback className="bg-accent/20 text-accent text-xl">
@@ -97,15 +99,16 @@ export function ViewUserDialog({ open, onOpenChange, user, onSendEmail }: ViewUs
             </div>
           </div>
 
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={() => onSendEmail?.(user)}
-          >
-            <Mail className="w-4 h-4 mr-2" />
-            Send Email
-          </Button>
-        </div>
+            <Button 
+              variant="outline" 
+              className="w-full"
+              onClick={() => onSendEmail?.(user)}
+            >
+              <Mail className="w-4 h-4 mr-2" />
+              Send Email
+            </Button>
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

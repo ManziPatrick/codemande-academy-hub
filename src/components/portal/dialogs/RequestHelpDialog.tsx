@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { HelpCircle, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -61,21 +62,22 @@ export function RequestHelpDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle className="flex items-center gap-2">
             <HelpCircle className="w-5 h-5 text-accent" />
             Request Help
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
-          {context && (
-            <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-              Context: {context}
-            </div>
-          )}
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
+            {context && (
+              <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+                Context: {context}
+              </div>
+            )}
 
-          <div>
+            <div>
             <Label htmlFor="category">Category *</Label>
             <Select
               value={formData.category}
@@ -117,41 +119,42 @@ export function RequestHelpDialog({
             />
           </div>
 
-          <div>
-            <Label htmlFor="contact">Preferred Contact Method</Label>
-            <Select
-              value={formData.preferredContact}
-              onValueChange={(value) => setFormData({ ...formData, preferredContact: value })}
-            >
-              <SelectTrigger className="mt-1.5">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="in-app">In-App Message</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
-                <SelectItem value="video-call">Video Call</SelectItem>
-              </SelectContent>
-            </Select>
+            <div>
+              <Label htmlFor="contact">Preferred Contact Method</Label>
+              <Select
+                value={formData.preferredContact}
+                onValueChange={(value) => setFormData({ ...formData, preferredContact: value })}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="in-app">In-App Message</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="video-call">Video Call</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+        </ScrollArea>
 
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button variant="gold" className="flex-1" onClick={handleSubmit} disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Request
-                </>
-              )}
-            </Button>
-          </div>
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant="gold" className="flex-1" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                Send Request
+              </>
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

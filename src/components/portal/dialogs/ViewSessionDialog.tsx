@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Calendar, Clock, Users, Video, MapPin, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
@@ -69,8 +70,8 @@ export function ViewSessionDialog({ open, onOpenChange, session, onJoin }: ViewS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <div className="flex items-start justify-between gap-4">
             <DialogTitle className="text-xl">{session.title}</DialogTitle>
             <Badge className={sessionTypeColors[session.type] || "bg-muted text-muted-foreground"}>
@@ -79,7 +80,8 @@ export function ViewSessionDialog({ open, onOpenChange, session, onJoin }: ViewS
           </div>
         </DialogHeader>
         
-        <div className="space-y-4 mt-4">
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
           {/* Course */}
           <div className="text-sm text-muted-foreground">
             {session.course}
@@ -130,16 +132,18 @@ export function ViewSessionDialog({ open, onOpenChange, session, onJoin }: ViewS
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
-            <Button variant="gold" className="flex-1" onClick={handleJoinMeeting}>
-              <Video className="w-4 h-4 mr-2" />
-              Join Meeting
-            </Button>
           </div>
+        </ScrollArea>
+
+        {/* Actions */}
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          <Button variant="gold" className="flex-1" onClick={handleJoinMeeting}>
+            <Video className="w-4 h-4 mr-2" />
+            Join Meeting
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

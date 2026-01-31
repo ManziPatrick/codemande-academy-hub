@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Video, Calendar, Clock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -97,35 +98,36 @@ export function BookCallDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle className="flex items-center gap-2">
             <Video className="w-5 h-5 text-accent" />
             Book a Call
             {mentorName && <span className="text-muted-foreground font-normal">with {mentorName}</span>}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 mt-4">
-          <div>
-            <Label htmlFor="callType">Call Type *</Label>
-            <Select
-              value={formData.callType}
-              onValueChange={(value) => setFormData({ ...formData, callType: value })}
-            >
-              <SelectTrigger className="mt-1.5">
-                <SelectValue placeholder="Select call type" />
-              </SelectTrigger>
-              <SelectContent>
-                {callTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <ScrollArea className="flex-1 px-4 sm:px-6">
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="callType">Call Type *</Label>
+              <Select
+                value={formData.callType}
+                onValueChange={(value) => setFormData({ ...formData, callType: value })}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Select call type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {callTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="date">Date *</Label>
               <Select
@@ -187,32 +189,33 @@ export function BookCallDialog({
             />
           </div>
 
-          <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4" />
-              <span className="font-medium">Duration: 30 minutes</span>
+            <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="w-4 h-4" />
+                <span className="font-medium">Duration: 30 minutes</span>
+              </div>
+              <p>A Google Meet link will be sent to your email after booking.</p>
             </div>
-            <p>A Google Meet link will be sent to your email after booking.</p>
           </div>
+        </ScrollArea>
 
-          <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button variant="gold" className="flex-1" onClick={handleBook} disabled={isBooking}>
-              {isBooking ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Booking...
-                </>
-              ) : (
-                <>
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Book Call
-                </>
-              )}
-            </Button>
-          </div>
+        <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
+          <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant="gold" className="flex-1" onClick={handleBook} disabled={isBooking}>
+            {isBooking ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Booking...
+              </>
+            ) : (
+              <>
+                <Calendar className="w-4 h-4 mr-2" />
+                Book Call
+              </>
+            )}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
