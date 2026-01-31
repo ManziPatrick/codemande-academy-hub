@@ -1,8 +1,7 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import { Award, Briefcase, FolderOpen } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { ImageWithSkeleton } from "@/components/ui/image-skeleton";
+import { AuthAwareLink } from "@/components/AuthAwareLink";
 import internshipImage from "@/assets/internship-work.jpg";
 
 export function InternshipsSection() {
@@ -68,14 +67,16 @@ export function InternshipsSection() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <Link to="/internships">
-                <Button variant="gold" size="sm">Apply for Internship</Button>
-              </Link>
-              <Link to="/training">
-                <Button variant="heroOutline" size="sm" className="bg-transparent text-card-foreground border-card-foreground/30 hover:border-accent hover:text-accent">
-                  Apply for Training
-                </Button>
-              </Link>
+              <AuthAwareLink variant="gold" size="sm">
+                Apply for Internship
+              </AuthAwareLink>
+              <AuthAwareLink 
+                variant="heroOutline" 
+                size="sm" 
+                className="bg-transparent text-card-foreground border-card-foreground/30 hover:border-accent hover:text-accent"
+              >
+                Apply for Training
+              </AuthAwareLink>
             </div>
           </motion.div>
         </div>

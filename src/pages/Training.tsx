@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { AuthAwareLink } from "@/components/AuthAwareLink";
 import { Code, Database, Wifi, Clock, Users, Award, CheckCircle, BookOpen, Target, Briefcase, Calendar, ArrowRight, Brain, Shield, Building2, Stethoscope, GraduationCap, Landmark, ShoppingBag, Factory } from "lucide-react";
 import heroImage from "@/assets/hero-training.jpg";
 import aboutImage from "@/assets/about-training.jpg";
@@ -338,11 +339,9 @@ const Training = () => {
                         <p className="flex items-center gap-2"><Target className="w-4 h-4 text-accent" /> <strong>Level:</strong> {program.level}</p>
                         <p className="flex items-center gap-2"><Users className="w-4 h-4 text-accent" /> <strong>Format:</strong> {program.format}</p>
                       </div>
-                      <Link to="/contact">
-                        <Button variant="gold" className="w-full">
-                          Apply Now <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </Link>
+                      <AuthAwareLink variant="gold" className="w-full">
+                        Apply Now <ArrowRight className="w-4 h-4 ml-2" />
+                      </AuthAwareLink>
                     </div>
 
                     {/* Curriculum */}
@@ -481,11 +480,9 @@ const Training = () => {
 
                     {/* CTA */}
                     <div className="mt-4 pt-4 border-t border-border/30">
-                      <Link to="/contact">
-                        <Button variant="gold" size="sm" className="w-full">
-                          Enroll Now <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </Link>
+                      <AuthAwareLink variant="gold" size="sm" className="w-full">
+                        Enroll Now <ArrowRight className="w-4 h-4 ml-2" />
+                      </AuthAwareLink>
                     </div>
                   </div>
                 </motion.div>
@@ -630,12 +627,8 @@ const Training = () => {
                 Enrollment is now open!
               </p>
               <div className="flex flex-wrap justify-center gap-4">
-                <Link to="/contact">
-                  <Button variant="gold" size="lg">Apply Now</Button>
-                </Link>
-                <Link to="/internships">
-                  <Button variant="outline" size="lg">Explore Internships</Button>
-                </Link>
+                <AuthAwareLink variant="gold" size="lg">Apply Now</AuthAwareLink>
+                <AuthAwareLink variant="outline" size="lg">Explore Internships</AuthAwareLink>
               </div>
             </motion.div>
           </div>
