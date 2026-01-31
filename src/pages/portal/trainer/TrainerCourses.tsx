@@ -22,6 +22,8 @@ import {
   AlertCircle,
   Upload,
 } from "lucide-react";
+import { AddLessonDialog, AddModuleDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
 const myCourses = [
   {
@@ -60,6 +62,24 @@ const courseModules = [
 export default function TrainerCourses() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [isLessonOpen, setIsLessonOpen] = useState(false);
+  const [isModuleOpen, setIsModuleOpen] = useState(false);
+
+  const handleAddLesson = () => {
+    toast.success("Lesson added to course!");
+  };
+
+  const handleAddModule = () => {
+    toast.success("Module added to course!");
+  };
+
+  const handlePreview = (courseTitle: string) => {
+    toast.info(`Opening preview for ${courseTitle}...`);
+  };
+
+  const handleEdit = (courseTitle: string) => {
+    toast.info(`Editing ${courseTitle}...`);
+  };
 
   return (
     <PortalLayout>
@@ -78,7 +98,7 @@ export default function TrainerCourses() {
               Manage your course content, lessons, and materials
             </p>
           </div>
-          <Button variant="gold">
+          <Button variant="gold" onClick={() => setIsLessonOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Create New Lesson
           </Button>
@@ -162,10 +182,10 @@ export default function TrainerCourses() {
                     Updated {course.lastUpdated}
                   </span>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => handlePreview(course.title)}>
                       <Eye className="w-4 h-4 mr-1" /> Preview
                     </Button>
-                    <Button variant="gold" size="sm">
+                    <Button variant="gold" size="sm" onClick={() => handleEdit(course.title)}>
                       <Edit className="w-4 h-4 mr-1" /> Edit
                     </Button>
                   </div>
@@ -185,7 +205,7 @@ export default function TrainerCourses() {
             <Card className="border-border/50">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-lg font-heading">Course Modules</CardTitle>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => setIsModuleOpen(true)}>
                   <Plus className="w-4 h-4 mr-1" /> Add Module
                 </Button>
               </CardHeader>
@@ -292,6 +312,18 @@ export default function TrainerCourses() {
           </motion.div>
         )}
       </div>
+
+      {/* Dialogs */}
+      <AddLessonDialog
+        open={isLessonOpen}
+        onOpenChange={setIsLessonOpen}
+        onAdd={handleAddLesson}
+      />
+      <AddModuleDialog
+        open={isModuleOpen}
+        onOpenChange={setIsModuleOpen}
+        onAdd={handleAddModule}
+      />
     </PortalLayout>
   );
 }

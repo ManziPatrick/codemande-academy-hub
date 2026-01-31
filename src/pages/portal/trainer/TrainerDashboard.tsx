@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +19,7 @@ import {
   Video,
   GraduationCap,
 } from "lucide-react";
+import { StartLiveSessionDialog, AddSessionDialog } from "@/components/portal/dialogs";
 
 const assignedCourses = [
   {
@@ -53,6 +55,8 @@ const upcomingSessions = [
 
 export default function TrainerDashboard() {
   const { user } = useAuth();
+  const [isLiveSessionOpen, setIsLiveSessionOpen] = useState(false);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
   return (
     <PortalLayout>
@@ -71,7 +75,7 @@ export default function TrainerDashboard() {
               Here's what's happening with your courses today.
             </p>
           </div>
-          <Button variant="gold">
+          <Button variant="gold" onClick={() => setIsLiveSessionOpen(true)}>
             <Video className="w-4 h-4 mr-2" />
             Start Live Session
           </Button>
@@ -268,7 +272,7 @@ export default function TrainerDashboard() {
                       </div>
                     </div>
                   ))}
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => setIsScheduleOpen(true)}>
                     Schedule New Session
                   </Button>
                 </CardContent>
@@ -310,6 +314,16 @@ export default function TrainerDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Dialogs */}
+      <StartLiveSessionDialog
+        open={isLiveSessionOpen}
+        onOpenChange={setIsLiveSessionOpen}
+      />
+      <AddSessionDialog
+        open={isScheduleOpen}
+        onOpenChange={setIsScheduleOpen}
+      />
     </PortalLayout>
   );
 }
