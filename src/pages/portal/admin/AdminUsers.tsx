@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import {
   Edit,
   ChevronLeft,
   ChevronRight,
+  Eye,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -26,8 +27,26 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { 
+  AddUserDialog, 
+  EditUserDialog, 
+  ViewUserDialog, 
+  SendEmailDialog, 
+  DeleteConfirmDialog 
+} from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
-const users = [
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  courses: number;
+  joinedAt: string;
+}
+
+const initialUsers: User[] = [
   { id: "1", name: "Jean Baptiste", email: "jean@example.com", role: "student", status: "active", courses: 2, joinedAt: "Jan 2026" },
   { id: "2", name: "Marie Claire", email: "marie@example.com", role: "trainer", status: "active", courses: 3, joinedAt: "Nov 2025" },
   { id: "3", name: "Emmanuel Kwizera", email: "emmanuel@example.com", role: "trainer", status: "active", courses: 2, joinedAt: "Oct 2025" },
@@ -60,6 +79,14 @@ const getRoleBadge = (role: string) => {
 export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [users, setUsers] = useState<User[]>(initialUsers);
+  
+  // Dialog states
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [viewUser, setViewUser] = useState<User | null>(null);
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [deleteUser, setDeleteUser] = useState<User | null>(null);
+  const [emailUser, setEmailUser] = useState<User | null>(null);
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -67,6 +94,30 @@ export default function AdminUsers() {
     const matchesRole = filterRole === "all" || user.role === filterRole;
     return matchesSearch && matchesRole;
   });
+
+  const handleAddUser = (newUser: { name: string; email: string; role: string }) => {
+    const user: User = {
+      id: `user-${Date.now()}`,
+      name: newUser.name,
+      email: newUser.email,
+      role: newUser.role,
+      status: "active",
+      courses: 0,
+      joinedAt: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
+    };
+    setUsers([...users, user]);
+  };
+
+  const handleSaveUser = (updatedUser: User) => {
+    setUsers(users.map(u => u.id === updatedUser.id ? updatedUser : u));
+  };
+
+  const handleDeleteUser = () => {
+    if (!deleteUser) return;
+    setUsers(users.filter(u => u.id !== deleteUser.id));
+    toast.success("User deleted successfully!");
+    setDeleteUser(null);
+  };
 
   return (
     <PortalLayout>
@@ -85,7 +136,7 @@ export default function AdminUsers() {
               Manage students, trainers, and administrators
             </p>
           </div>
-          <Button variant="gold">
+          <Button variant="gold" onClick={() => setIsAddOpen(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Add User
           </Button>
@@ -236,15 +287,22 @@ export default function AdminUsers() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setViewUser(user)}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEditUser(user)}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => setEmailUser(user)}>
                                 <Mail className="w-4 h-4 mr-2" />
                                 Send Email
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => setDeleteUser(user)}
+                              >
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Delete
                               </DropdownMenuItem>
@@ -275,6 +333,41 @@ export default function AdminUsers() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Dialogs */}
+      <AddUserDialog
+        open={isAddOpen}
+        onOpenChange={setIsAddOpen}
+        onAdd={handleAddUser}
+      />
+      <ViewUserDialog
+        open={!!viewUser}
+        onOpenChange={(open) => !open && setViewUser(null)}
+        user={viewUser}
+        onSendEmail={(user) => {
+          setViewUser(null);
+          setEmailUser(user);
+        }}
+      />
+      <EditUserDialog
+        open={!!editUser}
+        onOpenChange={(open) => !open && setEditUser(null)}
+        user={editUser}
+        onSave={handleSaveUser}
+      />
+      <SendEmailDialog
+        open={!!emailUser}
+        onOpenChange={(open) => !open && setEmailUser(null)}
+        recipientName={emailUser?.name || ""}
+        recipientEmail={emailUser?.email || ""}
+      />
+      <DeleteConfirmDialog
+        open={!!deleteUser}
+        onOpenChange={(open) => !open && setDeleteUser(null)}
+        title="Delete User"
+        description={`Are you sure you want to delete ${deleteUser?.name}? This will remove their account and all associated data.`}
+        onConfirm={handleDeleteUser}
+      />
     </PortalLayout>
   );
 }

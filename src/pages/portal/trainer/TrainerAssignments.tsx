@@ -13,7 +13,6 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  Star,
   MessageSquare,
   Download,
   Eye,
@@ -21,8 +20,29 @@ import {
   ThumbsDown,
   ChevronRight,
 } from "lucide-react";
+import { ViewSubmissionDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
-const pendingSubmissions = [
+interface Submission {
+  id: number;
+  student: string;
+  assignment: string;
+  course: string;
+  submittedAt: string;
+  type: string;
+}
+
+interface ReviewedSubmission {
+  id: number;
+  student: string;
+  assignment: string;
+  course: string;
+  reviewedAt: string;
+  grade: number;
+  feedback: string;
+}
+
+const initialPendingSubmissions: Submission[] = [
   {
     id: 1,
     student: "Jean Baptiste",
@@ -57,7 +77,7 @@ const pendingSubmissions = [
   },
 ];
 
-const reviewedSubmissions = [
+const initialReviewedSubmissions: ReviewedSubmission[] = [
   {
     id: 5,
     student: "Patrick N.",
@@ -83,13 +103,53 @@ export default function TrainerAssignments() {
   const [selectedSubmission, setSelectedSubmission] = useState<number | null>(null);
   const [feedback, setFeedback] = useState("");
   const [grade, setGrade] = useState("");
+  const [pendingSubmissions, setPendingSubmissions] = useState<Submission[]>(initialPendingSubmissions);
+  const [reviewedSubmissions, setReviewedSubmissions] = useState<ReviewedSubmission[]>(initialReviewedSubmissions);
+  
+  // Dialog states
+  const [viewSubmission, setViewSubmission] = useState<Submission | null>(null);
 
   const handleGradeSubmit = () => {
-    console.log("Grading submission:", { grade, feedback });
+    if (!selectedSubmission || !grade) {
+      toast.error("Please enter a grade");
+      return;
+    }
+
+    const submission = pendingSubmissions.find(s => s.id === selectedSubmission);
+    if (!submission) return;
+
+    const reviewed: ReviewedSubmission = {
+      id: submission.id,
+      student: submission.student,
+      assignment: submission.assignment,
+      course: submission.course,
+      reviewedAt: "Just now",
+      grade: parseInt(grade),
+      feedback: feedback || "Good work!",
+    };
+
+    setReviewedSubmissions([reviewed, ...reviewedSubmissions]);
+    setPendingSubmissions(pendingSubmissions.filter(s => s.id !== selectedSubmission));
+    toast.success(`Graded ${submission.student}'s submission!`);
+    
     setSelectedSubmission(null);
     setFeedback("");
     setGrade("");
   };
+
+  const handleRequestRevision = () => {
+    if (!selectedSubmission) return;
+    
+    const submission = pendingSubmissions.find(s => s.id === selectedSubmission);
+    toast.info(`Revision requested for ${submission?.student}'s submission`);
+    setFeedback("Needs revision. Please address the following issues...");
+  };
+
+  const handleDownload = () => {
+    toast.success("Downloading submission files...");
+  };
+
+  const selectedSubmissionData = pendingSubmissions.find(s => s.id === selectedSubmission);
 
   return (
     <PortalLayout>
@@ -151,7 +211,7 @@ export default function TrainerAssignments() {
                 <TabsTrigger value="pending">
                   Pending ({pendingSubmissions.length})
                 </TabsTrigger>
-                <TabsTrigger value="reviewed">Reviewed</TabsTrigger>
+                <TabsTrigger value="reviewed">Reviewed ({reviewedSubmissions.length})</TabsTrigger>
               </TabsList>
 
               <TabsContent value="pending" className="space-y-3">
@@ -199,6 +259,19 @@ export default function TrainerAssignments() {
                     </CardContent>
                   </Card>
                 ))}
+                {pendingSubmissions.length === 0 && (
+                  <Card className="border-border/50">
+                    <CardContent className="py-12 text-center">
+                      <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
+                      <h3 className="font-heading text-lg font-medium text-foreground mb-2">
+                        All caught up!
+                      </h3>
+                      <p className="text-muted-foreground">
+                        No pending submissions to review
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="reviewed" className="space-y-3">
@@ -249,29 +322,39 @@ export default function TrainerAssignments() {
                 <CardTitle className="text-lg font-heading">Grade Submission</CardTitle>
               </CardHeader>
               <CardContent>
-                {selectedSubmission ? (
+                {selectedSubmissionData ? (
                   <div className="space-y-4">
                     <div className="p-3 bg-background/50 rounded-lg">
                       <p className="font-medium text-card-foreground text-sm">
-                        {pendingSubmissions.find(s => s.id === selectedSubmission)?.assignment}
+                        {selectedSubmissionData.assignment}
                       </p>
                       <p className="text-xs text-card-foreground/60 mt-1">
-                        by {pendingSubmissions.find(s => s.id === selectedSubmission)?.student}
+                        by {selectedSubmissionData.student}
                       </p>
                     </div>
 
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => setViewSubmission(selectedSubmissionData)}
+                      >
                         <Eye className="w-4 h-4 mr-1" /> View
                       </Button>
-                      <Button variant="outline" size="sm" className="flex-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={handleDownload}
+                      >
                         <Download className="w-4 h-4 mr-1" /> Download
                       </Button>
                     </div>
 
                     <div>
                       <label className="text-sm font-medium text-card-foreground mb-2 block">
-                        Grade (0-100)
+                        Grade (0-100) *
                       </label>
                       <Input
                         type="number"
@@ -300,10 +383,7 @@ export default function TrainerAssignments() {
                         variant="outline"
                         size="sm"
                         className="flex-1"
-                        onClick={() => {
-                          setGrade("");
-                          setFeedback("Needs revision. Please address the following issues...");
-                        }}
+                        onClick={handleRequestRevision}
                       >
                         <ThumbsDown className="w-4 h-4 mr-1" /> Request Revision
                       </Button>
@@ -330,6 +410,13 @@ export default function TrainerAssignments() {
           </motion.div>
         </div>
       </div>
+
+      {/* Dialogs */}
+      <ViewSubmissionDialog
+        open={!!viewSubmission}
+        onOpenChange={(open) => !open && setViewSubmission(null)}
+        submission={viewSubmission}
+      />
     </PortalLayout>
   );
 }

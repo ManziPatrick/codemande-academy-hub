@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -26,15 +25,15 @@ import {
   Briefcase,
   Users,
   Building2,
-  Search,
   Plus,
   CheckCircle,
   Clock,
-  AlertCircle,
   DollarSign,
   TrendingUp,
   UserPlus,
 } from "lucide-react";
+import { ViewInternshipDialog, AddCompanyDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
 const internshipStats = [
   { label: "Active Internships", value: "45", icon: Briefcase },
@@ -43,7 +42,19 @@ const internshipStats = [
   { label: "Completion Rate", value: "92%", icon: TrendingUp },
 ];
 
-const activeInternships = [
+interface Internship {
+  id: number;
+  student: string;
+  company: string;
+  position: string;
+  mentor: string;
+  startDate: string;
+  endDate: string;
+  progress: number;
+  paymentStatus: string;
+}
+
+const initialActiveInternships: Internship[] = [
   {
     id: 1,
     student: "Emmanuel K.",
@@ -93,10 +104,60 @@ const partnerCompanies = [
 ];
 
 export default function AdminInternships() {
-  const [searchQuery, setSearchQuery] = useState("");
   const [isAssignOpen, setIsAssignOpen] = useState(false);
+  const [activeInternships, setActiveInternships] = useState<Internship[]>(initialActiveInternships);
+  
+  // Dialog states
+  const [viewInternship, setViewInternship] = useState<Internship | null>(null);
+  const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
+
+  // Assign form state
+  const [assignForm, setAssignForm] = useState({
+    student: "",
+    company: "",
+    mentor: "",
+  });
 
   const getInitials = (name: string) => name.split(" ").map(n => n[0]).join("").toUpperCase();
+
+  const handleAssignInternship = () => {
+    if (!assignForm.student || !assignForm.company || !assignForm.mentor) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    const student = eligibleStudents.find(s => s.id.toString() === assignForm.student);
+    const company = partnerCompanies.find(c => c.id.toString() === assignForm.company);
+
+    const newInternship: Internship = {
+      id: Date.now(),
+      student: student?.name || "",
+      company: company?.name || "",
+      position: "Intern",
+      mentor: assignForm.mentor === "marie" ? "Marie Claire" : assignForm.mentor === "emmanuel" ? "Emmanuel Kwizera" : "Jean Pierre",
+      startDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      progress: 0,
+      paymentStatus: "pending",
+    };
+
+    setActiveInternships([...activeInternships, newInternship]);
+    toast.success(`${student?.name} assigned to ${company?.name}!`);
+    setAssignForm({ student: "", company: "", mentor: "" });
+    setIsAssignOpen(false);
+  };
+
+  const handleQuickAssign = (studentId: number) => {
+    const student = eligibleStudents.find(s => s.id === studentId);
+    if (student) {
+      setAssignForm({ ...assignForm, student: studentId.toString() });
+      setIsAssignOpen(true);
+    }
+  };
+
+  const handleManageCompany = (companyName: string) => {
+    toast.info(`Managing ${companyName}...`);
+  };
 
   return (
     <PortalLayout>
@@ -128,8 +189,11 @@ export default function AdminInternships() {
               </DialogHeader>
               <div className="space-y-4 mt-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Select Student</label>
-                  <Select>
+                  <label className="text-sm font-medium mb-2 block">Select Student *</label>
+                  <Select
+                    value={assignForm.student}
+                    onValueChange={(value) => setAssignForm({ ...assignForm, student: value })}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose a student" />
                     </SelectTrigger>
@@ -141,8 +205,11 @@ export default function AdminInternships() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Partner Company</label>
-                  <Select>
+                  <label className="text-sm font-medium mb-2 block">Partner Company *</label>
+                  <Select
+                    value={assignForm.company}
+                    onValueChange={(value) => setAssignForm({ ...assignForm, company: value })}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose a company" />
                     </SelectTrigger>
@@ -154,8 +221,11 @@ export default function AdminInternships() {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Assign Mentor</label>
-                  <Select>
+                  <label className="text-sm font-medium mb-2 block">Assign Mentor *</label>
+                  <Select
+                    value={assignForm.mentor}
+                    onValueChange={(value) => setAssignForm({ ...assignForm, mentor: value })}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose a mentor" />
                     </SelectTrigger>
@@ -177,7 +247,7 @@ export default function AdminInternships() {
                   <Button variant="outline" className="flex-1" onClick={() => setIsAssignOpen(false)}>
                     Cancel
                   </Button>
-                  <Button variant="gold" className="flex-1" onClick={() => setIsAssignOpen(false)}>
+                  <Button variant="gold" className="flex-1" onClick={handleAssignInternship}>
                     Assign
                   </Button>
                 </div>
@@ -212,9 +282,9 @@ export default function AdminInternships() {
 
         <Tabs defaultValue="active" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="active">Active Internships</TabsTrigger>
-            <TabsTrigger value="eligible">Eligible Students</TabsTrigger>
-            <TabsTrigger value="companies">Partner Companies</TabsTrigger>
+            <TabsTrigger value="active">Active Internships ({activeInternships.length})</TabsTrigger>
+            <TabsTrigger value="eligible">Eligible Students ({eligibleStudents.length})</TabsTrigger>
+            <TabsTrigger value="companies">Partner Companies ({partnerCompanies.length})</TabsTrigger>
           </TabsList>
 
           {/* Active Internships */}
@@ -268,7 +338,13 @@ export default function AdminInternships() {
                             <><Clock className="w-3 h-3 mr-1" /> Pending</>
                           )}
                         </Badge>
-                        <Button variant="outline" size="sm">View Details</Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setViewInternship(internship)}
+                        >
+                          View Details
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -317,7 +393,11 @@ export default function AdminInternships() {
                         }>
                           {student.paymentStatus === "paid" ? "Fee Paid" : "Fee Pending"}
                         </Badge>
-                        <Button variant="gold" size="sm">
+                        <Button 
+                          variant="gold" 
+                          size="sm"
+                          onClick={() => handleQuickAssign(student.id)}
+                        >
                           <UserPlus className="w-4 h-4 mr-1" /> Assign
                         </Button>
                       </div>
@@ -349,7 +429,13 @@ export default function AdminInternships() {
                           <p className="text-sm text-card-foreground/60">{company.industry}</p>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">Manage</Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleManageCompany(company.name)}
+                      >
+                        Manage
+                      </Button>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center gap-1 text-card-foreground/70">
@@ -366,7 +452,7 @@ export default function AdminInternships() {
               ))}
               <Card className="border-border/50 border-dashed">
                 <CardContent className="p-4 flex items-center justify-center h-full">
-                  <Button variant="ghost">
+                  <Button variant="ghost" onClick={() => setIsAddCompanyOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Add Partner Company
                   </Button>
@@ -376,6 +462,17 @@ export default function AdminInternships() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialogs */}
+      <ViewInternshipDialog
+        open={!!viewInternship}
+        onOpenChange={(open) => !open && setViewInternship(null)}
+        internship={viewInternship}
+      />
+      <AddCompanyDialog
+        open={isAddCompanyOpen}
+        onOpenChange={setIsAddCompanyOpen}
+      />
     </PortalLayout>
   );
 }
