@@ -7,6 +7,8 @@ export { ViewUserDialog } from "./ViewUserDialog";
 export { SendEmailDialog } from "./SendEmailDialog";
 export { ViewSubmissionDialog } from "./ViewSubmissionDialog";
 export { EditSessionDialog } from "./EditSessionDialog";
+export { AddSessionDialog } from "./AddSessionDialog";
+export { ViewSessionDialog } from "./ViewSessionDialog";
 export { AddFeedbackDialog } from "./AddFeedbackDialog";
 export { ViewProgressDialog } from "./ViewProgressDialog";
 export { ViewInternshipDialog } from "./ViewInternshipDialog";

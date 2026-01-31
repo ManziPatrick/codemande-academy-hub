@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import {
 import { Video, Copy, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-interface Session {
+interface NewSession {
   id: number;
   title: string;
   course: string;
@@ -26,11 +26,10 @@ interface Session {
   description?: string;
 }
 
-interface EditSessionDialogProps {
+interface AddSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  session: Session | null;
-  onSave?: (session: Session) => void;
+  onAdd?: (session: NewSession) => void;
 }
 
 const courses = [
@@ -59,39 +58,27 @@ const generateMeetLink = (): string => {
   return `https://meet.google.com/${generateSegment(3)}-${generateSegment(4)}-${generateSegment(3)}`;
 };
 
-export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditSessionDialogProps) {
+export function AddSessionDialog({ open, onOpenChange, onAdd }: AddSessionDialogProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
     course: "",
     date: "",
     time: "",
+    duration: "2",
     type: "live",
     description: "",
     link: "",
   });
 
-  useEffect(() => {
-    if (session) {
-      setFormData({
-        title: session.title,
-        course: session.course,
-        date: session.date,
-        time: session.time,
-        type: session.type,
-        description: session.description || "",
-        link: session.link,
-      });
-    }
-  }, [session]);
-
   const handleGenerateMeetLink = async () => {
     setIsGenerating(true);
+    // Simulate API delay for generating link
     await new Promise((resolve) => setTimeout(resolve, 800));
     const newLink = generateMeetLink();
     setFormData({ ...formData, link: newLink });
     setIsGenerating(false);
-    toast.success("New Google Meet link generated!");
+    toast.success("Google Meet link generated!");
   };
 
   const handleCopyLink = () => {
@@ -101,46 +88,73 @@ export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditS
     }
   };
 
-  const handleSave = () => {
-    if (!session) return;
-    
-    if (!formData.title || !formData.course) {
+  const handleSubmit = () => {
+    if (!formData.title || !formData.date || !formData.course) {
       toast.error("Please fill in all required fields");
       return;
     }
 
-    const updatedSession: Session = {
-      ...session,
+    // Generate link if not already generated
+    const meetLink = formData.link || generateMeetLink();
+
+    const newSession: NewSession = {
+      id: Date.now(),
       title: formData.title,
       course: formData.course,
-      date: formData.date || session.date,
-      time: formData.time || session.time,
+      date: formData.date,
+      time: formData.time || "TBD",
       type: formData.type,
-      link: formData.link || session.link,
+      attendees: 0,
+      link: meetLink,
       description: formData.description,
     };
 
-    onSave?.(updatedSession);
-    toast.success("Session updated successfully!");
+    onAdd?.(newSession);
+    toast.success("Session scheduled successfully! Meet link generated.");
+    
+    // Reset form
+    setFormData({
+      title: "",
+      course: "",
+      date: "",
+      time: "",
+      duration: "2",
+      type: "live",
+      description: "",
+      link: "",
+    });
     onOpenChange(false);
   };
 
-  if (!session) return null;
+  const handleClose = () => {
+    setFormData({
+      title: "",
+      course: "",
+      date: "",
+      time: "",
+      duration: "2",
+      type: "live",
+      description: "",
+      link: "",
+    });
+    onOpenChange(false);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="w-5 h-5 text-accent" />
-            Edit Session
+            Schedule New Session
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-4">
           <div>
-            <Label htmlFor="edit-title">Session Title *</Label>
+            <Label htmlFor="title">Session Title *</Label>
             <Input
-              id="edit-title"
+              id="title"
+              placeholder="e.g., React Advanced Patterns"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               className="mt-1.5"
@@ -149,7 +163,7 @@ export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditS
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="edit-course">Course *</Label>
+              <Label htmlFor="course">Course *</Label>
               <Select
                 value={formData.course}
                 onValueChange={(value) => setFormData({ ...formData, course: value })}
@@ -167,7 +181,7 @@ export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditS
               </Select>
             </div>
             <div>
-              <Label htmlFor="edit-type">Session Type</Label>
+              <Label htmlFor="type">Session Type</Label>
               <Select
                 value={formData.type}
                 onValueChange={(value) => setFormData({ ...formData, type: value })}
@@ -188,9 +202,9 @@ export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditS
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="edit-date">Date</Label>
+              <Label htmlFor="date">Date *</Label>
               <Input
-                id="edit-date"
+                id="date"
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
@@ -198,15 +212,28 @@ export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditS
               />
             </div>
             <div>
-              <Label htmlFor="edit-time">Time</Label>
+              <Label htmlFor="time">Time</Label>
               <Input
-                id="edit-time"
+                id="time"
                 type="time"
                 value={formData.time}
                 onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                 className="mt-1.5"
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="duration">Duration (hours)</Label>
+            <Input
+              id="duration"
+              type="number"
+              min="0.5"
+              step="0.5"
+              value={formData.duration}
+              onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+              className="mt-1.5"
+            />
           </div>
 
           {/* Google Meet Link Section */}
@@ -216,7 +243,7 @@ export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditS
               <Input
                 value={formData.link}
                 onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                placeholder="Meeting link"
+                placeholder="Click generate or paste your own link"
                 className="flex-1"
               />
               {formData.link && (
@@ -249,30 +276,34 @@ export function EditSessionDialog({ open, onOpenChange, session, onSave }: EditS
               ) : (
                 <>
                   <Video className="w-4 h-4 mr-2" />
-                  Generate New Link
+                  Generate Google Meet Link
                 </>
               )}
             </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+              A unique meeting link will be auto-generated if not provided
+            </p>
           </div>
 
           <div>
-            <Label htmlFor="edit-description">Description</Label>
+            <Label htmlFor="description">Description</Label>
             <Textarea
-              id="edit-description"
+              id="description"
+              placeholder="What will you cover in this session?"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Session description..."
               rows={3}
               className="mt-1.5"
             />
           </div>
 
           <div className="flex gap-2 pt-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" className="flex-1" onClick={handleClose}>
               Cancel
             </Button>
-            <Button variant="gold" className="flex-1" onClick={handleSave}>
-              Save Changes
+            <Button variant="gold" className="flex-1" onClick={handleSubmit}>
+              <Video className="w-4 h-4 mr-2" />
+              Schedule Session
             </Button>
           </div>
         </div>

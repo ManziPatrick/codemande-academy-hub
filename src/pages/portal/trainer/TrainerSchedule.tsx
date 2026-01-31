@@ -4,15 +4,6 @@ import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Calendar,
   Clock,
@@ -25,8 +16,14 @@ import {
   Edit,
   Trash2,
   ExternalLink,
+  Eye,
 } from "lucide-react";
-import { EditSessionDialog, DeleteConfirmDialog } from "@/components/portal/dialogs";
+import { 
+  EditSessionDialog, 
+  DeleteConfirmDialog, 
+  AddSessionDialog,
+  ViewSessionDialog,
+} from "@/components/portal/dialogs";
 import { toast } from "sonner";
 
 interface Session {
@@ -38,6 +35,7 @@ interface Session {
   type: string;
   attendees: number;
   link: string;
+  description?: string;
 }
 
 const initialSessions: Session[] = [
@@ -98,6 +96,7 @@ const sessionTypeColors: Record<string, string> = {
   workshop: "bg-blue-500/20 text-blue-400",
   office_hours: "bg-purple-500/20 text-purple-400",
   review: "bg-orange-500/20 text-orange-400",
+  mentorship: "bg-accent/20 text-accent",
 };
 
 export default function TrainerSchedule() {
@@ -106,39 +105,16 @@ export default function TrainerSchedule() {
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
   
   // Dialog states
+  const [viewSession, setViewSession] = useState<Session | null>(null);
   const [editSession, setEditSession] = useState<Session | null>(null);
   const [deleteSession, setDeleteSession] = useState<Session | null>(null);
 
-  // Create session form state
-  const [newSession, setNewSession] = useState({
-    title: "",
-    date: "",
-    time: "",
-    duration: "2",
-    description: "",
-  });
+  const handleAddSession = (newSession: Session) => {
+    setSessions([...sessions, newSession]);
+  };
 
-  const handleCreateSession = () => {
-    if (!newSession.title || !newSession.date) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    const session: Session = {
-      id: Date.now(),
-      title: newSession.title,
-      course: "Software Development",
-      date: newSession.date,
-      time: newSession.time || "TBD",
-      type: "live",
-      attendees: 0,
-      link: `https://meet.google.com/new-session-${Date.now()}`,
-    };
-
-    setSessions([...sessions, session]);
-    toast.success("Session scheduled successfully!");
-    setNewSession({ title: "", date: "", time: "", duration: "2", description: "" });
-    setIsCreateOpen(false);
+  const handleUpdateSession = (updatedSession: Session) => {
+    setSessions(sessions.map(s => s.id === updatedSession.id ? updatedSession : s));
   };
 
   const handleStartSession = (session: Session) => {
@@ -170,73 +146,10 @@ export default function TrainerSchedule() {
               Manage your live sessions and office hours
             </p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button variant="gold">
-                <Plus className="w-4 h-4 mr-2" />
-                Schedule Session
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Schedule New Session</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 mt-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Session Title *</label>
-                  <Input 
-                    placeholder="e.g., React Advanced Patterns"
-                    value={newSession.title}
-                    onChange={(e) => setNewSession({ ...newSession, title: e.target.value })}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Date *</label>
-                    <Input 
-                      type="date"
-                      value={newSession.date}
-                      onChange={(e) => setNewSession({ ...newSession, date: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Time</label>
-                    <Input 
-                      type="time"
-                      value={newSession.time}
-                      onChange={(e) => setNewSession({ ...newSession, time: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Duration (hours)</label>
-                  <Input 
-                    type="number" 
-                    min="0.5" 
-                    step="0.5" 
-                    value={newSession.duration}
-                    onChange={(e) => setNewSession({ ...newSession, duration: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Description</label>
-                  <Textarea 
-                    placeholder="What will you cover in this session?"
-                    value={newSession.description}
-                    onChange={(e) => setNewSession({ ...newSession, description: e.target.value })}
-                  />
-                </div>
-                <div className="flex gap-2 pt-2">
-                  <Button variant="outline" className="flex-1" onClick={() => setIsCreateOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button variant="gold" className="flex-1" onClick={handleCreateSession}>
-                    Schedule
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button variant="gold" onClick={() => setIsCreateOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Schedule Session
+          </Button>
         </motion.div>
 
         {/* Week View */}
@@ -350,6 +263,13 @@ export default function TrainerSchedule() {
                         <Button 
                           variant="ghost" 
                           size="sm"
+                          onClick={() => setViewSession(session)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
                           onClick={() => setEditSession(session)}
                         >
                           <Edit className="w-4 h-4" />
@@ -442,10 +362,22 @@ export default function TrainerSchedule() {
       </div>
 
       {/* Dialogs */}
+      <AddSessionDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onAdd={handleAddSession}
+      />
+      <ViewSessionDialog
+        open={!!viewSession}
+        onOpenChange={(open) => !open && setViewSession(null)}
+        session={viewSession}
+        onJoin={handleStartSession}
+      />
       <EditSessionDialog
         open={!!editSession}
         onOpenChange={(open) => !open && setEditSession(null)}
         session={editSession}
+        onSave={handleUpdateSession}
       />
       <DeleteConfirmDialog
         open={!!deleteSession}

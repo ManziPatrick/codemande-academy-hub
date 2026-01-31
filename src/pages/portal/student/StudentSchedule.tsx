@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,17 +13,88 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  Eye,
 } from "lucide-react";
+import { ViewSessionDialog } from "@/components/portal/dialogs";
+import { toast } from "sonner";
 
-const scheduleData = {
+interface Session {
+  id: number;
+  title: string;
+  course: string;
+  date: string;
+  time: string;
+  type: string;
+  attendees: number;
+  link: string;
+  instructor?: string;
+  isOnline?: boolean;
+}
+
+const scheduleData: { today: Session[]; upcoming: Session[] } = {
   today: [
-    { id: 1, title: "React Hooks Deep Dive", time: "6:00 PM - 7:30 PM", type: "Live Session", course: "Software Development", instructor: "Marie Claire", isOnline: true },
+    { 
+      id: 1, 
+      title: "React Hooks Deep Dive", 
+      time: "6:00 PM - 7:30 PM", 
+      type: "Live Session", 
+      course: "Software Development", 
+      instructor: "Marie Claire", 
+      isOnline: true,
+      attendees: 32,
+      date: "Today",
+      link: "https://meet.google.com/abc-defg-hij",
+    },
   ],
   upcoming: [
-    { id: 2, title: "Office Hours", time: "Wed, 2:00 PM", type: "Mentorship", course: "Data Science", instructor: "Emmanuel", isOnline: true },
-    { id: 3, title: "Project Review", time: "Fri, 5:00 PM", type: "Review", course: "Software Development", instructor: "Marie Claire", isOnline: true },
-    { id: 4, title: "ML Algorithms Workshop", time: "Sat, 10:00 AM", type: "Workshop", course: "Data Science", instructor: "Emmanuel", isOnline: true },
-    { id: 5, title: "Weekly Check-in", time: "Mon, 10:00 AM", type: "Internship", course: "Internship", instructor: "Marie Claire", isOnline: true },
+    { 
+      id: 2, 
+      title: "Office Hours", 
+      time: "Wed, 2:00 PM", 
+      type: "Mentorship", 
+      course: "Data Science", 
+      instructor: "Emmanuel", 
+      isOnline: true,
+      attendees: 8,
+      date: "Wednesday",
+      link: "https://meet.google.com/xyz-uvwx-yz",
+    },
+    { 
+      id: 3, 
+      title: "Project Review", 
+      time: "Fri, 5:00 PM", 
+      type: "Review", 
+      course: "Software Development", 
+      instructor: "Marie Claire", 
+      isOnline: true,
+      attendees: 12,
+      date: "Friday",
+      link: "https://meet.google.com/project-review",
+    },
+    { 
+      id: 4, 
+      title: "ML Algorithms Workshop", 
+      time: "Sat, 10:00 AM", 
+      type: "Workshop", 
+      course: "Data Science", 
+      instructor: "Emmanuel", 
+      isOnline: true,
+      attendees: 24,
+      date: "Saturday",
+      link: "https://meet.google.com/ml-workshop",
+    },
+    { 
+      id: 5, 
+      title: "Weekly Check-in", 
+      time: "Mon, 10:00 AM", 
+      type: "Internship", 
+      course: "Internship", 
+      instructor: "Marie Claire", 
+      isOnline: true,
+      attendees: 5,
+      date: "Monday",
+      link: "https://meet.google.com/weekly-checkin",
+    },
   ],
 };
 
@@ -38,6 +110,17 @@ const getTypeBadge = (type: string) => {
 };
 
 export default function StudentSchedule() {
+  const [viewSession, setViewSession] = useState<Session | null>(null);
+
+  const handleJoinSession = (session: Session) => {
+    toast.success(`Joining ${session.title}...`);
+    window.open(session.link, "_blank");
+  };
+
+  const handleAddToCalendar = (session: Session) => {
+    toast.success(`Added "${session.title}" to your calendar!`);
+  };
+
   return (
     <PortalLayout>
       <div className="space-y-6">
@@ -114,10 +197,20 @@ export default function StudentSchedule() {
                           </div>
                         </div>
                       </div>
-                      <Button variant="gold">
-                        <Video className="w-4 h-4 mr-2" />
-                        Join Session
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => setViewSession(session)}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          Details
+                        </Button>
+                        <Button variant="gold" onClick={() => handleJoinSession(session)}>
+                          <Video className="w-4 h-4 mr-2" />
+                          Join Session
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -171,10 +264,25 @@ export default function StudentSchedule() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleAddToCalendar(session)}
+                        >
                           Add to Calendar
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setViewSession(session)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => window.open(session.link, "_blank")}
+                        >
                           <ExternalLink className="w-4 h-4" />
                         </Button>
                       </div>
@@ -201,6 +309,14 @@ export default function StudentSchedule() {
           </Card>
         )}
       </div>
+
+      {/* View Session Dialog */}
+      <ViewSessionDialog
+        open={!!viewSession}
+        onOpenChange={(open) => !open && setViewSession(null)}
+        session={viewSession}
+        onJoin={handleJoinSession}
+      />
     </PortalLayout>
   );
 }
