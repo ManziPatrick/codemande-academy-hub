@@ -4,6 +4,7 @@ import { Menu, X, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -77,8 +78,9 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Auth Buttons */}
+          {/* Theme Toggle & Auth Buttons */}
           <div className="hidden lg:flex items-center gap-3">
+            <ThemeToggle />
             {isAuthenticated ? (
               <>
                 <Link to="/portal/student">

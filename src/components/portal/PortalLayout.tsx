@@ -35,6 +35,7 @@ import {
   HelpCircle,
   GraduationCap,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface NavItem {
   label: string;
@@ -282,6 +283,9 @@ export function PortalLayout({ children }: PortalLayoutProps) {
 
           {/* Right Actions */}
           <div className="flex items-center gap-3">
+            {/* Theme Toggle */}
+            <ThemeToggle />
+            
             {/* Notifications */}
             <button className="relative p-2 text-card-foreground/70 hover:text-card-foreground transition-colors">
               <Bell className="w-5 h-5" />
