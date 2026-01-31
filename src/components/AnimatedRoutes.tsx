@@ -29,13 +29,29 @@ import StudentSupport from "@/pages/portal/student/StudentSupport";
 // Trainer Portal
 import TrainerDashboard from "@/pages/portal/trainer/TrainerDashboard";
 import TrainerStudents from "@/pages/portal/trainer/TrainerStudents";
+import TrainerCourses from "@/pages/portal/trainer/TrainerCourses";
+import TrainerAssignments from "@/pages/portal/trainer/TrainerAssignments";
+import TrainerSchedule from "@/pages/portal/trainer/TrainerSchedule";
+import TrainerMentorship from "@/pages/portal/trainer/TrainerMentorship";
 
 // Admin Portal
 import AdminDashboard from "@/pages/portal/admin/AdminDashboard";
 import AdminUsers from "@/pages/portal/admin/AdminUsers";
+import AdminCourses from "@/pages/portal/admin/AdminCourses";
+import AdminInternships from "@/pages/portal/admin/AdminInternships";
+import AdminPayments from "@/pages/portal/admin/AdminPayments";
+import AdminAnalytics from "@/pages/portal/admin/AdminAnalytics";
 
 // Super Admin Portal
 import SuperAdminDashboard from "@/pages/portal/super-admin/SuperAdminDashboard";
+import SuperAdminAdmins from "@/pages/portal/super-admin/SuperAdminAdmins";
+import SuperAdminUsers from "@/pages/portal/super-admin/SuperAdminUsers";
+import SuperAdminConfig from "@/pages/portal/super-admin/SuperAdminConfig";
+import SuperAdminAnalytics from "@/pages/portal/super-admin/SuperAdminAnalytics";
+
+// Shared Portal Pages
+import PortalSettings from "@/pages/portal/shared/PortalSettings";
+import PortalHelp from "@/pages/portal/shared/PortalHelp";
 
 export function AnimatedRoutes() {
   const location = useLocation();
@@ -68,13 +84,29 @@ export function AnimatedRoutes() {
         {/* Trainer Portal */}
         <Route path="/portal/trainer" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerDashboard /></ProtectedRoute>} />
         <Route path="/portal/trainer/students" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerStudents /></ProtectedRoute>} />
+        <Route path="/portal/trainer/courses" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerCourses /></ProtectedRoute>} />
+        <Route path="/portal/trainer/assignments" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerAssignments /></ProtectedRoute>} />
+        <Route path="/portal/trainer/schedule" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerSchedule /></ProtectedRoute>} />
+        <Route path="/portal/trainer/mentorship" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerMentorship /></ProtectedRoute>} />
 
         {/* Admin Portal */}
         <Route path="/portal/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/portal/admin/users" element={<ProtectedRoute allowedRoles={["admin"]}><AdminUsers /></ProtectedRoute>} />
+        <Route path="/portal/admin/courses" element={<ProtectedRoute allowedRoles={["admin"]}><AdminCourses /></ProtectedRoute>} />
+        <Route path="/portal/admin/internships" element={<ProtectedRoute allowedRoles={["admin"]}><AdminInternships /></ProtectedRoute>} />
+        <Route path="/portal/admin/payments" element={<ProtectedRoute allowedRoles={["admin"]}><AdminPayments /></ProtectedRoute>} />
+        <Route path="/portal/admin/analytics" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnalytics /></ProtectedRoute>} />
 
         {/* Super Admin Portal */}
         <Route path="/portal/super-admin" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminDashboard /></ProtectedRoute>} />
+        <Route path="/portal/super-admin/admins" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminAdmins /></ProtectedRoute>} />
+        <Route path="/portal/super-admin/users" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminUsers /></ProtectedRoute>} />
+        <Route path="/portal/super-admin/config" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminConfig /></ProtectedRoute>} />
+        <Route path="/portal/super-admin/analytics" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminAnalytics /></ProtectedRoute>} />
+
+        {/* Shared Portal Routes */}
+        <Route path="/portal/settings" element={<ProtectedRoute allowedRoles={["student", "trainer", "admin", "super_admin"]}><PortalSettings /></ProtectedRoute>} />
+        <Route path="/portal/help" element={<ProtectedRoute allowedRoles={["student", "trainer", "admin", "super_admin"]}><PortalHelp /></ProtectedRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />
