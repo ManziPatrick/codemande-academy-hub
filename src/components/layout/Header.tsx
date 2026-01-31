@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Menu, X, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -19,6 +20,13 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -69,13 +77,40 @@ export function Header() {
             ))}
           </nav>
 
-          {/* CTA Button */}
-          <div className="hidden lg:block">
-            <Link to="/contact">
-              <Button variant="gold" size="default">
-                Get Started
-              </Button>
-            </Link>
+          {/* Auth Buttons */}
+          <div className="hidden lg:flex items-center gap-3">
+            {isAuthenticated ? (
+              <>
+                <Link to="/portal/student">
+                  <Button variant="gold" size="default" className="gap-2">
+                    <User size={16} />
+                    Student Portal
+                  </Button>
+                </Link>
+                <Button 
+                  variant="heroOutline" 
+                  size="default" 
+                  onClick={handleLogout}
+                  className="gap-2"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button variant="heroOutline" size="default">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button variant="gold" size="default">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -112,11 +147,38 @@ export function Header() {
                 {link.name}
               </Link>
             ))}
-            <Link to="/contact">
-              <Button variant="gold" size="lg" className="mt-2 w-full">
-                Get Started
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to="/portal/student">
+                  <Button variant="gold" size="lg" className="mt-2 w-full gap-2">
+                    <User size={18} />
+                    Student Portal
+                  </Button>
+                </Link>
+                <Button 
+                  variant="heroOutline" 
+                  size="lg" 
+                  className="mt-2 w-full gap-2"
+                  onClick={handleLogout}
+                >
+                  <LogOut size={18} />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button variant="heroOutline" size="lg" className="mt-2 w-full">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/auth">
+                  <Button variant="gold" size="lg" className="mt-2 w-full">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </nav>
         </motion.div>
       )}
