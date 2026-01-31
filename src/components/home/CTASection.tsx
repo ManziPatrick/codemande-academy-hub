@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { AuthAwareLink } from "@/components/AuthAwareLink";
 
 export function CTASection() {
   return (
@@ -39,21 +38,17 @@ export function CTASection() {
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link to="/training">
-              <Button variant="gold" size="lg" className="group">
-                View Programs
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Link to="/contact">
-              <Button 
-                variant="heroOutline" 
-                size="lg"
-                className="bg-transparent text-card-foreground border-card-foreground/30 hover:border-accent hover:text-accent"
-              >
-                Contact Us
-              </Button>
-            </Link>
+            <AuthAwareLink variant="gold" size="lg" className="group">
+              View Programs
+              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            </AuthAwareLink>
+            <AuthAwareLink 
+              variant="heroOutline" 
+              size="lg"
+              className="bg-transparent text-card-foreground border-card-foreground/30 hover:border-accent hover:text-accent"
+            >
+              Contact Us
+            </AuthAwareLink>
           </div>
         </motion.div>
       </div>

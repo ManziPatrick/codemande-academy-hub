@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { AuthAwareLink } from "@/components/AuthAwareLink";
 import { Code, Database, Wifi, ExternalLink, CheckCircle, Users, Calendar } from "lucide-react";
 import heroImage from "@/assets/hero-training.jpg";
 import internshipImage from "@/assets/internship-work.jpg";
@@ -280,9 +281,7 @@ const Projects = () => {
                 and experienced development team.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
-                <Link to="/contact">
-                  <Button variant="gold" size="lg">Start a Project</Button>
-                </Link>
+                <AuthAwareLink variant="gold" size="lg">Start a Project</AuthAwareLink>
                 <Link to="/services">
                   <Button variant="outline" size="lg">View Our Services</Button>
                 </Link>

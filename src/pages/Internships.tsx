@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { AuthAwareLink } from "@/components/AuthAwareLink";
 import { Briefcase, Code, Database, Wifi, Award, FolderOpen, Users, Clock, CheckCircle, ArrowRight, Target, Calendar, Globe } from "lucide-react";
 import internshipImage from "@/assets/internship-work.jpg";
 import heroImage from "@/assets/hero-training.jpg";
@@ -94,9 +95,7 @@ const Internships = () => {
                 Work on real projects, get mentored by experts, and build a portfolio that stands out.
               </p>
               <div className="flex flex-wrap justify-center gap-4 mt-8">
-                <Link to="/contact">
-                  <Button variant="gold" size="lg">Apply for Internship</Button>
-                </Link>
+                <AuthAwareLink variant="gold" size="lg">Apply for Internship</AuthAwareLink>
                 <Link to="/training">
                   <Button variant="outline" size="lg">View Training First</Button>
                 </Link>
@@ -232,11 +231,9 @@ const Internships = () => {
                   </div>
 
                   <div className="mt-auto">
-                    <Link to="/contact">
-                      <Button variant="gold" size="sm" className="w-full">
-                        Apply Now <ArrowRight className="w-4 h-4 ml-2" />
-                      </Button>
-                    </Link>
+                    <AuthAwareLink variant="gold" size="sm" className="w-full">
+                      Apply Now <ArrowRight className="w-4 h-4 ml-2" />
+                    </AuthAwareLink>
                   </div>
                 </motion.div>
               ))}
@@ -336,9 +333,7 @@ const Internships = () => {
                 in our next cohort of interns.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
-                <Link to="/contact">
-                  <Button variant="gold" size="lg">Apply Now</Button>
-                </Link>
+                <AuthAwareLink variant="gold" size="lg">Apply Now</AuthAwareLink>
                 <Link to="/training">
                   <Button variant="outline" size="lg">Explore Training First</Button>
                 </Link>

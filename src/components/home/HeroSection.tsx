@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ImageWithSkeleton } from "@/components/ui/image-skeleton";
+import { AuthAwareLink } from "@/components/AuthAwareLink";
 import heroImage from "@/assets/hero-training.jpg";
 
 export function HeroSection() {
@@ -65,16 +66,12 @@ export function HeroSection() {
             transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Link to="/training">
-              <Button variant="gold" size="lg">
-                Explore Programs
-              </Button>
-            </Link>
-            <Link to="/contact">
-              <Button variant="heroOutline" size="lg">
-                Get Started
-              </Button>
-            </Link>
+            <AuthAwareLink variant="gold" size="lg">
+              Explore Programs
+            </AuthAwareLink>
+            <AuthAwareLink variant="heroOutline" size="lg">
+              Get Started
+            </AuthAwareLink>
           </motion.div>
         </div>
       </div>

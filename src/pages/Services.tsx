@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { AuthAwareLink } from "@/components/AuthAwareLink";
 import { Code, Database, Wifi, Briefcase, BookOpen, Building2, CheckCircle, Users, Award, Zap, ArrowRight, Globe, Cpu, BarChart3 } from "lucide-react";
 import heroImage from "@/assets/hero-training.jpg";
 import internshipImage from "@/assets/internship-work.jpg";
@@ -415,9 +416,7 @@ const Services = () => {
                 we're here to help you succeed.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
-                <Link to="/training">
-                  <Button variant="gold" size="lg">Explore Training</Button>
-                </Link>
+                <AuthAwareLink variant="gold" size="lg">Explore Training</AuthAwareLink>
                 <Link to="/contact">
                   <Button variant="outline" size="lg">Request Quote</Button>
                 </Link>
