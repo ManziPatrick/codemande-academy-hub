@@ -1,0 +1,289 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CODEMANDE Design System
+   Color Philosophy: 60-30-10 Rule
+   60% - Parchment (#EDEADE) - backgrounds, reading areas
+   30% - Charcoal (#2B2B2D) - header, footer, cards
+   10% - Academic Gold (#C6A75E) - accents, CTAs
+*/
+
+@layer base {
+  :root {
+    /* Primary Palette - 60-30-10 */
+    --parchment: 45 33% 90%;
+    --charcoal: 240 3% 17%;
+    --gold: 41 47% 57%;
+    
+    /* Semantic Tokens */
+    --background: 45 33% 90%;
+    --foreground: 240 3% 17%;
+
+    --card: 240 3% 17%;
+    --card-foreground: 45 33% 90%;
+
+    --popover: 45 33% 90%;
+    --popover-foreground: 240 3% 17%;
+
+    --primary: 240 3% 17%;
+    --primary-foreground: 45 33% 90%;
+
+    --secondary: 45 33% 85%;
+    --secondary-foreground: 240 3% 17%;
+
+    --muted: 45 20% 85%;
+    --muted-foreground: 240 3% 40%;
+
+    --accent: 41 47% 57%;
+    --accent-foreground: 240 3% 17%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 45 33% 90%;
+
+    --border: 41 20% 75%;
+    --input: 41 20% 80%;
+    --ring: 41 47% 57%;
+
+    --radius: 0.375rem;
+
+    /* Custom Properties */
+    --gold-glow: 0 0 20px hsla(41, 47%, 57%, 0.4);
+    --overlay-dark: rgba(43, 43, 45, 0.6);
+    --overlay-light: rgba(237, 234, 222, 0.7);
+    
+    /* Typography */
+    --font-heading: 'Playfair Display', Georgia, serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+
+    --sidebar-background: 240 3% 17%;
+    --sidebar-foreground: 45 33% 90%;
+    --sidebar-primary: 41 47% 57%;
+    --sidebar-primary-foreground: 240 3% 17%;
+    --sidebar-accent: 240 3% 22%;
+    --sidebar-accent-foreground: 45 33% 90%;
+    --sidebar-border: 240 3% 25%;
+    --sidebar-ring: 41 47% 57%;
+  }
+
+  .dark {
+    --background: 240 3% 12%;
+    --foreground: 45 33% 90%;
+
+    --card: 240 3% 15%;
+    --card-foreground: 45 33% 90%;
+
+    --popover: 240 3% 15%;
+    --popover-foreground: 45 33% 90%;
+
+    --primary: 45 33% 90%;
+    --primary-foreground: 240 3% 17%;
+
+    --secondary: 240 3% 20%;
+    --secondary-foreground: 45 33% 90%;
+
+    --muted: 240 3% 25%;
+    --muted-foreground: 45 20% 70%;
+
+    --accent: 41 47% 57%;
+    --accent-foreground: 240 3% 17%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 45 33% 90%;
+
+    --border: 240 3% 25%;
+    --input: 240 3% 25%;
+    --ring: 41 47% 57%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    @apply font-medium tracking-tight;
+  }
+}
+
+@layer components {
+  /* Circuit decoration lines */
+  .circuit-line {
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--accent)) 50%, transparent 100%);
+    height: 1px;
+  }
+  
+  .circuit-dot {
+    @apply w-2 h-2 rounded-full bg-accent;
+  }
+
+  /* Section dividers with circuit pattern */
+  .section-divider {
+    @apply relative flex items-center justify-center py-4;
+  }
+  
+  .section-divider::before,
+  .section-divider::after {
+    content: '';
+    @apply flex-1 h-px bg-gradient-to-r;
+  }
+  
+  .section-divider::before {
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--accent) / 0.5) 100%);
+  }
+  
+  .section-divider::after {
+    background: linear-gradient(90deg, hsl(var(--accent) / 0.5) 0%, transparent 100%);
+  }
+
+  /* Gold accent underline */
+  .gold-underline {
+    @apply relative inline-block;
+  }
+  
+  .gold-underline::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-full h-0.5 bg-accent transform scale-x-0 origin-left transition-transform duration-300;
+  }
+  
+  .gold-underline:hover::after {
+    @apply scale-x-100;
+  }
+}
+
+@layer utilities {
+  /* Text gradient for special headings */
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-accent via-[hsl(41,60%,65%)] to-accent bg-clip-text text-transparent;
+  }
+
+  /* Overlay utilities */
+  .overlay-dark {
+    background: var(--overlay-dark);
+  }
+  
+  .overlay-light {
+    background: var(--overlay-light);
+  }
+
+  /* Animation utilities */
+  .animate-fade-up {
+    animation: fadeUp 0.6s ease-out forwards;
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+
+  /* Hover glow effect */
+  .hover-glow:hover {
+    box-shadow: var(--gold-glow);
+  }
+
+  /* Stagger animation delays */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--accent) / 0.3);
+  border-radius: 10px;
+  border: 2px solid hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--accent) / 0.6);
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--accent) / 0.3) hsl(var(--background));
+}
+

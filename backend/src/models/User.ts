@@ -1,0 +1,64 @@
+import mongoose from 'mongoose';
+
+const userSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  role: {
+    type: String,
+    enum: ['student', 'trainer', 'admin', 'super_admin'],
+    default: 'student',
+  },
+  enrolledCourses: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Course'
+  }],
+  completedLessons: [{
+    courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
+    lessonId: { type: String }
+  }],
+  activityLog: [{
+    action: { type: String, required: true },
+    details: { type: String },
+    timestamp: { type: Date, default: Date.now }
+  }],
+  badges: [{
+    badgeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Badge' },
+    awardedAt: { type: Date, default: Date.now }
+  }],
+  grades: [{
+    courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
+    lessonId: { type: String },
+    score: { type: Number },
+    feedback: { type: String },
+    gradedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    gradedAt: { type: Date, default: Date.now }
+  }],
+  level: { type: Number, default: 1 },
+  academicStatus: { type: String, enum: ['active', 'intern', 'graduate', 'alumni'], default: 'active' },
+  permissions: [{ type: String }],
+  // Account Status & Soft Delete
+  status: { type: String, enum: ['active', 'suspended', 'deactivated'], default: 'active' },
+  isDeleted: { type: Boolean, default: false },
+  
+  // Tracking & Presence
+  lastActive: { type: Date },
+  isOnline: { type: Boolean, default: false },
+  totalTimeSpent: { type: Number, default: 0 }, // in seconds
+  
+  // Navigation Tracking (Last known path)
+  lastPath: { type: String }
+}, { timestamps: true });
+
+export const User = mongoose.model('User', userSchema);

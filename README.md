@@ -1,73 +1,217 @@
-# Welcome to your Lovable project
+# Codemande Academy Hub
 
-## Project info
+A comprehensive learning management system for tech education in Rwanda, featuring student portals, trainer dashboards, admin management, and super admin configuration.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 🏗️ Project Structure
 
-## How can I edit this code?
+```
+codemande-academy-hub/
+├── frontend/          # React + Vite frontend application
+│   ├── src/          # Source code
+│   ├── public/       # Static assets
+│   └── package.json  # Frontend dependencies
+├── backend/          # Node.js + GraphQL backend
+│   ├── src/          # Backend source code
+│   └── package.json  # Backend dependencies
+└── supabase/         # Database migrations
+```
 
-There are several ways of editing your application.
+## 🚀 Quick Start
 
-**Use Lovable**
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- MongoDB (running locally or remote connection)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+### Installation
 
-Changes made via Lovable will be committed automatically to this repo.
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd codemande-academy-hub
+```
 
-**Use your preferred IDE**
+2. **Install Frontend Dependencies**
+```bash
+cd frontend
+npm install
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+3. **Install Backend Dependencies**
+```bash
+cd ../backend
+npm install
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+4. **Configure Environment Variables**
 
-Follow these steps:
+Create `.env` files in both `frontend` and `backend` directories:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+**Frontend `.env`:**
+```env
+VITE_API_URL=http://localhost:4000/graphql
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+**Backend `.env`:**
+```env
+MONGODB_URI=mongodb://localhost:27017/codemande-academy
+JWT_SECRET=your-secret-key-here
+PORT=4000
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Running the Application
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+**Option 1: Run Both Servers Separately**
+
+Terminal 1 - Backend:
+```bash
+cd backend
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Terminal 2 - Frontend:
+```bash
+cd frontend
+npm run dev
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+**Option 2: Run from Root (Coming Soon)**
+```bash
+npm run dev
+```
 
-**Use GitHub Codespaces**
+## 📱 Application Features
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Student Portal
+- Course enrollment and progress tracking
+- Interactive lessons with quizzes
+- Project submissions
+- Certificate generation
+- Internship applications
+- Personal schedule management
 
-## What technologies are used for this project?
+### Trainer Portal
+- Student management and grading
+- Course content creation
+- Assignment tracking
+- Live session scheduling
+- Mentorship program
 
-This project is built with:
+### Admin Portal
+- User management (students, trainers)
+- Course administration
+- Payment tracking
+- Badge management
+- Analytics dashboard
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Super Admin Portal
+- Admin account management
+- Platform configuration
+- System-wide settings
+- Advanced analytics
 
-## How can I deploy this project?
+## 🛠️ Tech Stack
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### Frontend
+- **Framework:** React 18 with TypeScript
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS
+- **UI Components:** shadcn/ui
+- **State Management:** Apollo Client
+- **Routing:** React Router v6
+- **Animations:** Framer Motion
+- **Forms:** React Hook Form
+- **Notifications:** Sonner
 
-## Can I connect a custom domain to my Lovable project?
+### Backend
+- **Runtime:** Node.js
+- **API:** GraphQL (Apollo Server)
+- **Database:** MongoDB with Mongoose
+- **Authentication:** JWT
+- **Password Hashing:** bcryptjs
+- **Real-time:** Socket.IO
 
-Yes, you can!
+## 📚 Development
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Frontend Development
+```bash
+cd frontend
+npm run dev      # Start dev server
+npm run build    # Build for production
+npm run preview  # Preview production build
+npm run lint     # Run ESLint
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Backend Development
+```bash
+cd backend
+npm run dev      # Start with nodemon
+npm start        # Start production server
+```
+
+## 🔐 Authentication & Authorization
+
+The application uses role-based access control (RBAC) with four user roles:
+- **Student:** Access to learning materials and personal progress
+- **Trainer:** Course management and student grading
+- **Admin:** Platform administration and user management
+- **Super Admin:** Full system access and configuration
+
+## 🎨 Design System
+
+The application features a premium design with:
+- Custom color palette (Gold accent: #EAB308)
+- Dark/Light mode support
+- Responsive layouts for all screen sizes
+- Smooth animations and transitions
+- Accessible UI components
+
+## 📦 Database Models
+
+- **User:** Student, trainer, admin, and super admin accounts
+- **Course:** Course information with modules and lessons
+- **Enrollment:** Student course enrollments
+- **Grade:** Student grades and feedback
+- **Badge:** Achievement badges
+- **Internship:** Internship opportunities
+- **Booking:** Mentorship session bookings
+- **Config:** Platform configuration settings
+
+## 🚢 Deployment
+
+### Frontend (Vercel/Netlify)
+```bash
+cd frontend
+npm run build
+# Deploy the dist/ folder
+```
+
+### Backend (Render/Railway)
+```bash
+cd backend
+npm start
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 👥 Team
+
+Developed by the Codemande Academy team.
+
+## 📞 Support
+
+For support, email support@codemande.com or join our Discord community.
+
+---
+
+**Made with ❤️ in Rwanda**
