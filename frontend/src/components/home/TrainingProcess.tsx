@@ -63,7 +63,7 @@ export function TrainingProcess() {
                     
                     {/* Content */}
                     <div className="bg-card rounded-lg p-4 shadow-card border border-border/30 flex-1">
-                      <h3 className="font-heading font-semibold text-foreground">{step.title}</h3>
+                      <h3 className="font-heading font-semibold text-card-foreground">{step.title}</h3>
                       <p className="text-xs text-muted-foreground">{step.description}</p>
                     </div>
                   </div>
@@ -77,7 +77,7 @@ export function TrainingProcess() {
                           whileHover={{ scale: 1.02 }}
                           className="bg-card rounded-lg p-4 shadow-card border border-border/30 ml-auto max-w-xs text-right group hover:border-accent/50 hover:shadow-gold-glow transition-all duration-300"
                         >
-                          <h3 className="font-heading font-semibold text-foreground group-hover:text-accent transition-colors">{step.title}</h3>
+                          <h3 className="font-heading font-semibold text-card-foreground group-hover:text-accent transition-colors">{step.title}</h3>
                           <p className="text-xs text-muted-foreground">{step.description}</p>
                           
                           {/* Connection line to node */}
@@ -115,7 +115,7 @@ export function TrainingProcess() {
                           whileHover={{ scale: 1.02 }}
                           className="bg-card rounded-lg p-4 shadow-card border border-border/30 max-w-xs group hover:border-accent/50 hover:shadow-gold-glow transition-all duration-300"
                         >
-                          <h3 className="font-heading font-semibold text-foreground group-hover:text-accent transition-colors">{step.title}</h3>
+                          <h3 className="font-heading font-semibold text-card-foreground group-hover:text-accent transition-colors">{step.title}</h3>
                           <p className="text-xs text-muted-foreground">{step.description}</p>
                           
                           {/* Connection line to node */}

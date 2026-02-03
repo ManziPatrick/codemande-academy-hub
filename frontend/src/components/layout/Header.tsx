@@ -48,8 +48,8 @@ export function Header() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-background/95 backdrop-blur-sm shadow-card"
-          : "bg-background border-b border-border/10"
+          ? "bg-card/95 backdrop-blur-sm shadow-card"
+          : "bg-card"
       }`}
     >
       <div className="container mx-auto px-4 lg:px-8">
@@ -62,7 +62,7 @@ export function Header() {
               ) : (
                 <>
                   <span className="text-accent text-2xl font-bold">≪</span>
-                  <span className="font-heading text-xl lg:text-2xl font-semibold text-foreground tracking-wide ml-1">
+                  <span className="font-heading text-xl lg:text-2xl font-semibold text-card-foreground tracking-wide ml-1">
                     {branding.siteName}
                   </span>
                 </>
@@ -127,7 +127,7 @@ export function Header() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden text-foreground p-2"
+            className="lg:hidden text-card-foreground p-2"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -152,7 +152,7 @@ export function Header() {
                 className={`py-2 text-base font-medium transition-colors duration-300 ${
                   location.pathname === link.href
                     ? "text-accent"
-                    : "text-foreground/80 hover:text-accent"
+                    : "text-card-foreground/80 hover:text-accent"
                 }`}
               >
                 {link.name}

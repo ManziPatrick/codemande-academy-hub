@@ -19,7 +19,7 @@
     /* Gold Brand Accent #C9A24D */
     --primary: 41 53% 54%; 
     --primary-hover: 41 53% 45%; 
-    --primary-foreground: 52 40% 98%;
+    --primary-foreground: 240 2% 17%; /* Dark text on Gold */
 
     --secondary: 212 72% 59%; /* Tech Blue #4A90E2 */
     --secondary-foreground: 0 0% 100%;
@@ -28,7 +28,7 @@
     --muted-foreground: 240 2% 45%;
 
     --accent: 41 53% 54%;
-    --accent-foreground: 52 40% 98%;
+    --accent-foreground: 240 2% 17%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
@@ -51,20 +51,20 @@
   }
 
   .dark {
-    /* THE 60-30-10 DARK MODE - USER SIGNATURE */
-    --background: 240 2% 17%; /* 60% Main BG: Charcoal Black #2B2B2D */
-    --foreground: 52 26% 92%; /* Light text for dark areas */
+    /* TRADITIONAL DARK MODE - REVERTED */
+    --background: 240 2% 17%; /* Charcoal Black #2B2B2D */
+    --foreground: 52 26% 92%; /* Soft Off-White text */
 
-    --card: 52 26% 92%; /* 30% Content Areas: Soft Off-White #EDEADE */
-    --card-foreground: 240 2% 17%; /* Charcoal text for Off-White cards */
+    --card: 240 2% 21%; /* Slightly lighter charcoal for cards */
+    --card-foreground: 52 26% 92%; /* Off-White text on dark cards */
 
-    --popover: 52 26% 92%;
-    --popover-foreground: 240 2% 17%;
+    --popover: 240 2% 21%;
+    --popover-foreground: 52 26% 92%;
 
-    --primary: 41 53% 54%; /* 10% Gold #C9A24D */
-    --primary-foreground: 240 2% 17%; /* dark text on gold button */
+    --primary: 41 53% 54%; /* Gold #C9A24D */
+    --primary-foreground: 240 2% 17%; /* Dark text on Gold */
 
-    --secondary: 212 72% 59%; /* Tech Blue #4A90E2 */
+    --secondary: 212 72% 59%; /* Tech Blue */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 240 2% 25%;
@@ -73,8 +73,8 @@
     --accent: 41 53% 54%;
     --accent-foreground: 240 2% 17%;
 
-    --border: 240 2% 35%; /* subtle charcoal border */
-    --input: 240 2% 35%;
+    --border: 240 2% 30%;
+    --input: 240 2% 30%;
     --ring: 41 53% 54%;
   }
 }
