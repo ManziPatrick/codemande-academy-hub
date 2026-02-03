@@ -2,98 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CODEMANDE Design System
-   Color Philosophy: 60-30-10 Rule
-   60% - Parchment (#EDEADE) - backgrounds, reading areas
-   30% - Charcoal (#2B2B2D) - header, footer, cards
-   10% - Academic Gold (#C6A75E) - accents, CTAs
-*/
+/* CODEMANDE Design System - Modern, Professional & Premium */
 
 @layer base {
   :root {
-    /* Primary Palette - 60-30-10 */
-    --parchment: 45 33% 90%;
-    --charcoal: 240 3% 17%;
-    --gold: 41 47% 57%;
-    
-    /* Semantic Tokens */
-    --background: 45 33% 90%;
-    --foreground: 240 3% 17%;
+    /* CLEAN LIGHT MODE - Optimized Reading */
+    --background: 52 40% 98%; /* Light Parchment #FDFCFB */
+    --foreground: 240 2% 17%; /* Charcoal Black #2B2B2D text */
 
-    --card: 240 3% 17%;
-    --card-foreground: 45 33% 90%;
+    --card: 0 0% 100%; /* Pure White */
+    --card-foreground: 240 2% 17%; /* Charcoal text on cards */
 
-    --popover: 45 33% 90%;
-    --popover-foreground: 240 3% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 2% 17%;
 
-    --primary: 240 3% 17%;
-    --primary-foreground: 45 33% 90%;
+    /* Gold Brand Accent #C9A24D */
+    --primary: 41 53% 54%; 
+    --primary-hover: 41 53% 45%; 
+    --primary-foreground: 52 40% 98%;
 
-    --secondary: 45 33% 85%;
-    --secondary-foreground: 240 3% 17%;
+    --secondary: 212 72% 59%; /* Tech Blue #4A90E2 */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 45 20% 85%;
-    --muted-foreground: 240 3% 40%;
+    --muted: 240 5% 94%;
+    --muted-foreground: 240 2% 45%;
 
-    --accent: 41 47% 57%;
-    --accent-foreground: 240 3% 17%;
+    --accent: 41 53% 54%;
+    --accent-foreground: 52 40% 98%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 45 33% 90%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 41 20% 75%;
-    --input: 41 20% 80%;
-    --ring: 41 47% 57%;
+    --border: 240 5% 88%;
+    --input: 240 5% 88%;
+    --ring: 41 53% 54%;
 
-    --radius: 0.375rem;
-
-    /* Custom Properties */
-    --gold-glow: 0 0 20px hsla(41, 47%, 57%, 0.4);
-    --overlay-dark: rgba(43, 43, 45, 0.6);
-    --overlay-light: rgba(237, 234, 222, 0.7);
+    --radius: 0.75rem;
+    --gold-gradient: linear-gradient(135deg, #E6B94D 0%, #C9A24D 100%);
     
-    /* Typography */
     --font-heading: 'Playfair Display', Georgia, serif;
     --font-body: 'Inter', system-ui, sans-serif;
 
-    --sidebar-background: 240 3% 17%;
-    --sidebar-foreground: 45 33% 90%;
-    --sidebar-primary: 41 47% 57%;
-    --sidebar-primary-foreground: 240 3% 17%;
-    --sidebar-accent: 240 3% 22%;
-    --sidebar-accent-foreground: 45 33% 90%;
-    --sidebar-border: 240 3% 25%;
-    --sidebar-ring: 41 47% 57%;
+    /* Sidebar stays charcoal even in light mode for professional contrast */
+    --sidebar-background: 240 2% 17%; 
+    --sidebar-foreground: 52 26% 92%;
+    --sidebar-primary: 41 53% 54%;
+    --sidebar-primary-foreground: 240 2% 17%;
   }
 
   .dark {
-    --background: 240 3% 12%;
-    --foreground: 45 33% 90%;
+    /* THE 60-30-10 DARK MODE - USER SIGNATURE */
+    --background: 240 2% 17%; /* 60% Main BG: Charcoal Black #2B2B2D */
+    --foreground: 52 26% 92%; /* Light text for dark areas */
 
-    --card: 240 3% 15%;
-    --card-foreground: 45 33% 90%;
+    --card: 52 26% 92%; /* 30% Content Areas: Soft Off-White #EDEADE */
+    --card-foreground: 240 2% 17%; /* Charcoal text for Off-White cards */
 
-    --popover: 240 3% 15%;
-    --popover-foreground: 45 33% 90%;
+    --popover: 52 26% 92%;
+    --popover-foreground: 240 2% 17%;
 
-    --primary: 45 33% 90%;
-    --primary-foreground: 240 3% 17%;
+    --primary: 41 53% 54%; /* 10% Gold #C9A24D */
+    --primary-foreground: 240 2% 17%; /* dark text on gold button */
 
-    --secondary: 240 3% 20%;
-    --secondary-foreground: 45 33% 90%;
+    --secondary: 212 72% 59%; /* Tech Blue #4A90E2 */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 240 3% 25%;
-    --muted-foreground: 45 20% 70%;
+    --muted: 240 2% 25%;
+    --muted-foreground: 240 2% 70%;
 
-    --accent: 41 47% 57%;
-    --accent-foreground: 240 3% 17%;
+    --accent: 41 53% 54%;
+    --accent-foreground: 240 2% 17%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 45 33% 90%;
-
-    --border: 240 3% 25%;
-    --input: 240 3% 25%;
-    --ring: 41 47% 57%;
+    --border: 240 2% 35%; /* subtle charcoal border */
+    --input: 240 2% 35%;
+    --ring: 41 53% 54%;
   }
 }
 
@@ -118,19 +100,26 @@
 }
 
 @layer components {
-  /* Circuit decoration lines */
+  /* Premium Glass Card */
+  .glass-card {
+    @apply bg-white/20 dark:bg-black/20 backdrop-blur-md border border-white/30 dark:border-white/10 shadow-xl;
+  }
+
+  /* Circuit decoration lines - refined */
   .circuit-line {
     background: linear-gradient(90deg, transparent 0%, hsl(var(--accent)) 50%, transparent 100%);
     height: 1px;
+    opacity: 0.5;
   }
   
   .circuit-dot {
-    @apply w-2 h-2 rounded-full bg-accent;
+    @apply w-1.5 h-1.5 rounded-full bg-accent;
+    box-shadow: 0 0 10px hsl(var(--accent));
   }
 
   /* Section dividers with circuit pattern */
   .section-divider {
-    @apply relative flex items-center justify-center py-4;
+    @apply relative flex items-center justify-center py-8;
   }
   
   .section-divider::before,
@@ -140,150 +129,83 @@
   }
   
   .section-divider::before {
-    background: linear-gradient(90deg, transparent 0%, hsl(var(--accent) / 0.5) 100%);
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--accent) / 0.3) 100%);
   }
   
   .section-divider::after {
-    background: linear-gradient(90deg, hsl(var(--accent) / 0.5) 0%, transparent 100%);
+    background: linear-gradient(90deg, hsl(var(--accent) / 0.3) 0%, transparent 100%);
   }
 
-  /* Gold accent underline */
-  .gold-underline {
+  /* Gold accent underline - Premium */
+  .premium-underline {
     @apply relative inline-block;
   }
   
-  .gold-underline::after {
+  .premium-underline::after {
     content: '';
-    @apply absolute bottom-0 left-0 w-full h-0.5 bg-accent transform scale-x-0 origin-left transition-transform duration-300;
+    @apply absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-accent to-transparent transform scale-x-0 origin-center transition-transform duration-500 ease-out;
   }
   
-  .gold-underline:hover::after {
+  .premium-underline:hover::after {
     @apply scale-x-100;
   }
 }
 
 @layer utilities {
-  /* Text gradient for special headings */
+  /* Rich Text Gradients */
   .text-gradient-gold {
-    @apply bg-gradient-to-r from-accent via-[hsl(41,60%,65%)] to-accent bg-clip-text text-transparent;
+    @apply bg-gradient-to-br from-[#E6B94D] via-[#BC9229] to-[#8C6D1C] bg-clip-text text-transparent;
   }
 
-  /* Overlay utilities */
-  .overlay-dark {
-    background: var(--overlay-dark);
+  .text-gradient-silver {
+    @apply bg-gradient-to-br from-slate-200 via-slate-400 to-slate-600 bg-clip-text text-transparent;
   }
-  
-  .overlay-light {
-    background: var(--overlay-light);
+
+  /* Premium Elevations */
+  .shadow-premium {
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
+  }
+
+  .shadow-gold {
+    box-shadow: 0 10px 30px -10px hsla(41, 47%, 50%, 0.3);
   }
 
   /* Animation utilities */
-  .animate-fade-up {
-    animation: fadeUp 0.6s ease-out forwards;
-  }
-  
-  .animate-fade-in {
-    animation: fadeIn 0.4s ease-out forwards;
-  }
-  
-  .animate-scale-in {
-    animation: scaleIn 0.3s ease-out forwards;
+  .animate-reveal {
+    animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  .animate-slide-up {
-    animation: slideUp 0.5s ease-out forwards;
-  }
-
-  /* Hover glow effect */
-  .hover-glow:hover {
-    box-shadow: var(--gold-glow);
-  }
-
-  /* Stagger animation delays */
   .stagger-1 { animation-delay: 0.1s; }
   .stagger-2 { animation-delay: 0.2s; }
   .stagger-3 { animation-delay: 0.3s; }
   .stagger-4 { animation-delay: 0.4s; }
 }
 
-@keyframes fadeUp {
+@keyframes reveal {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.skeleton-shimmer {
-  animation: shimmer 1.5s infinite;
-}
-
-/* Custom Scrollbar Styles */
+/* Custom Scrollbar - Minimalist Premium */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background));
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--accent) / 0.3);
+  background: hsl(var(--accent) / 0.2);
   border-radius: 10px;
-  border: 2px solid hsl(var(--background));
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--accent) / 0.6);
+  background: hsl(var(--accent) / 0.4);
 }
-
-/* For Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--accent) / 0.3) hsl(var(--background));
-}
-

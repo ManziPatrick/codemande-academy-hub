@@ -56,6 +56,13 @@ export const typeDefs = `#graphql
     category: String
   }
 
+  type ThemePreference {
+    primaryColor: String
+    mode: String
+    lightBg: String
+    darkBg: String
+  }
+
   type User {
     id: ID!
     username: String!
@@ -70,6 +77,7 @@ export const typeDefs = `#graphql
     academicStatus: String
     permissions: [String]
     streak: Int
+    themePreference: ThemePreference
   }
 
   type Message {
@@ -663,6 +671,7 @@ export const typeDefs = `#graphql
     payForCourse(courseId: ID!, amount: Float!, paymentMethod: String!): Course
     addInternshipTask(internshipId: ID!, title: String!, priority: String): Internship
     addBatchTask(internshipIds: [ID!], stage: Int, cohort: String, title: String!, priority: String): Boolean
+    updateTheme(primaryColor: String, mode: String, lightBg: String, darkBg: String): User
     updateInternshipTask(internshipId: ID!, taskId: ID!, status: String!): Internship
   }
 `;

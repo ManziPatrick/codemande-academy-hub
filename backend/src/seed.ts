@@ -292,6 +292,136 @@ const seedData = async () => {
       await new Internship(idata).save();
     }
 
+    console.log('Seeding Projects...');
+    const projectsData = [
+      {
+        userId: student1._id,
+        title: 'E-Commerce Platform for Local Artisans',
+        course: courses[0].title, // Full Stack Dev
+        type: 'Individual',
+        status: 'in_progress',
+        progress: 65,
+        description: 'Building a fully functional e-commerce site using MERN stack, featuring user authentication, product management, and payment integration.',
+        deadline: new Date(Date.now() + 86400000 * 14), // 2 weeks from now
+        tasks: [
+          { title: 'Setup React Frontend', completed: true },
+          { title: 'Design Database Schema', completed: true },
+          { title: 'Implement Stripe Payment', completed: false },
+          { title: 'Deploy to Vercel', completed: false }
+        ]
+      },
+      {
+        userId: student1._id,
+        title: 'Smart Home IoT Dashboard',
+        course: courses[6].title, // DevOps
+        type: 'Team Project',
+        status: 'completed',
+        progress: 100,
+        description: 'A centralized dashboard to monitor and control IoT devices, deployed using Kubernetes and ensuring high availability.',
+        submittedAt: new Date(),
+        grade: 'A',
+        feedback: 'Excellent work on the CI/CD pipeline implementation.',
+        team: [
+          { name: 'Alice Student', role: 'DevOps Engineer' },
+          { name: 'David Lee', role: 'Frontend Developer' }
+        ],
+        tasks: [
+          { title: 'Containerize Applications', completed: true },
+          { title: 'Setup Jenkins Pipeline', completed: true },
+          { title: 'Configure Monitoring (Prometheus/Grafana)', completed: true }
+        ],
+        submissionUrl: 'https://github.com/alice/iot-dashboard'
+      },
+      {
+        userId: student2._id,
+        title: 'Predictive Analytics for Retail',
+        course: courses[1].title, // Data Science
+        type: 'Individual',
+        status: 'pending_review',
+        progress: 95,
+        description: 'Using Python and Pandas to analyze retail sales data and predict future trends using machine learning models.',
+        submittedAt: new Date(),
+        submissionUrl: 'https://github.com/bob/retail-analytics',
+        tasks: [
+          { title: 'Data Cleaning', completed: true },
+          { title: 'Exploratory Data Analysis', completed: true },
+          { title: 'Model Training', completed: true },
+          { title: 'Final Report Generation', completed: false }
+        ]
+      },
+      {
+        userId: student3._id,
+        title: 'Blockchain Voting System',
+        course: courses[9].title, // Blockchain
+        type: 'Team Project',
+        status: 'in_progress',
+        progress: 40,
+        description: 'A decentralized voting application built on Ethereum to ensure transparency and security in local elections.',
+        team: [
+          { name: 'Charlie Newbie', role: 'Smart Contract Dev' },
+          { name: 'Sarah Jones', role: 'UI/UX Designer' }
+        ],
+        tasks: [
+          { title: 'Write Smart Contracts', completed: true },
+          { title: 'Integrate Web3.js', completed: false },
+          { title: 'Test on Ropsten Network', completed: false }
+        ]
+      }
+    ];
+
+    for (const p of projectsData) {
+      const project = new Project(p);
+      await project.save();
+    }
+
+    console.log('Seeding Certificates...');
+    const certificatesData = [
+      {
+        userId: student1._id,
+        courseId: courses[0]._id, // Full Stack Dev
+        courseTitle: courses[0].title,
+        issueDate: new Date(),
+        credentialId: `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+        status: 'issued',
+        progress: 100,
+        requirements: [
+          { title: 'Complete all video lessons', completed: true, current: 50, total: 50 },
+          { title: 'Pass final exam with >80%', completed: true, current: 1, total: 1 },
+          { title: 'Submit final project', completed: true, current: 1, total: 1 }
+        ]
+      },
+      {
+        userId: student2._id,
+        courseId: courses[1]._id,
+        courseTitle: courses[1].title,
+        status: 'in_progress',
+        progress: 60,
+        requirements: [
+          { title: 'Complete all video lessons', completed: false, current: 20, total: 40 },
+          { title: 'Pass final exam with >80%', completed: false, current: 0, total: 1 },
+          { title: 'Submit final project', completed: false, current: 0, total: 1 }
+        ]
+      },
+      {
+         userId: student4._id,
+         courseId: courses[4]._id, // Cloud
+         courseTitle: courses[4].title,
+         status: 'issued',
+         issueDate: new Date(Date.now() - 86400000 * 30), // 1 month ago
+         credentialId: `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+         progress: 100,
+         requirements: [
+             { title: 'Complete AWS Cloud Practitioner Essentials', completed: true },
+             { title: 'Pass Capstone Project', completed: true }
+         ]
+      }
+    ];
+
+    for (const c of certificatesData) {
+      const certificate = new Certificate(c);
+      await certificate.save();
+    }
+
     console.log('Seeding Completed Successfully!');
     process.exit(0);
   } catch (error) {

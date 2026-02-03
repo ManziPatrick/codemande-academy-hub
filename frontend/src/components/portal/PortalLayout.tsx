@@ -89,6 +89,7 @@ const superAdminNavItems: NavItem[] = [
   { label: "Admins", href: "/portal/super-admin/admins", icon: Shield },
   { label: "All Users", href: "/portal/super-admin/users", icon: Users },
   { label: "Configuration", href: "/portal/super-admin/config", icon: Cog },
+  { label: "Branding", href: "/portal/admin/branding", icon: Palette },
   { label: "Analytics", href: "/portal/super-admin/analytics", icon: BarChart3 },
   { label: "Messages", href: "/chat", icon: MessageSquare },
 ];
@@ -111,6 +112,8 @@ interface PortalLayoutProps {
   children: ReactNode;
 }
 
+import { useBranding } from "@/components/BrandingProvider";
+
 export function PortalLayout({ children }: PortalLayoutProps) {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -119,52 +122,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   const socket = useSocket();
 
   const [trackActivity] = useMutation(TRACK_ACTIVITY);
-  const { data: brandingData } = useQuery(GET_BRANDING, {
-    fetchPolicy: 'cache-and-network'
-  });
-
-  const branding = (brandingData as any)?.branding || {
-    siteName: "CODEMANDE",
-    logoUrl: "",
-    primaryColor: "#D4AF37"
-  };
-
-  const hexToHsl = (hex: string) => {
-    let r = 0, g = 0, b = 0;
-    if (hex.length === 4) {
-      r = parseInt(hex[1] + hex[1], 16);
-      g = parseInt(hex[2] + hex[2], 16);
-      b = parseInt(hex[3] + hex[3], 16);
-    } else if (hex.length === 7) {
-      r = parseInt(hex.substring(1, 3), 16);
-      g = parseInt(hex.substring(3, 5), 16);
-      b = parseInt(hex.substring(5, 7), 16);
-    }
-    r /= 255; g /= 255; b /= 255;
-    const max = Math.max(r, g, b), min = Math.min(r, g, b);
-    let h = 0, s, l = (max + min) / 2;
-    if (max === min) {
-      h = s = 0;
-    } else {
-      const d = max - min;
-      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-      switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
-      }
-      h /= 6;
-    }
-    return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
-  };
-
-  useEffect(() => {
-    if (branding.primaryColor) {
-      const hsl = hexToHsl(branding.primaryColor);
-      document.documentElement.style.setProperty('--accent', hsl);
-      document.documentElement.style.setProperty('--ring', hsl);
-    }
-  }, [branding.primaryColor]);
+  const { branding } = useBranding();
 
   useEffect(() => {
     if (socket) {

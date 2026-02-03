@@ -116,9 +116,6 @@ export default function SuperAdminConfig() {
             <TabsTrigger value="security" className="gap-2 px-4 py-2">
               <Shield className="w-4 h-4" /> Security
             </TabsTrigger>
-            <TabsTrigger value="appearance" className="gap-2 px-4 py-2">
-              <Palette className="w-4 h-4" /> Appearance
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
@@ -126,7 +123,7 @@ export default function SuperAdminConfig() {
               <Card className="border-border/50">
                 <CardHeader>
                   <CardTitle>Site Information</CardTitle>
-                  <CardDescription>Basic details about your platform</CardDescription>
+                  <CardDescription>Basic details about your platform (Note: Site Name is also synced with Branding)</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -255,60 +252,6 @@ export default function SuperAdminConfig() {
                   <p className="font-medium">Admin 2FA</p>
                   <p className="text-sm text-muted-foreground">Require Two-Factor Authentication for all admins</p>
                   <Switch className="mt-2" />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="appearance">
-            <Card className="border-border/50">
-              <CardHeader>
-                <CardTitle>Branding & Theme</CardTitle>
-                <CardDescription>Customize the look and feel of your portal</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <Label>Accent Color</Label>
-                  <div className="flex flex-wrap gap-4 items-center">
-                    {["#EAB308", "#3B82F6", "#8B5CF6", "#10B981", "#F43F5E", "#10B981"].map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setSettings({...settings, primaryColor: color})}
-                        className={`w-10 h-10 rounded-full border-2 transition-all ${
-                          settings.primaryColor === color ? "border-foreground scale-110" : "border-transparent"
-                        }`}
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                    <Separator orientation="vertical" className="h-8 mx-2 bg-border/50" />
-                    <div className="flex items-center gap-2 bg-background/50 p-2 rounded-lg border border-border/30">
-                      <div className="relative w-8 h-8 rounded-full border border-border overflow-hidden">
-                        <input 
-                          type="color" 
-                          value={settings.primaryColor}
-                          onChange={(e) => setSettings({...settings, primaryColor: e.target.value})}
-                          className="absolute inset-0 opacity-0 cursor-pointer scale-150"
-                        />
-                        <div className="w-full h-full" style={{ backgroundColor: settings.primaryColor }} />
-                      </div>
-                      <Input 
-                        value={settings.primaryColor}
-                        onChange={(e) => setSettings({...settings, primaryColor: e.target.value})}
-                        className="w-24 h-8 text-xs font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <Separator className="bg-border/30" />
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label>Forced Dark Mode</Label>
-                    <p className="text-sm text-muted-foreground">Override user theme preferences</p>
-                  </div>
-                  <Switch 
-                    checked={settings.darkMode}
-                    onCheckedChange={(v) => setSettings({...settings, darkMode: v})}
-                  />
                 </div>
               </CardContent>
             </Card>

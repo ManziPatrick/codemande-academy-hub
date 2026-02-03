@@ -37,9 +37,13 @@ const socialLinks = [
   { icon: Youtube, href: "#", label: "YouTube" },
 ];
 
+import { useBranding } from "@/components/BrandingProvider";
+
 export function Footer() {
+  const { branding } = useBranding();
+
   return (
-    <footer className="bg-card text-card-foreground">
+    <footer className="bg-background text-foreground border-t border-border/10">
       {/* Circuit line decoration */}
       <div className="h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
       
@@ -49,17 +53,23 @@ export function Footer() {
           {/* Brand Column - Takes 2 columns on large screens */}
           <div className="sm:col-span-2 lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <span className="text-accent text-2xl font-bold">≪</span>
-              <span className="font-heading text-xl font-semibold tracking-wide">
-                CODEMANDE
-              </span>
+              {branding.logoUrl ? (
+                <img src={branding.logoUrl} alt={branding.siteName} className="h-8 w-auto" />
+              ) : (
+                <>
+                  <span className="text-accent text-2xl font-bold">≪</span>
+                  <span className="font-heading text-xl font-semibold tracking-wide">
+                    {branding.siteName}
+                  </span>
+                </>
+              )}
             </Link>
-            <p className="text-card-foreground/70 text-sm leading-relaxed mb-6 max-w-xs">
-              Empowering Africa through technology education and innovation. Building the next generation of digital professionals across Rwanda and beyond.
+            <p className="text-foreground/70 text-sm leading-relaxed mb-6 max-w-xs">
+              Empowering Africa through technology education and innovation. Building the next generation of digital professionals with {branding.siteName}.
             </p>
             
             {/* Contact Info Block */}
-            <div className="space-y-3 text-sm text-card-foreground/70">
+            <div className="space-y-3 text-sm text-foreground/70">
               <div className="flex items-start gap-3">
                 <MapPin size={16} className="text-accent flex-shrink-0 mt-0.5" />
                 <span>KG 123 Street, Kigali Innovation City,<br />Kigali, Rwanda</span>
@@ -81,7 +91,7 @@ export function Footer() {
 
           {/* Company Links Block */}
           <div>
-            <h4 className="font-heading font-semibold mb-4 text-card-foreground text-sm uppercase tracking-wider">
+            <h4 className="font-heading font-semibold mb-4 text-foreground text-sm uppercase tracking-wider">
               Company
             </h4>
             <ul className="space-y-2.5">
@@ -89,7 +99,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-sm text-card-foreground/70 hover:text-accent transition-colors duration-300 block"
+                    className="text-sm text-foreground/70 hover:text-accent transition-colors duration-300 block"
                   >
                     {link.name}
                   </Link>
@@ -100,7 +110,7 @@ export function Footer() {
 
           {/* Programs Links Block */}
           <div>
-            <h4 className="font-heading font-semibold mb-4 text-card-foreground text-sm uppercase tracking-wider">
+            <h4 className="font-heading font-semibold mb-4 text-foreground text-sm uppercase tracking-wider">
               Programs
             </h4>
             <ul className="space-y-2.5">
@@ -108,7 +118,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-sm text-card-foreground/70 hover:text-accent transition-colors duration-300 block"
+                    className="text-sm text-foreground/70 hover:text-accent transition-colors duration-300 block"
                   >
                     {link.name}
                   </Link>
@@ -119,7 +129,7 @@ export function Footer() {
 
           {/* Opportunities Links Block */}
           <div>
-            <h4 className="font-heading font-semibold mb-4 text-card-foreground text-sm uppercase tracking-wider">
+            <h4 className="font-heading font-semibold mb-4 text-foreground text-sm uppercase tracking-wider">
               Opportunities
             </h4>
             <ul className="space-y-2.5">
@@ -127,7 +137,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-sm text-card-foreground/70 hover:text-accent transition-colors duration-300 block"
+                    className="text-sm text-foreground/70 hover:text-accent transition-colors duration-300 block"
                   >
                     {link.name}
                   </Link>
@@ -138,7 +148,7 @@ export function Footer() {
 
           {/* Resources Links Block */}
           <div>
-            <h4 className="font-heading font-semibold mb-4 text-card-foreground text-sm uppercase tracking-wider">
+            <h4 className="font-heading font-semibold mb-4 text-foreground text-sm uppercase tracking-wider">
               Resources
             </h4>
             <ul className="space-y-2.5">
@@ -146,7 +156,7 @@ export function Footer() {
                 <li key={link.name}>
                   <Link
                     to={link.href}
-                    className="text-sm text-card-foreground/70 hover:text-accent transition-colors duration-300 block"
+                    className="text-sm text-foreground/70 hover:text-accent transition-colors duration-300 block"
                   >
                     {link.name}
                   </Link>
@@ -160,10 +170,10 @@ export function Footer() {
         <div className="mt-12 pt-8 border-t border-card-foreground/10">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 items-center">
             <div className="lg:col-span-2">
-              <h4 className="font-heading font-semibold text-card-foreground mb-1">
+              <h4 className="font-heading font-semibold text-foreground mb-1">
                 Stay Updated
               </h4>
-              <p className="text-sm text-card-foreground/70">
+              <p className="text-sm text-foreground/70">
                 Subscribe to our newsletter for the latest courses, tech insights, and opportunities.
               </p>
             </div>
@@ -185,10 +195,10 @@ export function Footer() {
           <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
             {/* Copyright */}
             <div className="text-center lg:text-left">
-              <p className="text-sm text-card-foreground/60">
+              <p className="text-sm text-foreground/60">
                 © {new Date().getFullYear()} CODEMANDE. All rights reserved.
               </p>
-              <p className="text-xs text-card-foreground/40 mt-1">
+              <p className="text-xs text-foreground/40 mt-1">
                 Leading Technology Education & Innovation in Rwanda and Beyond.
               </p>
             </div>
@@ -200,7 +210,7 @@ export function Footer() {
                   key={social.label}
                   href={social.href}
                   aria-label={social.label}
-                  className="w-9 h-9 rounded-full border border-card-foreground/20 flex items-center justify-center text-card-foreground/60 hover:text-accent hover:border-accent hover:bg-accent/10 transition-all duration-300"
+                  className="w-9 h-9 rounded-full border border-card-foreground/20 flex items-center justify-center text-foreground/60 hover:text-accent hover:border-accent hover:bg-accent/10 transition-all duration-300"
                 >
                   <social.icon size={16} />
                 </a>
@@ -208,7 +218,7 @@ export function Footer() {
             </div>
 
             {/* Legal Links */}
-            <div className="flex items-center gap-4 text-xs text-card-foreground/50">
+            <div className="flex items-center gap-4 text-xs text-foreground/50">
               <Link to="/contact" className="hover:text-accent transition-colors">Privacy Policy</Link>
               <span>•</span>
               <Link to="/contact" className="hover:text-accent transition-colors">Terms of Service</Link>

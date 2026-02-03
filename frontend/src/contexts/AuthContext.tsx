@@ -13,6 +13,12 @@ export interface User {
   enrolledCourses?: string[];
   completedCourses?: string[];
   createdAt: string;
+  themePreference?: {
+    primaryColor?: string;
+    mode?: string;
+    lightBg?: string;
+    darkBg?: string;
+  };
 }
 
 interface AuthContextType {
@@ -119,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             fullName: userData.username, 
             role: userData.role || "student", 
             createdAt: new Date().toISOString(),
+            themePreference: userData.themePreference
         };
 
         setUser(appUser);
@@ -151,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             fullName: userData.username,
             role: "student",
             createdAt: new Date().toISOString(),
+            themePreference: userData.themePreference
         };
 
         setUser(appUser);

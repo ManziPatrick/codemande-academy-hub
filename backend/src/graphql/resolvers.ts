@@ -1543,6 +1543,23 @@ export const resolvers = {
       return await course.populate('instructor studentsEnrolled');
     },
 
+    updateTheme: async (_: any, { primaryColor, mode, lightBg, darkBg }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      const user = await User.findById(context.user.id);
+      if (!user) throw new Error('User not found');
+      
+      (user as any).themePreference = {
+        primaryColor: primaryColor === undefined ? user.themePreference?.primaryColor : primaryColor,
+        mode: mode === undefined ? user.themePreference?.mode : mode,
+        lightBg: lightBg === undefined ? user.themePreference?.lightBg : lightBg,
+        darkBg: darkBg === undefined ? user.themePreference?.darkBg : darkBg
+      };
+      
+      await user.save();
+      return user;
+    },
+
     updateBranding: async (_: any, args: any, context: any) => {
       if (!context.user || !['admin', 'super_admin'].includes(context.user.role)) {
         throw new Error('Not authorized');

@@ -520,3 +520,16 @@ export const UPDATE_BRANDING = gql`
     }
   }
 `;
+export const UPDATE_THEME = gql`
+  mutation UpdateTheme($primaryColor: String, $mode: String, $lightBg: String, $darkBg: String) {
+    updateTheme(primaryColor: $primaryColor, mode: $mode, lightBg: $lightBg, darkBg: $darkBg) {
+      id
+      themePreference {
+        primaryColor
+        mode
+        lightBg
+        darkBg
+      }
+    }
+  }
+`;

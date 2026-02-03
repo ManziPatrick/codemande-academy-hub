@@ -189,6 +189,10 @@ export const GET_ME = gql`
       level
       academicStatus
       streak
+      themePreference {
+        primaryColor
+        mode
+      }
     }
   }
 `;

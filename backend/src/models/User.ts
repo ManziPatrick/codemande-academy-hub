@@ -58,7 +58,15 @@ const userSchema = new mongoose.Schema({
   totalTimeSpent: { type: Number, default: 0 }, // in seconds
   
   // Navigation Tracking (Last known path)
-  lastPath: { type: String }
+  lastPath: { type: String },
+  
+  // Theme Preferences
+  themePreference: {
+    primaryColor: { type: String },
+    mode: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
+    lightBg: { type: String },
+    darkBg: { type: String }
+  }
 }, { timestamps: true });
 
 export const User = mongoose.model('User', userSchema);
