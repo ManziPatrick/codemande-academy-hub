@@ -11,10 +11,24 @@ export interface IProject extends Document {
   submittedAt?: Date;
   grade?: string;
   feedback?: string;
-  team?: Array<{ name: string; role: string }>;
-  tasks?: Array<{ title: string; completed: boolean }>;
+  mentors: mongoose.Types.ObjectId[];
+  team?: Array<{ userId?: mongoose.Types.ObjectId; name: string; role: string }>;
+  tasks?: Array<{ 
+    id: string; 
+    title: string; 
+    completed: boolean; 
+    approved?: boolean;
+    feedback?: string;
+  }>;
   description: string;
+  documentation?: {
+    images?: string[];
+    videos?: string[];
+    links?: Array<{ title: string; url: string }>;
+    inPersonNotes?: string;
+  };
   submissionUrl?: string;
+  conversationId?: mongoose.Types.ObjectId | string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,20 +45,32 @@ const ProjectSchema: Schema = new Schema(
     submittedAt: { type: Date },
     grade: { type: String },
     feedback: { type: String },
+    conversationId: { type: Schema.Types.ObjectId, ref: 'Conversation' },
     team: [
       {
+        userId: { type: Schema.Types.ObjectId, ref: 'User' },
         name: { type: String },
         role: { type: String },
       },
     ],
     tasks: [
       {
+        id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
         title: { type: String },
         completed: { type: Boolean, default: false },
+        approved: { type: Boolean, default: false },
+        feedback: { type: String },
       },
     ],
+    documentation: {
+      images: [String],
+      videos: [String],
+      links: [{ title: String, url: String }],
+      inPersonNotes: String,
+    },
     description: { type: String, required: true },
     submissionUrl: { type: String },
+    mentors: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }
 );

@@ -186,6 +186,12 @@ export const resolvers = {
       }
       return await Booking.find().populate('userId').populate('mentorId').sort({ createdAt: -1 });
     },
+    myBookings: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      return await Booking.find({
+        $or: [{ userId: context.user.id }, { mentorId: context.user.id }]
+      }).populate('userId mentorId').sort({ createdAt: -1 });
+    },
 
     payments: async (_: any, __: any, context: any) => {
       if (!context.user || !['admin', 'super_admin'].includes(context.user.role)) {
@@ -264,12 +270,7 @@ export const resolvers = {
     configs: async (_: any, __: any, context: any) => {
       return await Config.find();
     },
-    myBookings: async (_: any, __: any, context: any) => {
-      if (!context.user) throw new Error('Not authenticated');
-      return await Booking.find({
-        $or: [{ userId: context.user.id }, { mentorId: context.user.id }]
-      }).populate('userId').populate('mentorId').sort({ createdAt: -1 });
-    },
+
     badges: async () => await Badge.find(),
 
     trainerStats: async (_: any, __: any, context: any) => {
@@ -542,6 +543,17 @@ export const resolvers = {
           outcome: "Interns move into jobs or self-employment."
         }
       ];
+    },
+    myMentees: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      if (context.user.role !== 'trainer' && context.user.role !== 'admin' && context.user.role !== 'super_admin') {
+        throw new Error('Not authorized');
+      }
+
+      // Get all internships where the current user is the mentor
+      return await Internship.find({ mentorId: context.user.id })
+        .populate('userId mentorId')
+        .sort({ createdAt: -1 });
     },
     branding: async () => {
       const config = await Config.findOne({ key: 'branding' });
@@ -1050,18 +1062,19 @@ export const resolvers = {
     },
 
     // Projects Mutations
-    createProject: async (_: any, args: any, context: any) => {
+    createProject: async (_: any, { mentorIds, ...args }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const project = new Project({
         ...args,
         userId: context.user.id,
+        mentors: mentorIds || [context.user.id],
         status: 'in_progress',
         progress: 0,
       });
       await project.save();
       return await project.populate('userId');
     },
-    updateProject: async (_: any, { id, ...args }: any, context: any) => {
+    updateProject: async (_: any, { id, mentorIds, ...args }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const project = await Project.findById(id);
       if (!project) throw new Error('Project not found');
@@ -1075,6 +1088,7 @@ export const resolvers = {
       }
 
       Object.assign(project, args);
+      if (mentorIds) project.mentors = mentorIds;
       await project.save();
       return await project.populate('userId');
     },
@@ -1250,13 +1264,19 @@ export const resolvers = {
     },
 
     // Internships Mutations
-    createInternship: async (_: any, args: any, context: any) => {
-      if (!context.user || (context.user.role !== 'super_admin' && context.user.role !== 'admin')) {
-        throw new Error('Not authorized');
+    createInternship: async (_: any, { mentorIds, ...args }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      // If not admin, check if the student is creating an internship for themselves
+      if (context.user.role !== 'super_admin' && context.user.role !== 'admin') {
+        if (args.userId !== context.user.id) {
+          throw new Error('Not authorized to create internship for another user');
+        }
       }
       const internship = new Internship({
         ...args,
         organization: args.organization || 'Codemande Academy',
+        mentors: mentorIds || (args.mentorId ? [args.mentorId] : []),
         status: 'eligible',
         progress: 0,
       });
@@ -1348,7 +1368,7 @@ export const resolvers = {
       return await internship.populate('userId mentorId');
     },
 
-    updateInternship: async (_: any, { id, ...args }: any, context: any) => {
+    updateInternship: async (_: any, { id, mentorIds, ...args }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const internship = await Internship.findById(id);
       if (!internship) throw new Error('Internship not found');
@@ -1363,6 +1383,7 @@ export const resolvers = {
       }
 
       Object.assign(internship, args);
+      if (mentorIds) (internship as any).mentors = mentorIds;
       await internship.save();
       return await internship.populate('userId mentorId projects');
     },
@@ -1388,9 +1409,13 @@ export const resolvers = {
       await internship.save();
       return await internship.populate('userId mentorId');
     },
-    promoteIntern: async (_: any, { id, groupId, cohort, targetStage }: any, context: any) => {
+    promoteIntern: async (_: any, { internshipIds, targetStage }: any, context: any) => {
       if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
         throw new Error('Not authorized');
+      }
+
+      if (!internshipIds || internshipIds.length === 0) {
+        throw new Error('No interns selected');
       }
 
       const stagesMap: any = {
@@ -1402,7 +1427,9 @@ export const resolvers = {
         6: "Stage 6: Career Transition & Placement Support"
       };
 
-      const updateIntern = async (intern: any) => {
+      const interns = await Internship.find({ _id: { $in: internshipIds } });
+
+      for (const intern of interns) {
         const oldStageTitle = intern.stage;
         intern.currentStage = targetStage;
         intern.stage = stagesMap[targetStage] || `Stage ${targetStage}`;
@@ -1411,14 +1438,7 @@ export const resolvers = {
         const totalStages = 6;
         const baseProgress = ((targetStage - 1) / totalStages) * 100;
 
-        // Add task contribution if tasks exist
-        let stageContribution = 0;
-        if (intern.tasks && intern.tasks.length > 0) {
-          const completedTasks = intern.tasks.filter((t: any) => t.status === 'completed').length;
-          stageContribution = (completedTasks / intern.tasks.length) * (100 / totalStages);
-        }
-
-        intern.progress = Math.min(100, Math.round(baseProgress + stageContribution));
+        intern.progress = Math.min(100, Math.round(baseProgress));
 
         if (!intern.completedStages.includes(oldStageTitle)) {
           intern.completedStages.push(oldStageTitle);
@@ -1432,27 +1452,109 @@ export const resolvers = {
         }
 
         await intern.save();
-      };
-
-      if (id) {
-        const intern = await Internship.findById(id);
-        if (!intern) throw new Error('Internship not found');
-        await updateIntern(intern);
-        return true;
-      } else if (groupId || cohort) {
-        let query: any = {};
-        if (groupId) query.currentStage = parseInt(groupId);
-        if (cohort) query.cohort = cohort;
-
-        const interns = await Internship.find(query);
-        for (const intern of interns) {
-          await updateIntern(intern);
-        }
-        return true;
       }
 
-      return false;
+      return true;
     },
+
+    assignGroupProject: async (_: any, { internshipIds, title, description, repoUrl, deadline, mentorIds }: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      if (!internshipIds || internshipIds.length === 0) {
+        throw new Error('No interns selected');
+      }
+
+      // Fetch interns to get names for the project team
+      const interns = await Internship.find({ _id: { $in: internshipIds } }).populate('userId');
+      
+      const projectTeam = interns.map((intern: any) => ({
+        userId: intern.userId?._id || intern.userId?.id,
+        name: intern.userId?.username || 'Unknown',
+        role: 'Developer'
+      }));
+
+      // Create Group Conversation
+      const participantIds = [
+        context.user.id, 
+        ...(mentorIds || []),
+        ...interns.map((i: any) => i.userId?._id?.toString() || i.userId?.id?.toString())
+      ].filter(Boolean);
+      const uniqueParticipants = [...new Set(participantIds)];
+
+      const newConversation = new Conversation({
+        participants: uniqueParticipants
+      });
+      await newConversation.save();
+
+      // Create new Project
+      const newProject = new Project({
+        userId: context.user.id,
+        title,
+        description,
+        course: "Internship Project",
+        type: 'Team Project',
+        submissionUrl: repoUrl,
+        deadline: deadline ? new Date(deadline) : undefined,
+        status: 'in_progress',
+        team: projectTeam,
+        mentors: mentorIds || [context.user.id],
+        conversationId: newConversation.id
+      });
+      
+      await newProject.save();
+
+      // Assign project to all interns
+      await Internship.updateMany(
+        { _id: { $in: internshipIds } },
+        { 
+          $push: { projects: newProject.id } 
+        }
+      );
+
+      return newProject;
+    },
+
+    sendMessageToProject: async (_: any, { projectId, content }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const project = await Project.findById(projectId);
+      if (!project) throw new Error('Project not found');
+
+      let conversationId = project.conversationId;
+
+      if (!conversationId) {
+        const teamUserIds = project.team?.map((t: any) => t.userId).filter(Boolean) || [];
+        const uniqueParticipants = [...new Set([project.userId.toString(), ...teamUserIds.map((id: any) => id.toString())])];
+        
+        const newConversation = new Conversation({
+            participants: uniqueParticipants
+        });
+        await newConversation.save();
+        
+        project.conversationId = newConversation.id;
+        await project.save();
+        conversationId = newConversation.id;
+      }
+
+      const newMessage = new Message({
+        conversationId,
+        sender: context.user.id,
+        content,
+        read: false
+      });
+      
+      await newMessage.save();
+
+      await Conversation.findByIdAndUpdate(conversationId, {
+        lastMessage: newMessage.id,
+        updatedAt: new Date()
+      });
+
+      return await newMessage.populate('sender');
+    },
+
     updateInternshipPayment: async (_: any, { id, status, paidAt }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const internship = await Internship.findById(id);
@@ -1461,15 +1563,17 @@ export const resolvers = {
       // Check ownership or admin role
       if (internship.userId.toString() !== context.user.id &&
         context.user.role !== 'super_admin' &&
-        context.user.role !== 'admin') {
+        context.user.role !== 'admin' &&
+        context.user.role !== 'trainer') {
         throw new Error('Not authorized');
       }
 
+      const oldStatus = internship.payment.status;
       internship.payment.status = status;
       if (paidAt) internship.payment.paidAt = new Date(paidAt);
 
       // If newly paid, create a Payment record for tracking
-      if (status === 'paid' || status === 'completed') {
+      if ((status === 'paid' || status === 'completed') && oldStatus !== 'paid') {
         const existingPayment = await Payment.findOne({ internshipId: internship.id });
         if (!existingPayment) {
           await new Payment({
@@ -1484,15 +1588,48 @@ export const resolvers = {
             itemTitle: internship.title
           }).save();
         }
+
+        // Auto-approve registration if payment is successful
+        if (internship.status === 'eligible' || internship.status === 'not_eligible') {
+          internship.status = 'enrolled';
+        }
       }
 
-      // If payment is completed, update internship status
+      // If already enrolled and payment is confirmed, start the journey
       if (status === 'paid' && internship.status === 'enrolled') {
         internship.status = 'in_progress';
       }
 
       await internship.save();
       return await internship.populate('userId mentorId');
+    },
+
+    awardBadgeToBatch: async (_: any, { userIds, badgeId }: any, context: any) => {
+      if (!context.user || !['trainer', 'admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      const session = await User.startSession();
+      try {
+        await session.withTransaction(async () => {
+          for (const userId of userIds) {
+            const user = await User.findById(userId);
+            if (user) {
+              const alreadyHas = (user as any).badges.some((b: any) => b.badgeId.toString() === badgeId);
+              if (!alreadyHas) {
+                (user as any).badges.push({ badgeId });
+                await user.save({ session });
+              }
+            }
+          }
+        });
+        return true;
+      } catch (err) {
+        console.error("Batch award failed:", err);
+        return false;
+      } finally {
+        session.endSession();
+      }
     },
     payForCourse: async (_: any, { courseId, amount, paymentMethod }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -1545,17 +1682,17 @@ export const resolvers = {
 
     updateTheme: async (_: any, { primaryColor, mode, lightBg, darkBg }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       const user = await User.findById(context.user.id);
       if (!user) throw new Error('User not found');
-      
+
       (user as any).themePreference = {
         primaryColor: primaryColor === undefined ? user.themePreference?.primaryColor : primaryColor,
         mode: mode === undefined ? user.themePreference?.mode : mode,
         lightBg: lightBg === undefined ? user.themePreference?.lightBg : lightBg,
         darkBg: darkBg === undefined ? user.themePreference?.darkBg : darkBg
       };
-      
+
       await user.save();
       return user;
     },
@@ -1597,6 +1734,42 @@ export const resolvers = {
 
       return config.value;
     },
+
+    updateTaskProgress: async (_: any, { projectId, taskId, completed }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const project = await Project.findById(projectId);
+      if (!project) throw new Error('Project not found');
+
+      const task = project.tasks?.find((t: any) => t.id === taskId || t._id.toString() === taskId);
+      if (!task) throw new Error('Task not found');
+
+      task.completed = completed;
+      
+      // Calculate progress based on completed tasks
+      const totalTasks = project.tasks?.length || 0;
+      const completedTasks = project.tasks?.filter((t: any) => t.completed).length || 0;
+      project.progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+      await project.save();
+      return project;
+    },
+
+    approveProjectTask: async (_: any, { projectId, taskId, approved, feedback }: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+      const project = await Project.findById(projectId);
+      if (!project) throw new Error('Project not found');
+
+      const task = project.tasks?.find((t: any) => t.id === taskId || t._id.toString() === taskId);
+      if (!task) throw new Error('Task not found');
+
+      task.approved = approved;
+      task.feedback = feedback;
+
+      await project.save();
+      return project;
+    },
   },
   User: {
     id: (parent: any) => parent.id || parent._id || parent.toString(),
@@ -1623,6 +1796,17 @@ export const resolvers = {
     user: async (parent: any) => {
       if (parent.userId && (parent.userId as any).username) return parent.userId;
       return await User.findById(parent.userId);
+    },
+    mentors: async (parent: any) => {
+      if (parent.mentors && parent.mentors.length > 0 && (parent.mentors[0] as any).username) return parent.mentors;
+      return await User.find({ _id: { $in: parent.mentors || [] } });
+    }
+  },
+  TeamMember: {
+    user: async (parent: any) => {
+      if (!parent.userId) return null;
+      if ((parent.userId as any).username) return parent.userId;
+      return await User.findById(parent.userId);
     }
   },
   Certificate: {
@@ -1640,6 +1824,10 @@ export const resolvers = {
     id: (parent: any) => parent.id || parent._id || parent.toString(),
     user: async (parent: any) => await User.findById(parent.userId),
     mentor: async (parent: any) => await User.findById(parent.mentorId),
+    mentors: async (parent: any) => {
+      if (parent.mentors && parent.mentors.length > 0 && (parent.mentors[0] as any).username) return parent.mentors;
+      return await User.find({ _id: { $in: parent.mentors || [] } });
+    },
     projects: async (parent: any) => await Project.find({ _id: { $in: parent.projects } }),
   },
   Message: {

@@ -205,13 +205,30 @@ export const typeDefs = `#graphql
   }
 
   type TeamMember {
+    userId: ID
+    user: User
     name: String!
     role: String!
   }
 
   type Task {
+    id: String
     title: String!
     completed: Boolean!
+    approved: Boolean
+    feedback: String
+  }
+
+  type ProjectLink {
+    title: String!
+    url: String!
+  }
+
+  type Documentation {
+    images: [String]
+    videos: [String]
+    links: [ProjectLink]
+    inPersonNotes: String
   }
 
   type Project {
@@ -229,8 +246,12 @@ export const typeDefs = `#graphql
     feedback: String
     team: [TeamMember]
     tasks: [Task]
+    documentation: Documentation
     description: String!
     submissionUrl: String
+    mentors: [User]
+    conversationId: ID
+    conversation: Conversation
     createdAt: String!
     updatedAt: String!
   }
@@ -304,6 +325,13 @@ export const typeDefs = `#graphql
     projects: [Project]
     mentorId: ID
     mentor: User
+    mentors: [User]
+    academicSchool: String
+    academicLevel: String
+    previousLanguages: String
+    skills: String
+    phoneNumber: String
+    portfolioUrl: String
     payment: Payment!
     progress: Int!
     milestones: [Milestone]
@@ -412,6 +440,7 @@ export const typeDefs = `#graphql
     # Internships
     internships: [Internship]
     myInternship: Internship
+    myMentees: [Internship]
     internship(id: ID!): Internship
     internshipStages: [ProgramStage]
   }
@@ -439,13 +468,29 @@ export const typeDefs = `#graphql
   }
 
   input TeamMemberInput {
+    userId: ID
     name: String!
     role: String!
   }
 
   input TaskInput {
+    id: String
     title: String!
     completed: Boolean
+    approved: Boolean
+    feedback: String
+  }
+
+  input ProjectLinkInput {
+    title: String!
+    url: String!
+  }
+
+  input DocumentationInput {
+    images: [String]
+    videos: [String]
+    links: [ProjectLinkInput]
+    inPersonNotes: String
   }
 
   input RequirementInput {
@@ -569,6 +614,7 @@ export const typeDefs = `#graphql
     
     createBadge(title: String!, description: String!, icon: String, category: String): Badge
     awardBadge(userId: ID!, badgeId: ID!): User
+    awardBadgeToBatch(userIds: [ID!]!, badgeId: ID!): Boolean
     submitGrade(userId: ID!, courseId: ID!, lessonId: String, score: Int!, feedback: String): User
     promoteStudent(userId: ID!, academicStatus: String!, level: Int): User
     
@@ -585,7 +631,10 @@ export const typeDefs = `#graphql
       deadline: String
       team: [TeamMemberInput]
       tasks: [TaskInput]
+      documentation: DocumentationInput
+      mentorIds: [ID]
     ): Project
+    sendMessageToProject(projectId: ID!, content: String!): Message
     updateProject(
       id: ID!
       title: String
@@ -599,8 +648,10 @@ export const typeDefs = `#graphql
       feedback: String
       team: [TeamMemberInput]
       tasks: [TaskInput]
+      documentation: DocumentationInput
       description: String
       submissionUrl: String
+      mentorIds: [ID]
     ): Project
     deleteProject(id: ID!): Boolean
     submitProject(id: ID!, submissionUrl: String!): Project
@@ -643,6 +694,13 @@ export const typeDefs = `#graphql
       milestones: [MilestoneInput]
       tasks: [InternshipTaskInput]
       meetings: [MeetingInput]
+      academicSchool: String
+      academicLevel: String
+      previousLanguages: String
+      skills: String
+      phoneNumber: String
+      portfolioUrl: String
+      mentorIds: [ID]
     ): Internship
     updateInternship(
       id: ID!
@@ -663,15 +721,25 @@ export const typeDefs = `#graphql
       milestones: [MilestoneInput]
       tasks: [InternshipTaskInput]
       meetings: [MeetingInput]
+      academicSchool: String
+      academicLevel: String
+      previousLanguages: String
+      skills: String
+      phoneNumber: String
+      portfolioUrl: String
+      mentorIds: [ID]
     ): Internship
     deleteInternship(id: ID!): Boolean
     applyForInternship(internshipId: ID!): Internship
-    promoteIntern(id: ID, groupId: String, cohort: String, targetStage: Int): Boolean
+    promoteIntern(internshipIds: [ID!], targetStage: Int!): Boolean
     updateInternshipPayment(id: ID!, status: String!, paidAt: String): Internship
     payForCourse(courseId: ID!, amount: Float!, paymentMethod: String!): Course
     addInternshipTask(internshipId: ID!, title: String!, priority: String): Internship
     addBatchTask(internshipIds: [ID!], stage: Int, cohort: String, title: String!, priority: String): Boolean
     updateTheme(primaryColor: String, mode: String, lightBg: String, darkBg: String): User
     updateInternshipTask(internshipId: ID!, taskId: ID!, status: String!): Internship
+    updateTaskProgress(projectId: ID!, taskId: String!, completed: Boolean!): Project
+    approveProjectTask(projectId: ID!, taskId: String!, approved: Boolean!, feedback: String): Project
+    assignGroupProject(internshipIds: [ID!], title: String!, description: String!, repoUrl: String, deadline: String, mentorIds: [ID!]): Project
   }
 `;

@@ -15,6 +15,13 @@ export interface IInternship extends Document {
   completedStages: string[];
   projects: mongoose.Types.ObjectId[];
   mentorId?: mongoose.Types.ObjectId;
+  mentors: mongoose.Types.ObjectId[];
+  academicSchool?: string;
+  academicLevel?: string;
+  previousLanguages?: string;
+  skills?: string;
+  phoneNumber?: string;
+  portfolioUrl?: string;
   payment: {
     amount: number;
     currency: string;
@@ -54,9 +61,9 @@ const InternshipSchema: Schema = new Schema(
     endDate: { type: Date },
     duration: { type: String, required: true },
     type: { type: String, required: true, enum: ['Online', 'Hybrid', 'On-site', 'Remote'], default: 'Online' },
-    status: { 
-      type: String, 
-      required: true, 
+    status: {
+      type: String,
+      required: true,
       enum: ['not_eligible', 'eligible', 'enrolled', 'in_progress', 'completed', 'graduated'],
       default: 'not_eligible'
     },
@@ -65,6 +72,13 @@ const InternshipSchema: Schema = new Schema(
     completedStages: [{ type: String }],
     projects: [{ type: Schema.Types.ObjectId, ref: 'Project' }],
     mentorId: { type: Schema.Types.ObjectId, ref: 'User' },
+    mentors: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    academicSchool: { type: String },
+    academicLevel: { type: String },
+    previousLanguages: { type: String },
+    skills: { type: String },
+    phoneNumber: { type: String },
+    portfolioUrl: { type: String },
     payment: {
       amount: { type: Number, required: true },
       currency: { type: String, default: 'RWF' },
