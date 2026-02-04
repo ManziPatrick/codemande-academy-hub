@@ -13,10 +13,14 @@ import {
   Calendar,
   Share2,
 } from "lucide-react";
-import { ShareCertificateDialog } from "@/components/portal/dialogs";
+import { ShareCertificateDialog, ViewCertificateDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { useQuery } from "@apollo/client/react";
 import { GET_MY_CERTIFICATES } from "@/lib/graphql/queries";
+
+interface MyCertificatesData {
+  myCertificates: Certificate[];
+}
 
 interface Certificate {
   id: string;
@@ -40,20 +44,26 @@ export default function StudentCertificates() {
     completedDate: string;
     credentialId: string;
   } | null>(null);
+  const [selectedCertificate, setSelectedCertificate] = useState<any | null>(null);
 
   // Fetch certificates from GraphQL
-  const { data, loading, error } = useQuery(GET_MY_CERTIFICATES);
+  const { data, loading, error } = useQuery<MyCertificatesData>(GET_MY_CERTIFICATES);
   const certificates: Certificate[] = data?.myCertificates || [];
 
   const issuedCerts = certificates.filter((c) => c.status === "issued");
   const inProgressCerts = certificates.filter((c) => c.status === "in_progress");
 
   const handleDownload = (cert: Certificate) => {
-    toast.success(`Downloading certificate for ${cert.courseTitle}...`);
-    // Simulate download
-    setTimeout(() => {
-      toast.success("Certificate downloaded successfully!");
-    }, 1000);
+    if (cert.issueDate) {
+        setSelectedCertificate({
+            id: cert.id,
+            courseTitle: cert.courseTitle,
+            issueDate: cert.issueDate,
+            credentialId: cert.credentialId || 'PENDING'
+        });
+    } else {
+        toast.error("Certificate not yet available for download");
+    }
   };
 
   const handleViewOnline = (cert: Certificate) => {
@@ -259,6 +269,11 @@ export default function StudentCertificates() {
         open={!!shareCertificate}
         onOpenChange={(open) => !open && setShareCertificate(null)}
         certificate={shareCertificate}
+      />
+      <ViewCertificateDialog
+        open={!!selectedCertificate}
+        onOpenChange={(open) => !open && setSelectedCertificate(null)}
+        certificate={selectedCertificate}
       />
     </PortalLayout>
   );

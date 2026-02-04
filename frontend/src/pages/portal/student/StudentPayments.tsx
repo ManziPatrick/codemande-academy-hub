@@ -17,6 +17,7 @@ import {
 import { useQuery } from "@apollo/client/react";
 import { GET_MY_PAYMENTS } from "@/lib/graphql/queries";
 import { Input } from "@/components/ui/input";
+import { ViewReceiptDialog } from "@/components/portal/dialogs";
 
 const statusColors: Record<string, string> = {
   completed: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -32,6 +33,7 @@ const statusIcons: Record<string, React.ElementType> = {
 
 export default function StudentPayments() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
   const { data, loading } = useQuery(GET_MY_PAYMENTS);
 
   const payments = (data as any)?.myPayments || [];
@@ -143,7 +145,12 @@ export default function StudentPayments() {
                               </Badge>
                             </td>
                             <td className="p-4 text-right">
-                              <Button variant="ghost" size="sm" className="h-8 text-xs font-bold hover:bg-gold/10 hover:text-gold">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 text-xs font-bold hover:bg-gold/10 hover:text-gold"
+                                onClick={() => setSelectedPayment(payment)}
+                              >
                                 <Download className="w-3.5 h-3.5 mr-1.5" />
                                 Receipt
                               </Button>
@@ -210,6 +217,11 @@ export default function StudentPayments() {
           </div>
         </div>
       </div>
+      <ViewReceiptDialog
+        open={!!selectedPayment}
+        onOpenChange={(open) => !open && setSelectedPayment(null)}
+        payment={selectedPayment}
+      />
     </PortalLayout>
   );
 }

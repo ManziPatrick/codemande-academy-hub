@@ -8,7 +8,8 @@
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "seed": "ts-node src/seed.ts"
+    "seed": "ts-node src/seed.ts",
+    "seed:internship": "ts-node src/seedInternship.ts"
   },
   "keywords": [],
   "author": "",
@@ -16,7 +17,10 @@
   "type": "commonjs",
   "dependencies": {
     "@apollo/server": "^4.12.2",
+    "@openrouter/sdk": "^0.5.1",
     "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^7.0.9",
+    "@types/pdfkit": "^0.17.4",
     "axios": "^1.13.4",
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
@@ -27,7 +31,10 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
     "node-cron": "^4.2.1",
-    "socket.io": "^4.8.3"
+    "nodemailer": "^8.0.0",
+    "pdfkit": "^0.17.2",
+    "socket.io": "^4.8.3",
+    "stripe": "^20.3.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

@@ -345,7 +345,7 @@ export default function StudentSupport() {
                   <Input placeholder="Search messages..." className="pl-9 h-9" />
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {conversations.length === 0 ? (
                   <div className="p-8 text-center">
                     <MessageSquare className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-20" />
@@ -413,7 +413,7 @@ export default function StudentSupport() {
                   {/* Messages */}
                   <div 
                     ref={scrollRef}
-                    className="flex-1 overflow-y-auto p-4 space-y-4"
+                    className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"
                   >
                     {messages.map((msg: any) => {
                       const isMe = msg.sender.id === currentUser?.id;

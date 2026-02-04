@@ -11,8 +11,28 @@ import { Certificate } from '../models/Certificate';
 import { Internship } from '../models/Internship';
 import { CourseProgress } from '../models/CourseProgress';
 import { Payment } from '../models/Payment';
+import { InternshipProgram } from '../models/internship/InternshipProgram';
+import { InternshipApplication } from '../models/internship/InternshipApplication';
+import { InternshipProject } from '../models/internship/InternshipProject';
+import { InternshipTeam } from '../models/internship/Team';
+import { InternshipTeamMember } from '../models/internship/TeamMember';
+import { InternshipMilestone } from '../models/internship/Milestone';
+import { InternshipSubmission } from '../models/internship/Submission';
+import { InternshipTimeLog } from '../models/internship/TimeLog';
+import { InternshipMentorFeedback } from '../models/internship/MentorFeedback';
+import { InternshipActivityLog } from '../models/internship/ActivityLog';
+import { StudentProfile } from '../models/StudentProfile';
+import { InternshipPayment } from '../models/internship/Payment';
+import { InternshipInvoice } from '../models/internship/Invoice';
+import { InternshipCertificate } from '../models/internship/Certificate';
+import { logActivity } from '../services/audit.service';
+import { sendNotification, broadcastToTeam } from '../services/notification.service';
+import { createPaymentIntent, createCheckoutSession, confirmPayment, refundPayment } from '../services/stripe.service';
+import { sendApplicationConfirmation, sendApplicationStatusUpdate, sendPaymentConfirmation, sendCertificateIssued, sendFeedbackNotification } from '../services/email.service';
+import { generateCertificatePDF, generateInvoicePDF } from '../services/pdf.service';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { chatWithAIService } from '../services/ai.service';
 
 export const resolvers = {
   Query: {
@@ -580,8 +600,145 @@ export const resolvers = {
         portalTitle: portalTitle?.value || brandingVal.portalTitle || defaults.portalTitle,
       };
     },
+    // Internship Module Queries
+    internshipPrograms: async () => await InternshipProgram.find({ isDeleted: false }),
+    internshipProgram: async (_: any, { id }: { id: string }) => await InternshipProgram.findById(id),
+    internshipApplications: async (_: any, { programId, status }: { programId?: string, status?: string }, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const query: any = { isDeleted: false };
+      if (programId) query.internshipProgramId = programId;
+      if (status) query.status = status;
+      return await InternshipApplication.find(query).sort({ createdAt: -1 });
+    },
+    myInternshipApplications: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      return await InternshipApplication.find({ userId: context.user.id, isDeleted: false }).sort({ createdAt: -1 });
+    },
+    internshipProject: async (_: any, { id }: { id: string }) => await InternshipProject.findById(id),
+    internshipTeams: async (_: any, { programId }: { programId?: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const query: any = { isDeleted: false };
+      if (programId) query.internshipProgramId = programId;
+      if (['admin', 'super_admin'].includes(context.user.role)) {
+        return await InternshipTeam.find(query);
+      } else if (context.user.role === 'trainer') {
+        query.mentorId = context.user.id;
+        return await InternshipTeam.find(query);
+      }
+      throw new Error('Unauthorized');
+    },
+    myInternshipTeam: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const membership = await InternshipTeamMember.findOne({ userId: context.user.id, isDeleted: false });
+      if (!membership) return null;
+      return await InternshipTeam.findById(membership.teamId);
+    },
+    internshipSubmissions: async (_: any, { teamId }: { teamId: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const team = await InternshipTeam.findById(teamId);
+      if (!team) throw new Error('Team not found');
+      const isMember = await InternshipTeamMember.findOne({ teamId, userId: context.user.id, isDeleted: false });
+      const isAdmin = ['admin', 'super_admin'].includes(context.user.role);
+      const isMentor = team.mentorId?.toString() === context.user.id;
+      if (!isMember && !isAdmin && !isMentor) throw new Error('Unauthorized');
+      return await InternshipSubmission.find({ teamId, isDeleted: false }).sort({ createdAt: -1 });
+    },
+    internshipTimeLogs: async (_: any, { teamId, userId }: { teamId: string, userId?: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const query: any = { teamId, isDeleted: false };
+      if (userId) query.userId = userId;
+      return await InternshipTimeLog.find(query).sort({ date: -1 });
+    },
+    internshipActivityLogs: async (_: any, { programId }: { programId?: string }, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      return await InternshipActivityLog.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(100);
+    },
+
+    // Student Profile Queries
+    myStudentProfile: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      return await StudentProfile.findOne({ userId: context.user.id });
+    },
+    studentProfile: async (_: any, { userId }: { userId: string }, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      return await StudentProfile.findOne({ userId });
+    },
+    studentProfiles: async (_: any, __: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      return await StudentProfile.find({});
+    },
+
+    // Payment Queries
+    internshipPayments: async (_: any, { programId, status }: { programId?: string, status?: string }, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const query: any = { isDeleted: false };
+      if (programId) query.internshipProgramId = programId;
+      if (status) query.status = status;
+      return await InternshipPayment.find(query).sort({ createdAt: -1 });
+    },
+    myInternshipPayments: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      return await InternshipPayment.find({ userId: context.user.id, isDeleted: false }).sort({ createdAt: -1 });
+    },
+    internshipPayment: async (_: any, { id }: { id: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const payment = await InternshipPayment.findById(id);
+      if (!payment) throw new Error('Payment not found');
+      // Allow access to own payment or admin
+      if (payment.userId.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Unauthorized');
+      }
+      return payment;
+    },
+
+    // Invoice Queries
+    internshipInvoices: async (_: any, { userId }: { userId?: string }, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const query: any = { isDeleted: false };
+      if (userId) query.userId = userId;
+      return await InternshipInvoice.find(query).sort({ issuedAt: -1 });
+    },
+    internshipInvoice: async (_: any, { id }: { id: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const invoice = await InternshipInvoice.findById(id);
+      if (!invoice) throw new Error('Invoice not found');
+      if (invoice.userId.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Unauthorized');
+      }
+      return invoice;
+    },
+
+    // Certificate Queries
+    internshipCertificates: async (_: any, { programId }: { programId?: string }, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const query: any = { isDeleted: false };
+      if (programId) query.internshipProgramId = programId;
+      return await InternshipCertificate.find(query).sort({ issuedAt: -1 });
+    },
+    myInternshipCertificates: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      return await InternshipCertificate.find({ userId: context.user.id, isDeleted: false, isRevoked: false }).sort({ issuedAt: -1 });
+    },
+    internshipCertificate: async (_: any, { id }: { id: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const cert = await InternshipCertificate.findById(id);
+      if (!cert) throw new Error('Certificate not found');
+      if (cert.userId.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Unauthorized');
+      }
+      return cert;
+    },
+    verifyCertificate: async (_: any, { certificateNumber }: { certificateNumber: string }) => {
+      const cert = await InternshipCertificate.findOne({ certificateNumber, isDeleted: false });
+      if (!cert) throw new Error('Certificate not found');
+      if (cert.isRevoked) throw new Error('Certificate has been revoked');
+      return cert;
+    },
   },
   Mutation: {
+    chatWithAI: async (_: any, { message }: { message: string }, context: any) => {
+      return await chatWithAIService(message, context.user);
+    },
     enroll: async (_: any, { courseId }: { courseId: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
 
@@ -1770,6 +1927,773 @@ export const resolvers = {
       await project.save();
       return project;
     },
+
+    // --- Internship Module Mutations (Group 1: Programs, Applications, Projects) ---
+
+    createInternshipProgram: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const program = new InternshipProgram(args);
+      await program.save();
+      await logActivity(context.user.id, 'CREATE', 'InternshipProgram', program.id, `Created program: ${program.title}`);
+      return program;
+    },
+
+    updateInternshipProgram: async (_: any, { id, ...args }: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const program = await InternshipProgram.findByIdAndUpdate(id, args, { new: true });
+      if (!program) throw new Error('Program not found');
+      await logActivity(context.user.id, 'UPDATE', 'InternshipProgram', id, `Updated program: ${program.title}`);
+      return program;
+    },
+
+    deleteInternshipProgram: async (_: any, { id }: { id: string }, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const program = await InternshipProgram.findById(id);
+      if (!program) throw new Error('Program not found');
+      program.isDeleted = true;
+      await program.save();
+      await logActivity(context.user.id, 'DELETE', 'InternshipProgram', id, `Soft deleted program: ${program.title}`);
+      return true;
+    },
+
+    applyToInternshipProgram: async (_: any, args: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const program = await InternshipProgram.findById(args.internshipProgramId);
+      if (!program || program.status !== 'active' || program.isDeleted) throw new Error('Internship program is not available for applications');
+      
+      const application = new InternshipApplication({
+        ...args,
+        userId: context.user.id,
+        status: 'pending'
+      });
+      await application.save();
+      await logActivity(context.user.id, 'APPLY', 'InternshipApplication', application.id, `Applied to program: ${program.title}`);
+      return application;
+    },
+
+    reviewInternshipApplication: async (_: any, { id, status, rejectionReason }: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const application = await InternshipApplication.findById(id).populate('userId internshipProgramId');
+      if (!application) throw new Error('Application not found');
+      
+      application.status = status;
+      if (rejectionReason) application.rejectionReason = rejectionReason;
+      await application.save();
+      
+      await logActivity(context.user.id, 'REVIEW', 'InternshipApplication', id, `Reviewed application status to: ${status}`);
+      
+      // Notify via Socket
+      sendNotification(application.userId.toString(), {
+        type: 'INTERNSHIP_APPLICATION_STATUS',
+        status,
+        applicationId: id,
+        message: `Your internship application status has been updated to: ${status}`
+      });
+
+      // Notify via Email
+      try {
+        const user = application.userId as any;
+        const program = application.internshipProgramId as any;
+        if (user.email) {
+          await sendApplicationStatusUpdate(
+            user.email,
+            user.fullName || user.username || 'Student',
+            program.title,
+            status as any,
+            rejectionReason || undefined
+          );
+        }
+      } catch (emailError) {
+        console.error('Failed to send status update email:', emailError);
+      }
+
+      return application;
+    },
+
+    createInternshipProject: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const { minTeamSize, maxTeamSize, ...rest } = args;
+      const project = new InternshipProject({
+        ...rest,
+        teamSizeRange: { min: minTeamSize, max: maxTeamSize }
+      });
+      await project.save();
+      await logActivity(context.user.id, 'CREATE', 'InternshipProject', project.id, `Created project: ${project.title}`);
+      return project;
+    },
+
+    updateInternshipProject: async (_: any, { id, minTeamSize, maxTeamSize, ...args }: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const updateData: any = { ...args };
+      if (minTeamSize !== undefined || maxTeamSize !== undefined) {
+        updateData.teamSizeRange = {
+          min: minTeamSize,
+          max: maxTeamSize
+        };
+      }
+      const project = await InternshipProject.findByIdAndUpdate(id, updateData, { new: true });
+      if (!project) throw new Error('Project not found');
+      await logActivity(context.user.id, 'UPDATE', 'InternshipProject', id, `Updated project: ${project.title}`);
+      return project;
+    },
+
+    deleteInternshipProject: async (_: any, { id }: { id: string }, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const project = await InternshipProject.findById(id);
+      if (!project) throw new Error('Project not found');
+      project.isDeleted = true;
+      await project.save();
+      await logActivity(context.user.id, 'DELETE', 'InternshipProject', id, `Soft deleted project: ${project.title}`);
+      return true;
+    },
+
+    // --- Internship Module Mutations (Group 2: Teams, Milestones) ---
+
+    createInternshipTeam: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const team = new InternshipTeam(args);
+      await team.save();
+      await logActivity(context.user.id, 'CREATE', 'InternshipTeam', team.id, `Created team: ${team.name}`);
+      return team;
+    },
+
+    updateInternshipTeam: async (_: any, { id, ...args }: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const team = await InternshipTeam.findById(id);
+      if (!team) throw new Error('Team not found');
+      
+      // Verification for mentors
+      if (context.user.role === 'trainer' && team.mentorId?.toString() !== context.user.id) throw new Error('Unauthorized');
+
+      Object.assign(team, args);
+      await team.save();
+      await logActivity(context.user.id, 'UPDATE', 'InternshipTeam', id, `Updated team: ${team.name}`);
+      return team;
+    },
+
+    addInternToTeam: async (_: any, { teamId, userId, role }: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const membership = new InternshipTeamMember({ teamId, userId, role });
+      await membership.save();
+      
+      await logActivity(context.user.id, 'ADD_MEMBER', 'InternshipTeam', teamId, `Added intern ${userId} to team`);
+      
+      // Notify intern
+      sendNotification(userId.toString(), {
+        type: 'TEAM_ASSIGNMENT',
+        teamId,
+        message: `You have been assigned to a new internship team.`
+      });
+      
+      return membership;
+    },
+
+    removeInternFromTeam: async (_: any, { teamMemberId }: { teamMemberId: string }, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const membership = await InternshipTeamMember.findById(teamMemberId);
+      if (!membership) throw new Error('Membership not found');
+      
+      membership.isDeleted = true;
+      await membership.save();
+      
+      await logActivity(context.user.id, 'REMOVE_MEMBER', 'InternshipTeam', membership.teamId.toString(), `Removed intern ${membership.userId} from team`);
+      return true;
+    },
+
+    createInternshipMilestone: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const milestone = new InternshipMilestone(args);
+      await milestone.save();
+      await logActivity(context.user.id, 'CREATE', 'InternshipMilestone', milestone.id, `Created milestone: ${milestone.title}`);
+      return milestone;
+    },
+
+    // --- Internship Module Mutations (Group 3: Submissions, Feedback, TimeLogs) ---
+
+    submitInternshipWork: async (_: any, args: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const submission = new InternshipSubmission({
+        ...args,
+        userId: context.user.id,
+        status: 'pending'
+      });
+      await submission.save();
+      
+      await logActivity(context.user.id, 'SUBMIT_WORK', 'InternshipSubmission', submission.id, `Submitted work for milestone ${args.milestoneId}`);
+      
+      // Notify team and mentor
+      const team = await InternshipTeam.findById(args.teamId);
+      if (team && team.mentorId) {
+        sendNotification(team.mentorId.toString(), {
+          type: 'NEW_SUBMISSION',
+          teamId: args.teamId,
+          submissionId: submission.id,
+          message: `New submission from team ${team.name}`
+        });
+      }
+      
+      return submission;
+    },
+
+    reviewInternshipSubmission: async (_: any, { id, status, feedback }: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const submission = await InternshipSubmission.findById(id);
+      if (!submission) throw new Error('Submission not found');
+      
+      submission.status = status;
+      submission.feedback = feedback;
+      await submission.save();
+      
+      await logActivity(context.user.id, 'REVIEW_WORK', 'InternshipSubmission', id, `Reviewed submission status to: ${status}`);
+      
+      // Notify team member who submitted
+      sendNotification(submission.userId.toString(), {
+        type: 'SUBMISSION_REVIEWED',
+        status,
+        submissionId: id,
+        message: `Your project submission has been reviewed: ${status}`
+      });
+      
+      return submission;
+    },
+
+    logInternshipTime: async (_: any, args: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const log = new InternshipTimeLog({
+        ...args,
+        userId: context.user.id
+      });
+      await log.save();
+      await logActivity(context.user.id, 'LOG_TIME', 'InternshipTimeLog', log.id, `Logged ${args.minutes} minutes for team ${args.teamId}`);
+      return log;
+    },
+
+    submitMentorFeedback: async (_: any, args: any, context: any) => {
+      if (context.user?.role !== 'trainer' && !['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const feedback = new InternshipMentorFeedback({
+        ...args,
+        mentorId: context.user.id
+      });
+      await feedback.save();
+      await logActivity(context.user.id, 'SUBMIT_FEEDBACK', 'InternshipMentorFeedback', feedback.id, `Submitted feedback for intern ${args.userId}`);
+      
+      // Notify student
+      sendNotification(args.userId.toString(), {
+        type: 'NEW_MENTOR_FEEDBACK',
+        mentorId: context.user.id,
+        message: `Your mentor has provided new feedback on your performance.`
+      });
+      
+      return feedback;
+    },
+
+    // ========== STUDENT PROFILE MUTATIONS ==========
+    createStudentProfile: async (_: any, args: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      // Check if profile already exists
+      const existing = await StudentProfile.findOne({ userId: context.user.id });
+      if (existing) throw new Error('Profile already exists. Use updateStudentProfile instead.');
+      
+      const profile = new StudentProfile({
+        userId: context.user.id,
+        ...args
+      });
+      await profile.save();
+      await logActivity(context.user.id, 'CREATE', 'StudentProfile', profile.id, 'Created student profile');
+      return profile;
+    },
+
+    updateStudentProfile: async (_: any, args: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      const profile = await StudentProfile.findOne({ userId: context.user.id });
+      if (!profile) throw new Error('Profile not found. Create one first.');
+      
+      Object.assign(profile, args);
+      await profile.save();
+      await logActivity(context.user.id, 'UPDATE', 'StudentProfile', profile.id, 'Updated student profile');
+      return profile;
+    },
+
+    validateProfileForInternship: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      const profile = await StudentProfile.findOne({ userId: context.user.id });
+      
+      const requiredFields = ['school', 'educationLevel', 'fieldOfStudy', 'skills', 'availability'];
+      const missingFields: string[] = [];
+      
+      if (!profile) {
+        return {
+          isValid: false,
+          missingFields: requiredFields,
+          completionPercentage: 0,
+          message: 'No profile found. Please create your student profile first.'
+        };
+      }
+      
+      requiredFields.forEach(field => {
+        const value = (profile as any)[field];
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+          missingFields.push(field);
+        }
+      });
+      
+      return {
+        isValid: missingFields.length === 0,
+        missingFields,
+        completionPercentage: profile.completionPercentage,
+        message: missingFields.length === 0 
+          ? 'Profile is complete. You can apply for internships.' 
+          : `Please complete the following fields: ${missingFields.join(', ')}`
+      };
+    },
+
+    // Enhanced application with profile validation
+    applyToInternshipWithValidation: async (_: any, args: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      // Check profile completion
+      const profile = await StudentProfile.findOne({ userId: context.user.id });
+      if (!profile || !profile.isComplete) {
+        throw new Error('PROFILE_INCOMPLETE: Please complete your student profile before applying. Required: school, education level, field of study, skills, and availability.');
+      }
+      
+      // Check if already applied
+      const existingApp = await InternshipApplication.findOne({
+        userId: context.user.id,
+        internshipProgramId: args.internshipProgramId,
+        isDeleted: false
+      });
+      if (existingApp) throw new Error('You have already applied to this program.');
+      
+      // Check if program is open for applications
+      const program = await InternshipProgram.findById(args.internshipProgramId);
+      if (!program || program.isDeleted) throw new Error('Program not found.');
+      if (program.status !== 'active') throw new Error('This program is not accepting applications.');
+      if (new Date() > new Date(program.applicationDeadline)) throw new Error('Application deadline has passed.');
+      
+      // Create application
+      const application = new InternshipApplication({
+        userId: context.user.id,
+        internshipProgramId: args.internshipProgramId,
+        skills: args.skills,
+        availability: args.availability,
+        portfolioUrl: args.portfolioUrl,
+        status: 'pending'
+      });
+      await application.save();
+      await logActivity(context.user.id, 'APPLY', 'InternshipApplication', application.id, `Applied to program: ${program.title}`);
+      
+      return application;
+    },
+
+    // ========== PAYMENT MUTATIONS ==========
+    createInternshipPayment: async (_: any, args: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      // Check if payment already exists
+      const existing = await InternshipPayment.findOne({
+        userId: context.user.id,
+        internshipProgramId: args.internshipProgramId,
+        isDeleted: false
+      });
+      if (existing) throw new Error('Payment record already exists for this program.');
+      
+      const program = await InternshipProgram.findById(args.internshipProgramId);
+      if (!program) throw new Error('Program not found.');
+      
+      const payment = new InternshipPayment({
+        userId: context.user.id,
+        internshipProgramId: args.internshipProgramId,
+        amount: args.amount,
+        currency: args.currency || 'RWF',
+        status: 'pending'
+      });
+      await payment.save();
+      await logActivity(context.user.id, 'CREATE', 'InternshipPayment', payment.id, `Created payment for ${program.title}`);
+      
+      return payment;
+    },
+
+    processInternshipPayment: async (_: any, args: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      const payment = await InternshipPayment.findById(args.paymentId);
+      if (!payment) throw new Error('Payment not found.');
+      if (payment.userId.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Unauthorized');
+      }
+      if (payment.status !== 'pending') throw new Error(`Payment cannot be processed. Current status: ${payment.status}`);
+      
+      payment.status = 'paid';
+      payment.transactionId = args.transactionId;
+      payment.paymentMethod = args.paymentMethod;
+      payment.paidAt = new Date();
+      await payment.save();
+      
+      await logActivity(context.user.id, 'UPDATE', 'InternshipPayment', payment.id, `Payment processed: ${args.transactionId}`);
+      
+      // Notify admin
+      sendNotification('admin', {
+        type: 'PAYMENT_RECEIVED',
+        userId: payment.userId.toString(),
+        amount: payment.amount,
+        currency: payment.currency,
+        message: `New internship payment received`
+      });
+      
+      return payment;
+    },
+
+    waiveInternshipPayment: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      
+      const payment = await InternshipPayment.findById(args.paymentId);
+      if (!payment) throw new Error('Payment not found.');
+      if (payment.status !== 'pending') throw new Error(`Cannot waive payment. Current status: ${payment.status}`);
+      
+      payment.status = 'waived';
+      payment.waivedBy = context.user.id;
+      payment.waivedReason = args.reason;
+      await payment.save();
+      
+      await logActivity(context.user.id, 'WAIVE', 'InternshipPayment', payment.id, `Payment waived: ${args.reason}`);
+      
+      // Notify student
+      sendNotification(payment.userId.toString(), {
+        type: 'PAYMENT_WAIVED',
+        message: `Your internship payment has been waived. You can now proceed with the program.`
+      });
+      
+      return payment;
+    },
+
+    refundInternshipPayment: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      
+      const payment = await InternshipPayment.findById(args.paymentId);
+      if (!payment) throw new Error('Payment not found.');
+      if (payment.status !== 'paid') throw new Error(`Cannot refund. Current status: ${payment.status}`);
+      
+      payment.status = 'refunded';
+      payment.notes = args.reason;
+      await payment.save();
+      
+      await logActivity(context.user.id, 'REFUND', 'InternshipPayment', payment.id, `Payment refunded: ${args.reason}`);
+      
+      // Notify student
+      sendNotification(payment.userId.toString(), {
+        type: 'PAYMENT_REFUNDED',
+        amount: payment.amount,
+        currency: payment.currency,
+        message: `Your internship payment has been refunded.`
+      });
+      
+      return payment;
+    },
+
+    // ========== INVOICE MUTATIONS ==========
+    generateInternshipInvoice: async (_: any, { paymentId }: { paymentId: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      const payment = await InternshipPayment.findById(paymentId);
+      if (!payment) throw new Error('Payment not found.');
+      if (payment.userId.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user?.role)) {
+        throw new Error('Unauthorized');
+      }
+      
+      // Check if invoice already exists
+      const existing = await InternshipInvoice.findOne({ paymentId, isDeleted: false });
+      if (existing) return existing;
+      
+      const program = await InternshipProgram.findById(payment.internshipProgramId);
+      
+      const invoice = new InternshipInvoice({
+        paymentId,
+        userId: payment.userId,
+        internshipProgramId: payment.internshipProgramId,
+        amount: payment.amount,
+        currency: payment.currency,
+        issuedAt: new Date(),
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        status: 'issued',
+        items: [{
+          description: `Internship Program: ${program?.title || 'Unknown'}`,
+          quantity: 1,
+          unitPrice: payment.amount,
+          total: payment.amount
+        }]
+      });
+      await invoice.save();
+      
+      // Update payment with invoice reference
+      payment.invoiceId = invoice.id as any;
+      await payment.save();
+      
+      await logActivity(context.user.id, 'CREATE', 'InternshipInvoice', invoice.id, `Generated invoice: ${invoice.invoiceNumber}`);
+      
+      return invoice;
+    },
+
+    // ========== CERTIFICATE MUTATIONS ==========
+    checkCertificateEligibility: async (_: any, { teamId }: { teamId: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      // Get team and project info
+      const team = await InternshipTeam.findById(teamId);
+      if (!team) throw new Error('Team not found.');
+      
+      // Check if user is member of team
+      const membership = await InternshipTeamMember.findOne({
+        teamId,
+        userId: context.user.id,
+        isDeleted: false
+      });
+      if (!membership && context.user.role !== 'admin') throw new Error('You are not a member of this team.');
+      
+      // 1. Check all milestones completed
+      const project = await InternshipProject.findById(team.internshipProjectId);
+      const milestones = await InternshipMilestone.find({ internshipProjectId: project?.id, isDeleted: false });
+      const submissions = await InternshipSubmission.find({ teamId, userId: context.user.id, status: 'approved', isDeleted: false });
+      const completedMilestoneIds = submissions.map((s: any) => s.milestoneId.toString());
+      const allMilestonesCompleted = milestones.every((m: any) => completedMilestoneIds.includes(m.id.toString()));
+      
+      // 2. Check trainer approval
+      const feedback = await InternshipMentorFeedback.findOne({
+        userId: context.user.id,
+        teamId,
+        isDeleted: false
+      });
+      const trainerApproved = feedback && (feedback as any).score >= 70;
+      
+      // 3. Check payment status
+      const payment = await InternshipPayment.findOne({
+        userId: context.user.id,
+        internshipProgramId: team.internshipProgramId,
+        isDeleted: false
+      });
+      const program = await InternshipProgram.findById(team.internshipProgramId) as any; // Cast so we can access price
+      const isFreeProgram = !program?.price || program.price === 0;
+      const paymentConfirmed = isFreeProgram || (payment && ['paid', 'waived'].includes(payment.status));
+      
+      const isEligible = allMilestonesCompleted && trainerApproved && paymentConfirmed;
+      
+      let message = isEligible
+        ? 'You are eligible for certification!'
+        : 'You are not yet eligible for certification.';
+      
+      if (!allMilestonesCompleted) message += ' Complete all milestones.';
+      if (!trainerApproved) message += ' Obtain trainer approval.';
+      if (!paymentConfirmed) message += ' Confirm payment.';
+      
+      return {
+        isEligible,
+        milestonesCompleted: allMilestonesCompleted,
+        trainerApproved: !!trainerApproved,
+        paymentConfirmed: !!paymentConfirmed,
+        message
+      };
+    },
+
+    generateInternshipCertificate: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      
+      const { userId, teamId, trainerId } = args;
+      
+      // Check eligibility first
+      const team = await InternshipTeam.findById(teamId);
+      if (!team) throw new Error('Team not found.');
+      
+      const program = await InternshipProgram.findById(team.internshipProgramId);
+      if (!program) throw new Error('Program not found.');
+      
+      const trainer = await User.findById(trainerId);
+      if (!trainer) throw new Error('Trainer not found.');
+      
+      const user = await User.findById(userId);
+      if (!user) throw new Error('User not found.');
+      
+      // Check if certificate already exists
+      const existing = await InternshipCertificate.findOne({
+        userId,
+        internshipProgramId: team.internshipProgramId,
+        isDeleted: false
+      });
+      if (existing) throw new Error('Certificate already exists for this user and program.');
+      
+      // Get completion metadata
+      const milestones = await InternshipMilestone.find({ internshipProjectId: team.internshipProjectId, isDeleted: false });
+      const submissions = await InternshipSubmission.find({ teamId, userId, status: 'approved', isDeleted: false });
+      const feedback = await InternshipMentorFeedback.findOne({ userId, teamId, isDeleted: false });
+      
+      const certificate = new InternshipCertificate({
+        userId,
+        internshipProgramId: team.internshipProgramId,
+        teamId,
+        trainerId,
+        trainerName: (trainer as any).username || 'Unknown Trainer',
+        internTitle: `${program.title} Intern`,
+        programTitle: program.title,
+        duration: program.duration,
+        startDate: program.startDate,
+        endDate: program.endDate,
+        completionDate: new Date(),
+        issuedAt: new Date(),
+        metadata: {
+          milestonesCompleted: submissions.length,
+          totalMilestones: milestones.length,
+          finalGrade: (feedback as any)?.score ? `${(feedback as any).score}%` : 'N/A',
+          skills: program.eligibility || []
+        }
+      });
+      await certificate.save();
+      
+      await logActivity(context.user.id, 'CREATE', 'InternshipCertificate', certificate.id, `Generated certificate for ${(user as any).username}`);
+      
+      // Notify student
+      sendNotification(userId, {
+        type: 'CERTIFICATE_READY',
+        certificateId: certificate.id,
+        certificateNumber: certificate.certificateNumber,
+        message: `Congratulations! Your certificate for ${program.title} is ready for download.`
+      });
+      
+      return certificate;
+    },
+
+    revokeCertificate: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      
+      const certificate = await InternshipCertificate.findById(args.certificateId);
+      if (!certificate) throw new Error('Certificate not found.');
+      if (certificate.isRevoked) throw new Error('Certificate is already revoked.');
+      
+      certificate.isRevoked = true;
+      certificate.revokedAt = new Date();
+      certificate.revokedBy = context.user.id;
+      certificate.revocationReason = args.reason;
+      await certificate.save();
+      
+      await logActivity(context.user.id, 'REVOKE', 'InternshipCertificate', certificate.id, `Certificate revoked: ${args.reason}`);
+      
+      // Notify student
+      sendNotification(certificate.userId.toString(), {
+        type: 'CERTIFICATE_REVOKED',
+        certificateNumber: certificate.certificateNumber,
+        message: `Your certificate ${certificate.certificateNumber} has been revoked. Reason: ${args.reason}`
+      });
+      
+      return certificate;
+    },
+
+    approveMilestone: async (_: any, args: any, context: any) => {
+      if (context.user?.role !== 'trainer' && !['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      
+      const milestone = await InternshipMilestone.findById(args.milestoneId);
+      if (!milestone) throw new Error('Milestone not found.');
+      
+      // This would typically update submission status rather than milestone itself
+      await logActivity(context.user.id, 'APPROVE', 'InternshipMilestone', milestone.id, `Milestone approved for team ${args.teamId}`);
+      
+      return milestone;
+    },
+
+    approveInternForCertificate: async (_: any, args: any, context: any) => {
+      if (context.user?.role !== 'trainer' && !['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      
+      const { userId, teamId, finalGrade } = args;
+      
+      // Check if feedback already exists
+      let feedback = await InternshipMentorFeedback.findOne({ userId, teamId, mentorId: context.user.id, isDeleted: false });
+      
+      if (feedback) {
+        (feedback as any).score = parseInt(finalGrade) || 100;
+        (feedback as any).comments = 'Approved for certification';
+        await feedback.save();
+      } else {
+        feedback = new InternshipMentorFeedback({
+          mentorId: context.user.id,
+          userId,
+          teamId,
+          score: parseInt(finalGrade) || 100,
+          comments: 'Approved for certification'
+        });
+        await feedback.save();
+      }
+      
+      await logActivity(context.user.id, 'APPROVE', 'InternshipMentorFeedback', (feedback as any).id, `Approved intern ${userId} for certification with grade ${finalGrade}`);
+      
+      // Notify student
+      sendNotification(userId, {
+        type: 'CERTIFICATE_APPROVAL',
+        message: `Your trainer has approved you for certification with grade: ${finalGrade}%`
+      });
+      
+      return feedback;
+    },
+
+    createStripePaymentIntent: async (_: any, { programId }: { programId: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      const program = await InternshipProgram.findById(programId);
+      if (!program) throw new Error('Program not found');
+      
+      const user = await User.findById(context.user.id);
+      if (!user) throw new Error('User not found');
+
+      // Check for existing payment
+      let payment = await InternshipPayment.findOne({ 
+        userId: user.id, 
+        internshipProgramId: (program as any).id || (program as any)._id,
+        isDeleted: { $ne: true }
+      });
+
+      if (payment && payment.status === 'paid') {
+        throw new Error('This program has already been paid for.');
+      }
+
+      const anyUser = user as any;
+      const customerName = anyUser.fullName || anyUser.username || 'Student';
+
+      const result = await createPaymentIntent({
+        amount: program.price, 
+        currency: program.currency || 'RWF',
+        userId: user.id,
+        programId: (program as any).id || (program as any)._id,
+        programTitle: program.title,
+        customerEmail: user.email,
+        customerName
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create payment intent');
+      }
+
+      // Create or update pending payment record
+      if (!payment) {
+        payment = new InternshipPayment({
+          userId: user.id,
+          internshipProgramId: (program as any).id || (program as any)._id,
+          amount: program.price,
+          currency: program.currency || 'RWF',
+          status: 'pending',
+          transactionId: result.paymentIntentId 
+        });
+      } else {
+        payment.transactionId = result.paymentIntentId;
+        payment.amount = program.price;
+      }
+      await payment.save();
+
+      return {
+        clientSecret: result.clientSecret,
+        paymentIntentId: result.paymentIntentId,
+        publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+        paymentId: payment.id
+      };
+    },
   },
   User: {
     id: (parent: any) => parent.id || parent._id || parent.toString(),
@@ -1778,7 +2702,9 @@ export const resolvers = {
         return Math.min((parent.level || 1) * 3 + Math.floor(Math.random() * 3), 100);
       }
       return 0;
-    }
+    },
+    fullName: (parent: any) => parent.fullName || parent.username,
+    studentProfile: async (parent: any) => await StudentProfile.findOne({ userId: parent.id || parent._id })
   },
   Booking: {
     user: async (parent: any) => {
@@ -1854,6 +2780,80 @@ export const resolvers = {
   },
   Lesson: {
     id: (parent: any) => parent.id || parent._id || parent.toString(),
+  },
+  InternshipProgram: {
+    id: (parent: any) => parent.id || parent._id,
+  },
+  InternshipApplication: {
+    id: (parent: any) => parent.id || parent._id,
+    internshipProgram: async (parent: any) => await InternshipProgram.findById(parent.internshipProgramId),
+    user: async (parent: any) => await User.findById(parent.userId),
+    payment: async (parent: any) => await InternshipPayment.findOne({ 
+      userId: parent.userId, 
+      internshipProgramId: parent.internshipProgramId,
+      isDeleted: false
+    }),
+  },
+  InternshipProject: {
+    id: (parent: any) => parent.id || parent._id,
+    internshipProgram: async (parent: any) => await InternshipProgram.findById(parent.internshipProgramId),
+    milestones: async (parent: any) => await InternshipMilestone.find({ internshipProjectId: parent._id, isDeleted: false }).sort({ order: 1 }),
+    teamSizeRange: (parent: any) => parent.teamSizeRange || { min: 1, max: 10 },
+  },
+  InternshipTeam: {
+    id: (parent: any) => parent.id || parent._id,
+    internshipProject: async (parent: any) => await InternshipProject.findById(parent.internshipProjectId),
+    internshipProgram: async (parent: any) => await InternshipProgram.findById(parent.internshipProgramId),
+    mentor: async (parent: any) => await User.findById(parent.mentorId),
+    members: async (parent: any) => await InternshipTeamMember.find({ teamId: parent._id, isDeleted: false }),
+  },
+  InternshipTeamMember: {
+    id: (parent: any) => parent.id || parent._id,
+    user: async (parent: any) => await User.findById(parent.userId),
+  },
+  InternshipSubmission: {
+    id: (parent: any) => parent.id || parent._id,
+    milestone: async (parent: any) => await InternshipMilestone.findById(parent.milestoneId),
+    team: async (parent: any) => await InternshipTeam.findById(parent.teamId),
+    user: async (parent: any) => await User.findById(parent.userId),
+  },
+  InternshipTimeLog: {
+    id: (parent: any) => parent.id || parent._id,
+    user: async (parent: any) => await User.findById(parent.userId),
+  },
+  InternshipMentorFeedback: {
+    id: (parent: any) => parent.id || parent._id,
+    mentor: async (parent: any) => await User.findById(parent.mentorId),
+    user: async (parent: any) => await User.findById(parent.userId),
+  },
+  InternshipActivityLog: {
+    id: (parent: any) => parent.id || parent._id,
+    user: async (parent: any) => await User.findById(parent.userId),
+  },
+  // New Type Resolvers
+  StudentProfile: {
+    id: (parent: any) => parent.id || parent._id,
+    user: async (parent: any) => await User.findById(parent.userId),
+  },
+  InternshipPayment: {
+    id: (parent: any) => parent.id || parent._id,
+    user: async (parent: any) => await User.findById(parent.userId),
+    internshipProgram: async (parent: any) => await InternshipProgram.findById(parent.internshipProgramId),
+    waivedByUser: async (parent: any) => parent.waivedBy ? await User.findById(parent.waivedBy) : null,
+  },
+  InternshipInvoice: {
+    id: (parent: any) => parent.id || parent._id,
+    user: async (parent: any) => await User.findById(parent.userId),
+    internshipProgram: async (parent: any) => await InternshipProgram.findById(parent.internshipProgramId),
+    payment: async (parent: any) => await InternshipPayment.findById(parent.paymentId),
+  },
+  InternshipCertificate: {
+    id: (parent: any) => parent.id || parent._id,
+    user: async (parent: any) => await User.findById(parent.userId),
+    internshipProgram: async (parent: any) => await InternshipProgram.findById(parent.internshipProgramId),
+    team: async (parent: any) => await InternshipTeam.findById(parent.teamId),
+    trainer: async (parent: any) => await User.findById(parent.trainerId),
+    revokedByUser: async (parent: any) => parent.revokedBy ? await User.findById(parent.revokedBy) : null,
   }
 };
 

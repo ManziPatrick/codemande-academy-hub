@@ -23,7 +23,7 @@ import StudentCourses from "@/pages/portal/student/StudentCourses";
 import CourseDetail from "@/pages/portal/student/CourseDetail";
 import StudentProjects from "@/pages/portal/student/StudentProjects";
 import StudentCertificates from "@/pages/portal/student/StudentCertificates";
-import StudentInternship from "@/pages/portal/student/StudentInternship";
+import StudentInternships from "@/pages/portal/student/StudentInternships";
 import StudentSchedule from "@/pages/portal/student/StudentSchedule";
 import StudentSupport from "@/pages/portal/student/StudentSupport";
 import StudentPayments from "@/pages/portal/student/StudentPayments";
@@ -41,6 +41,7 @@ import AdminDashboard from "@/pages/portal/admin/AdminDashboard";
 import AdminUsers from "@/pages/portal/admin/AdminUsers";
 import AdminCourses from "@/pages/portal/admin/AdminCourses";
 import AdminInternships from "@/pages/portal/admin/AdminInternships";
+import AdminProjects from "@/pages/portal/admin/AdminProjects";
 import AdminPayments from "@/pages/portal/admin/AdminPayments";
 import AdminBadges from "@/pages/portal/admin/AdminBadges";
 import AdminAnalytics from "@/pages/portal/admin/AdminAnalytics";
@@ -83,7 +84,7 @@ export function AnimatedRoutes() {
         <Route path="/portal/student/courses/:courseId" element={<ProtectedRoute allowedRoles={["student"]}><CourseDetail /></ProtectedRoute>} />
         <Route path="/portal/student/projects" element={<ProtectedRoute allowedRoles={["student"]}><StudentProjects /></ProtectedRoute>} />
         <Route path="/portal/student/certificates" element={<ProtectedRoute allowedRoles={["student"]}><StudentCertificates /></ProtectedRoute>} />
-        <Route path="/portal/student/internship" element={<ProtectedRoute allowedRoles={["student"]}><StudentInternship /></ProtectedRoute>} />
+        <Route path="/portal/student/internship" element={<ProtectedRoute allowedRoles={["student"]}><StudentInternships /></ProtectedRoute>} />
         <Route path="/portal/student/schedule" element={<ProtectedRoute allowedRoles={["student"]}><StudentSchedule /></ProtectedRoute>} />
         <Route path="/portal/student/support" element={<ProtectedRoute allowedRoles={["student"]}><StudentSupport /></ProtectedRoute>} />
         <Route path="/portal/student/billing" element={<ProtectedRoute allowedRoles={["student"]}><StudentPayments /></ProtectedRoute>} />
@@ -95,12 +96,14 @@ export function AnimatedRoutes() {
         <Route path="/portal/trainer/assignments" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerAssignments /></ProtectedRoute>} />
         <Route path="/portal/trainer/schedule" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerSchedule /></ProtectedRoute>} />
         <Route path="/portal/trainer/mentorship" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerMentorship /></ProtectedRoute>} />
+        <Route path="/portal/trainer/internships" element={<ProtectedRoute allowedRoles={["trainer"]}><AdminInternships /></ProtectedRoute>} />
 
         {/* Admin Portal */}
         <Route path="/portal/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/portal/admin/users" element={<ProtectedRoute allowedRoles={["admin"]}><AdminUsers /></ProtectedRoute>} />
         <Route path="/portal/admin/courses" element={<ProtectedRoute allowedRoles={["admin"]}><AdminCourses /></ProtectedRoute>} />
         <Route path="/portal/admin/internships" element={<ProtectedRoute allowedRoles={["admin"]}><AdminInternships /></ProtectedRoute>} />
+        <Route path="/portal/admin/projects" element={<ProtectedRoute allowedRoles={["admin"]}><AdminProjects /></ProtectedRoute>} />
         <Route path="/portal/admin/payments" element={<ProtectedRoute allowedRoles={["admin"]}><AdminPayments /></ProtectedRoute>} />
         <Route path="/portal/admin/badges" element={<ProtectedRoute allowedRoles={["admin"]}><AdminBadges /></ProtectedRoute>} />
         <Route path="/portal/admin/analytics" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnalytics /></ProtectedRoute>} />

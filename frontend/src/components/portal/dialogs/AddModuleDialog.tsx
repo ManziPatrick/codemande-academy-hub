@@ -88,7 +88,7 @@ export function AddModuleDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-4 sm:px-6 overflow-y-auto">
+        <ScrollArea className="flex-1 px-4 sm:px-6 custom-scrollbar">
           <div className="space-y-4 py-4">
             {/* Module Title */}
           <div>

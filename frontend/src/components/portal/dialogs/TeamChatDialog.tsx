@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, Wifi, WifiOff } from "lucide-react";
-import { useRealtimeChat } from "@/hooks/useRealtimeChat";
+import { useProjectChat } from "@/hooks/useProjectChat";
 import { useAuth } from "@/contexts/AuthContext";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface TeamMember {
   name: string;
@@ -15,20 +16,21 @@ interface TeamMember {
 interface TeamChatDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  projectId: string;
+  conversationId?: string;
   projectTitle: string;
   teamMembers: TeamMember[];
+  mentors?: { id: string; username: string }[];
 }
 
-export function TeamChatDialog({ open, onOpenChange, projectTitle, teamMembers }: TeamChatDialogProps) {
+export function TeamChatDialog({ open, onOpenChange, projectId, conversationId, projectTitle, teamMembers, mentors }: TeamChatDialogProps) {
   const { user } = useAuth();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Generate a stable room ID from the project title
-  const roomId = `project-${projectTitle.toLowerCase().replace(/\s+/g, "-")}`;
-  
-  const { messages, sendMessage, isConnected } = useRealtimeChat({
-    roomId,
+  const { messages, sendMessage, isConnected } = useProjectChat({
+    projectId,
+    conversationId,
     enabled: open,
   });
 
@@ -69,7 +71,7 @@ export function TeamChatDialog({ open, onOpenChange, projectTitle, teamMembers }
           </div>
         </DialogHeader>
         
-        <div className="flex-1 overflow-y-auto space-y-3 px-4 sm:px-6 py-2">
+        <div className="flex-1 overflow-y-auto space-y-3 px-4 sm:px-6 py-2 custom-scrollbar">
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
               No messages yet. Start the conversation!
@@ -103,18 +105,56 @@ export function TeamChatDialog({ open, onOpenChange, projectTitle, teamMembers }
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t border-border/50 p-4 sm:p-6">
-          <div className="flex gap-2 mb-3">
-            <p className="text-xs text-card-foreground/60">Team:</p>
-            <div className="flex gap-1">
-              {teamMembers.map((member, i) => (
-                <Avatar key={i} className="w-6 h-6">
-                  <AvatarFallback className="bg-accent/20 text-accent text-xs">
-                    {getInitials(member.name)}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
+        <div className="border-t border-border/50 p-4 sm:p-6 bg-muted/20">
+          <div className="flex flex-wrap items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Team</p>
+              <div className="flex -space-x-2">
+                {teamMembers.map((member, i) => (
+                  <TooltipProvider key={i}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Avatar className="w-6 h-6 border-2 border-background ring-1 ring-border/50">
+                          <AvatarFallback className="bg-accent/20 text-accent text-[10px] font-bold">
+                            {getInitials(member.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="text-xs font-semibold">{member.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{member.role}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+              </div>
             </div>
+
+            {mentors && mentors.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-px h-4 bg-border hidden sm:block" />
+                <p className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Mentors</p>
+                <div className="flex -space-x-2">
+                  {mentors.map((mentor, i) => (
+                    <TooltipProvider key={i}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Avatar className="w-6 h-6 border-2 border-background ring-1 ring-border/50">
+                            <AvatarFallback className="bg-orange-500/10 text-orange-500 text-[10px] font-bold">
+                              {getInitials(mentor.username)}
+                            </AvatarFallback>
+                          </Avatar>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-xs font-semibold">{mentor.username}</p>
+                          <p className="text-[10px] text-muted-foreground">Mentor</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Input

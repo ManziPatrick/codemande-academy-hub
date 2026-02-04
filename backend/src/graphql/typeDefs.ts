@@ -78,6 +78,8 @@ export const typeDefs = `#graphql
     permissions: [String]
     streak: Int
     themePreference: ThemePreference
+    fullName: String
+    studentProfile: StudentProfile
   }
 
   type Message {
@@ -535,6 +537,13 @@ export const typeDefs = `#graphql
     portalTitle: String
   }
 
+  type ChatResponse {
+    content: String!
+    role: String!
+    action: String
+    actionData: String
+  }
+
   type Mutation {
     updateBranding(
       primaryColor: String
@@ -544,6 +553,8 @@ export const typeDefs = `#graphql
       siteName: String
       portalTitle: String
     ): BrandingConfig
+
+    chatWithAI(message: String!): ChatResponse
 
     sendMessage(receiverId: ID!, content: String!): Message
     register(username: String!, email: String!, password: String!): AuthPayload
@@ -741,5 +752,420 @@ export const typeDefs = `#graphql
     updateTaskProgress(projectId: ID!, taskId: String!, completed: Boolean!): Project
     approveProjectTask(projectId: ID!, taskId: String!, approved: Boolean!, feedback: String): Project
     assignGroupProject(internshipIds: [ID!], title: String!, description: String!, repoUrl: String, deadline: String, mentorIds: [ID!]): Project
+
+    # New Internship Module Mutations
+    createInternshipProgram(title: String!, description: String!, duration: String!, startDate: String!, endDate: String!, applicationDeadline: String!, eligibility: [String], rules: String, price: Float, currency: String): InternshipProgram
+    updateInternshipProgram(id: ID!, title: String, description: String, duration: String, startDate: String, endDate: String, applicationDeadline: String, eligibility: [String], rules: String, price: Float, currency: String, status: String): InternshipProgram
+    deleteInternshipProgram(id: ID!): Boolean
+
+    applyToInternshipProgram(internshipProgramId: ID!, skills: [String]!, portfolioUrl: String, resumeUrl: String, availability: String!): InternshipApplication
+    reviewInternshipApplication(id: ID!, status: String!, rejectionReason: String): InternshipApplication
+
+    createInternshipProject(internshipProgramId: ID!, title: String!, description: String!, requiredSkills: [String], minTeamSize: Int, maxTeamSize: Int): InternshipProject
+    updateInternshipProject(id: ID!, title: String, description: String, requiredSkills: [String], minTeamSize: Int, maxTeamSize: Int, status: String): InternshipProject
+    deleteInternshipProject(id: ID!): Boolean
+
+    createInternshipTeam(name: String!, internshipProjectId: ID!, internshipProgramId: ID!, mentorId: ID): InternshipTeam
+    updateInternshipTeam(id: ID!, name: String, mentorId: ID, status: String): InternshipTeam
+    addInternToTeam(teamId: ID!, userId: ID!, role: String): InternshipTeamMember
+    removeInternFromTeam(teamMemberId: ID!): Boolean
+
+    createInternshipMilestone(internshipProjectId: ID!, title: String!, description: String, deadline: String!, order: Int): InternshipMilestone
+    submitInternshipWork(milestoneId: ID!, teamId: ID!, contentUrl: String!, description: String): InternshipSubmission
+    reviewInternshipSubmission(id: ID!, status: String!, feedback: String): InternshipSubmission
+
+    logInternshipTime(teamId: ID!, description: String!, minutes: Int!, date: String): InternshipTimeLog
+    submitMentorFeedback(userId: ID!, teamId: ID, score: Int!, comments: String!): InternshipMentorFeedback
+  }
+
+  # New Internship Module Types
+  type InternshipProgram {
+    id: ID!
+    title: String!
+    description: String!
+    duration: String!
+    startDate: String!
+    endDate: String!
+    applicationDeadline: String!
+    eligibility: [String]
+    rules: String
+    price: Float
+    currency: String
+    status: String!
+    isDeleted: Boolean
+    createdAt: String
+    updatedAt: String
+  }
+
+  type InternshipApplication {
+    id: ID!
+    internshipProgramId: ID!
+    internshipProgram: InternshipProgram
+    userId: ID!
+    user: User
+    status: String!
+    skills: [String]
+    portfolioUrl: String
+    resumeUrl: String
+    availability: String
+    rejectionReason: String
+    payment: InternshipPayment
+    createdAt: String
+  }
+
+  type InternshipProject {
+    id: ID!
+    internshipProgramId: ID!
+    internshipProgram: InternshipProgram
+    title: String!
+    description: String!
+    requiredSkills: [String]
+    teamSizeRange: TeamSizeRange
+    milestones: [InternshipMilestone]
+    status: String!
+    createdAt: String
+  }
+
+  type TeamSizeRange {
+    min: Int
+    max: Int
+  }
+
+  type InternshipTeam {
+    id: ID!
+    name: String!
+    internshipProjectId: ID!
+    internshipProject: InternshipProject
+    internshipProgramId: ID!
+    internshipProgram: InternshipProgram
+    mentorId: ID
+    mentor: User
+    members: [InternshipTeamMember]
+    status: String!
+    createdAt: String
+  }
+
+  type InternshipTeamMember {
+    id: ID!
+    teamId: ID!
+    userId: ID!
+    user: User
+    role: String!
+    joinedAt: String
+  }
+
+  type InternshipMilestone {
+    id: ID!
+    internshipProjectId: ID!
+    title: String!
+    description: String
+    deadline: String!
+    order: Int
+    createdAt: String
+  }
+
+  type InternshipSubmission {
+    id: ID!
+    milestoneId: ID!
+    milestone: InternshipMilestone
+    teamId: ID!
+    team: InternshipTeam
+    userId: ID!
+    user: User
+    contentUrl: String!
+    description: String
+    status: String!
+    feedback: String
+    createdAt: String
+  }
+
+  type InternshipTimeLog {
+    id: ID!
+    userId: ID!
+    user: User
+    teamId: ID!
+    description: String!
+    minutes: Int!
+    date: String!
+    createdAt: String
+  }
+
+  type InternshipMentorFeedback {
+    id: ID!
+    mentorId: ID!
+    mentor: User
+    userId: ID!
+    user: User
+    teamId: ID
+    score: Int!
+    comments: String!
+    createdAt: String
+  }
+
+  type InternshipActivityLog {
+    id: ID!
+    userId: ID!
+    user: User
+    action: String!
+    module: String!
+    targetType: String!
+    targetId: ID
+    details: String
+    createdAt: String
+  }
+
+  extend type Query {
+    internshipPrograms: [InternshipProgram]
+    internshipProgram(id: ID!): InternshipProgram
+    internshipApplications(programId: ID, status: String): [InternshipApplication]
+    myInternshipApplications: [InternshipApplication]
+    internshipProject(id: ID!): InternshipProject
+    internshipTeams(programId: ID): [InternshipTeam]
+    myInternshipTeam: InternshipTeam
+    internshipSubmissions(teamId: ID!): [InternshipSubmission]
+    internshipTimeLogs(teamId: ID!, userId: ID): [InternshipTimeLog]
+    internshipActivityLogs(programId: ID): [InternshipActivityLog]
+    
+    # Student Profile Queries
+    myStudentProfile: StudentProfile
+    studentProfile(userId: ID!): StudentProfile
+    studentProfiles: [StudentProfile]
+    
+    # Payment & Invoice Queries
+    internshipPayments(programId: ID, status: String): [InternshipPayment]
+    myInternshipPayments: [InternshipPayment]
+    internshipPayment(id: ID!): InternshipPayment
+    internshipInvoices(userId: ID): [InternshipInvoice]
+    internshipInvoice(id: ID!): InternshipInvoice
+    
+    # Certificate Queries
+    internshipCertificates(programId: ID): [InternshipCertificate]
+    myInternshipCertificates: [InternshipCertificate]
+    internshipCertificate(id: ID!): InternshipCertificate
+    verifyCertificate(certificateNumber: String!): InternshipCertificate
+  }
+
+  # Student Profile Type
+  type StudentProfile {
+    id: ID!
+    userId: ID!
+    user: User
+    school: String!
+    educationLevel: String!
+    fieldOfStudy: String!
+    skills: [String!]!
+    availability: String!
+    bio: String
+    linkedinUrl: String
+    githubUrl: String
+    portfolioUrl: String
+    completionPercentage: Int!
+    isComplete: Boolean!
+    createdAt: String
+    updatedAt: String
+  }
+
+  # Payment Types
+  type InternshipPayment {
+    id: ID!
+    userId: ID!
+    user: User
+    internshipProgramId: ID!
+    internshipProgram: InternshipProgram
+    amount: Float!
+    currency: String!
+    status: String!
+    paymentMethod: String
+    transactionId: String
+    paidAt: String
+    invoiceId: ID
+    waivedBy: ID
+    waivedByUser: User
+    waivedReason: String
+    notes: String
+    createdAt: String
+    updatedAt: String
+  }
+
+  type InternshipInvoice {
+    id: ID!
+    paymentId: ID!
+    payment: InternshipPayment
+    invoiceNumber: String!
+    userId: ID!
+    user: User
+    internshipProgramId: ID!
+    internshipProgram: InternshipProgram
+    amount: Float!
+    currency: String!
+    issuedAt: String!
+    dueDate: String!
+    pdfUrl: String
+    status: String!
+    items: [InvoiceItem]
+    notes: String
+    createdAt: String
+  }
+
+  type InvoiceItem {
+    description: String!
+    quantity: Int!
+    unitPrice: Float!
+    total: Float!
+  }
+
+  # Certificate Types
+  type InternshipCertificate {
+    id: ID!
+    userId: ID!
+    user: User
+    internshipProgramId: ID!
+    internshipProgram: InternshipProgram
+    teamId: ID!
+    team: InternshipTeam
+    certificateNumber: String!
+    issuedAt: String!
+    trainerId: ID!
+    trainer: User
+    trainerName: String!
+    trainerSignature: String
+    internTitle: String!
+    programTitle: String!
+    duration: String!
+    startDate: String!
+    endDate: String!
+    completionDate: String!
+    pdfUrl: String
+    verificationUrl: String
+    isRevoked: Boolean!
+    revokedAt: String
+    revokedBy: ID
+    revokedByUser: User
+    revocationReason: String
+    metadata: CertificateMetadata
+    createdAt: String
+  }
+
+  type CertificateMetadata {
+    milestonesCompleted: Int
+    totalMilestones: Int
+    finalGrade: String
+    skills: [String]
+  }
+
+  # Profile Validation Response
+  type ProfileValidationResult {
+    isValid: Boolean!
+    missingFields: [String]
+    completionPercentage: Int!
+    message: String
+  }
+
+  # Certificate Eligibility Response
+  type CertificateEligibility {
+    isEligible: Boolean!
+    milestonesCompleted: Boolean!
+    trainerApproved: Boolean!
+    paymentConfirmed: Boolean!
+    message: String
+  }
+
+  extend type Mutation {
+    # Student Profile Mutations
+    createStudentProfile(
+      school: String!
+      educationLevel: String!
+      fieldOfStudy: String!
+      skills: [String!]!
+      availability: String!
+      bio: String
+      linkedinUrl: String
+      githubUrl: String
+      portfolioUrl: String
+    ): StudentProfile
+
+    updateStudentProfile(
+      school: String
+      educationLevel: String
+      fieldOfStudy: String
+      skills: [String]
+      availability: String
+      bio: String
+      linkedinUrl: String
+      githubUrl: String
+      portfolioUrl: String
+    ): StudentProfile
+
+    validateProfileForInternship: ProfileValidationResult
+
+    # Payment Mutations
+    createInternshipPayment(
+      internshipProgramId: ID!
+      amount: Float!
+      currency: String
+    ): InternshipPayment
+
+    processInternshipPayment(
+      paymentId: ID!
+      transactionId: String!
+      paymentMethod: String!
+    ): InternshipPayment
+
+    waiveInternshipPayment(
+      paymentId: ID!
+      reason: String!
+    ): InternshipPayment
+
+    refundInternshipPayment(
+      paymentId: ID!
+      reason: String!
+    ): InternshipPayment
+
+    # Invoice Mutations
+    generateInternshipInvoice(paymentId: ID!): InternshipInvoice
+    
+    # Certificate Mutations
+    checkCertificateEligibility(teamId: ID!): CertificateEligibility
+
+    generateInternshipCertificate(
+      userId: ID!
+      teamId: ID!
+      trainerId: ID!
+    ): InternshipCertificate
+
+    revokeCertificate(
+      certificateId: ID!
+      reason: String!
+    ): InternshipCertificate
+
+    # Enhanced Application (with profile validation)
+    applyToInternshipWithValidation(
+      internshipProgramId: ID!
+      skills: [String!]!
+      availability: String!
+      portfolioUrl: String
+    ): InternshipApplication
+
+    # Milestone Approval
+    approveMilestone(
+      milestoneId: ID!
+      teamId: ID!
+    ): InternshipMilestone
+
+    approveInternForCertificate(
+      userId: ID!
+      teamId: ID!
+      finalGrade: String!
+    ): InternshipMentorFeedback
+
+    # Stripe Payment
+    createStripePaymentIntent(programId: ID!): StripePaymentIntent
+  }
+
+  type StripePaymentIntent {
+    clientSecret: String!
+    paymentIntentId: String!
+    publishableKey: String!
+    paymentId: ID!
   }
 `;

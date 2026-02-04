@@ -165,7 +165,7 @@ export default function StudentDashboard() {
                   </Button>
                 </Link>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar">
                 {enrolledCourses.length === 0 && (
                    <div className="text-center py-8">
                      <p className="text-muted-foreground mb-4">You haven't enrolled in any courses yet.</p>

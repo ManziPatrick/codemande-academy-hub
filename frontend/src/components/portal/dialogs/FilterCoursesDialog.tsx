@@ -90,7 +90,7 @@ export function FilterCoursesDialog({
             Filter Courses
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 px-4 sm:px-6">
+        <ScrollArea className="flex-1 px-4 sm:px-6 custom-scrollbar">
           <div className="space-y-6 py-4">
             {/* Categories */}
           <div>

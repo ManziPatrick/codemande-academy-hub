@@ -364,12 +364,33 @@ export const GET_MY_PROJECTS = gql`
       grade
       feedback
       team {
+        userId
         name
         role
+        user {
+          id
+          username
+        }
+      }
+      mentors {
+        id
+        username
       }
       tasks {
+        id
         title
         completed
+        approved
+        feedback
+      }
+      documentation {
+        images
+        videos
+        links {
+          title
+          url
+        }
+        inPersonNotes
       }
       description
       submissionUrl
@@ -393,12 +414,33 @@ export const GET_PROJECT = gql`
       grade
       feedback
       team {
+        userId
         name
         role
+        user {
+          id
+          username
+        }
+      }
+      mentors {
+        id
+        username
       }
       tasks {
+        id
         title
         completed
+        approved
+        feedback
+      }
+      documentation {
+        images
+        videos
+        links {
+          title
+          url
+        }
+        inPersonNotes
       }
       description
       submissionUrl
@@ -427,6 +469,24 @@ export const GET_ALL_PROJECTS = gql`
       feedback
       description
       submissionUrl
+      conversationId
+      team {
+        userId
+        name
+        role
+        user {
+          id
+          username
+        }
+      }
+      mentors {
+        id
+        username
+      }
+      tasks {
+        title
+        completed
+      }
       user {
         id
         username
@@ -528,6 +588,26 @@ export const GET_MY_INTERNSHIP = gql`
         status
         grade
         feedback
+        conversationId
+        team {
+          userId
+          name
+          role
+          user {
+            id
+            username
+          }
+        }
+        mentors {
+          id
+          username
+        }
+        conversationId
+        team {
+          userId
+          name
+          role
+        }
       }
       payment {
         amount
@@ -554,6 +634,10 @@ export const GET_MY_INTERNSHIP = gql`
         type
       }
       mentor {
+        id
+        username
+      }
+      mentors {
         id
         username
       }
@@ -583,6 +667,20 @@ export const GET_INTERNSHIP = gql`
         status
         grade
         feedback
+        conversationId
+        team {
+          userId
+          name
+          role
+          user {
+            id
+            username
+          }
+        }
+        mentors {
+          id
+          username
+        }
       }
       payment {
         amount
@@ -616,6 +714,10 @@ export const GET_INTERNSHIP = gql`
         id
         username
       }
+      mentors {
+        id
+        username
+      }
       createdAt
       updatedAt
     }
@@ -639,6 +741,10 @@ export const GET_ALL_INTERNSHIPS = gql`
         username
       }
       mentor {
+        id
+        username
+      }
+      mentors {
         id
         username
       }
@@ -695,14 +801,216 @@ export const GET_PAYMENTS = gql`
   query GetPayments {
     payments {
       id
-      studentName
-      type
-      itemTitle
       amount
       currency
-      date
+      itemTitle
+      type
       status
-      method
+      date
+      user {
+        username
+      }
+    }
+  }
+`;
+
+// --- New Internship Module Queries ---
+
+export const GET_INTERNSHIP_PROGRAMS = gql`
+  query GetInternshipPrograms {
+    internshipPrograms {
+      id
+      title
+      description
+      duration
+      startDate
+      endDate
+      applicationDeadline
+      status
+      price
+      currency
+      eligibility
+      rules
+    }
+  }
+`;
+
+export const GET_INTERNSHIP_PROGRAM = gql`
+  query GetInternshipProgram($id: ID!) {
+    internshipProgram(id: $id) {
+      id
+      title
+      description
+      duration
+      startDate
+      endDate
+      applicationDeadline
+      status
+      price
+      currency
+      eligibility
+      rules
+    }
+  }
+`;
+
+export const GET_INTERNSHIP_APPLICATIONS = gql`
+  query GetInternshipApplications($programId: ID, $status: String) {
+    internshipApplications(programId: $programId, status: $status) {
+      id
+      status
+      skills
+      availability
+      portfolioUrl
+      rejectionReason
+      createdAt
+      user {
+        id
+        username
+        email
+        fullName
+        studentProfile {
+          school
+        }
+      }
+      internshipProgram {
+        id
+        title
+      }
+    }
+  }
+`;
+
+export const GET_MY_INTERNSHIP_APPLICATIONS = gql`
+  query GetMyInternshipApplications {
+    myInternshipApplications {
+      id
+      status
+      internshipProgram {
+        id
+        title
+        price
+        currency
+        status
+      }
+      payment {
+        id
+        status
+        amount
+        currency
+      }
+      createdAt
+    }
+  }
+`;
+
+export const GET_INTERNSHIP_PROJECTS_NEW = gql`
+  query GetInternshipProjects($programId: ID) {
+    internshipProjects(programId: $programId) {
+      id
+      title
+      description
+      requiredSkills
+    }
+  }
+`;
+
+export const GET_INTERNSHIP_PROJECT_NEW = gql`
+  query GetInternshipProject($id: ID!) {
+    internshipProject(id: $id) {
+      id
+      title
+      description
+      requiredSkills
+      status
+      teamSizeRange {
+        min
+        max
+      }
+      milestones {
+        id
+        title
+        deadline
+        order
+      }
+    }
+  }
+`;
+
+export const GET_INTERNSHIP_TEAMS = gql`
+  query GetInternshipTeams($programId: ID) {
+    internshipTeams(programId: $programId) {
+      id
+      name
+      status
+      internshipProject {
+        id
+        title
+      }
+      mentor {
+        id
+        username
+      }
+      members {
+        id
+        role
+        user {
+          id
+          username
+        }
+      }
+    }
+  }
+`;
+
+export const GET_MY_INTERNSHIP_TEAM = gql`
+  query GetMyInternshipTeam {
+    myInternshipTeam {
+      id
+      name
+      status
+      internshipProject {
+        id
+        title
+        description
+        milestones {
+          id
+          title
+          deadline
+          order
+        }
+      }
+      mentor {
+        id
+        username
+      }
+      members {
+        id
+        role
+        user {
+          id
+          username
+        }
+      }
+    }
+  }
+`;
+
+export const GET_INTERNSHIP_SUBMISSIONS = gql`
+  query GetInternshipSubmissions($teamId: ID!) {
+    internshipSubmissions(teamId: $teamId) {
+      id
+      workUrl
+      description
+      status
+      feedback
+      createdAt
+      user {
+        username
+      }
+      milestone {
+        title
+      }
     }
   }
 `;
@@ -751,6 +1059,283 @@ export const GET_BRANDING = gql`
       logoUrl
       siteName
       portalTitle
+    }
+  }
+`;
+
+export const GET_MY_MENTEES = gql`
+  query GetMyMentees {
+    myMentees {
+      id
+      title
+      organization
+      duration
+      type
+      status
+      stage
+      currentStage
+      cohort
+      user {
+        id
+        username
+        email
+      }
+      mentors {
+        id
+        username
+      }
+      progress
+      tasks {
+        id
+        title
+        status
+        priority
+      }
+      milestones {
+        title
+        completed
+        date
+      }
+      payment {
+        status
+        amount
+        currency
+      }
+      projects {
+        id
+        title
+        status
+        grade
+        feedback
+        conversationId
+        team {
+          userId
+          name
+          role
+          user {
+            id
+            username
+          }
+        }
+        mentors {
+          id
+          username
+        }
+      }
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_INTERNSHIP_ACTIVITY_LOGS = gql`
+  query GetInternshipActivityLogs {
+    internshipActivityLogs {
+      id
+      action
+      targetType
+      targetId
+      details
+      createdAt
+      user {
+        username
+      }
+    }
+  }
+`;
+
+// ========== STUDENT PROFILE QUERIES ==========
+export const GET_MY_STUDENT_PROFILE = gql`
+  query GetMyStudentProfile {
+    myStudentProfile {
+      id
+      userId
+      school
+      educationLevel
+      fieldOfStudy
+      skills
+      availability
+      bio
+      linkedinUrl
+      githubUrl
+      portfolioUrl
+      completionPercentage
+      isComplete
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_STUDENT_PROFILES = gql`
+  query GetStudentProfiles {
+    studentProfiles {
+      id
+      userId
+      user {
+        id
+        username
+        email
+      }
+      school
+      educationLevel
+      fieldOfStudy
+      skills
+      availability
+      completionPercentage
+      isComplete
+    }
+  }
+`;
+
+// ========== PAYMENT QUERIES ==========
+export const GET_INTERNSHIP_PAYMENTS = gql`
+  query GetInternshipPayments($programId: ID, $status: String) {
+    internshipPayments(programId: $programId, status: $status) {
+      id
+      userId
+      user {
+        id
+        username
+        email
+      }
+      internshipProgramId
+      internshipProgram {
+        id
+        title
+      }
+      amount
+      currency
+      status
+      paymentMethod
+      transactionId
+      paidAt
+      waivedBy
+      waivedReason
+      createdAt
+    }
+  }
+`;
+
+export const GET_MY_INTERNSHIP_PAYMENTS = gql`
+  query GetMyInternshipPayments {
+    myInternshipPayments {
+      id
+      internshipProgramId
+      internshipProgram {
+        id
+        title
+      }
+      amount
+      currency
+      status
+      paymentMethod
+      paidAt
+      createdAt
+    }
+  }
+`;
+
+// ========== INVOICE QUERIES ==========
+export const GET_INTERNSHIP_INVOICES = gql`
+  query GetInternshipInvoices($userId: ID) {
+    internshipInvoices(userId: $userId) {
+      id
+      invoiceNumber
+      userId
+      user {
+        id
+        username
+        email
+      }
+      internshipProgram {
+        id
+        title
+      }
+      amount
+      currency
+      issuedAt
+      dueDate
+      status
+      items {
+        description
+        quantity
+        unitPrice
+        total
+      }
+    }
+  }
+`;
+
+// ========== CERTIFICATE QUERIES ==========
+export const GET_INTERNSHIP_CERTIFICATES = gql`
+  query GetInternshipCertificates($programId: ID) {
+    internshipCertificates(programId: $programId) {
+      id
+      userId
+      user {
+        id
+        username
+        email
+      }
+      internshipProgram {
+        id
+        title
+      }
+      certificateNumber
+      issuedAt
+      trainerName
+      programTitle
+      duration
+      isRevoked
+      verificationUrl
+    }
+  }
+`;
+
+export const GET_MY_INTERNSHIP_CERTIFICATES = gql`
+  query GetMyInternshipCertificates {
+    myInternshipCertificates {
+      id
+      certificateNumber
+      internshipProgram {
+        id
+        title
+      }
+      programTitle
+      duration
+      startDate
+      endDate
+      completionDate
+      issuedAt
+      trainerName
+      pdfUrl
+      verificationUrl
+      metadata {
+        milestonesCompleted
+        totalMilestones
+        finalGrade
+        skills
+      }
+    }
+  }
+`;
+
+export const VERIFY_CERTIFICATE = gql`
+  query VerifyCertificate($certificateNumber: String!) {
+    verifyCertificate(certificateNumber: $certificateNumber) {
+      id
+      certificateNumber
+      user {
+        username
+      }
+      programTitle
+      duration
+      trainerName
+      issuedAt
+      completionDate
+      isRevoked
+      verificationUrl
     }
   }
 `;

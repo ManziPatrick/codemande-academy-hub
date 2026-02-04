@@ -14,6 +14,7 @@ import { typeDefs } from './graphql/typeDefs';
 import { resolvers } from './graphql/resolvers';
 import { socketHandler } from './socket';
 import { initKronos } from './jobs/cron';
+import { initNotificationService } from './services/notification.service';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ const startServer = async () => {
     });
 
     socketHandler(io);
+    initNotificationService(io);
 
     // Middleware
     app.use(

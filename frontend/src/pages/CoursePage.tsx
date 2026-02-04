@@ -112,7 +112,7 @@ export default function CoursePage() {
                            {module.title}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="p-0">
+                      <CardContent className="p-0 max-h-80 overflow-y-auto custom-scrollbar">
                         {module.lessons.map((lesson: any) => (
                           <div key={lesson.id} className="flex items-center justify-between p-4 border-t border-border/30 hover:bg-slate-50 transition-colors">
                             <div className="flex items-center gap-3">

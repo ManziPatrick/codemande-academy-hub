@@ -107,7 +107,7 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-6">
+        <ScrollArea className="flex-1 px-6 custom-scrollbar">
           <div className="py-6">
             {step === 1 && (
               <div className="space-y-6">

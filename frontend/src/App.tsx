@@ -9,13 +9,14 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/components/ThemeProvider";
 
 import { BrandingProvider } from "@/components/BrandingProvider";
+import { ChatBot } from "@/components/chatbot/ChatBot";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <BrandingProvider>
           <TooltipProvider>
             <Toaster />
@@ -23,6 +24,7 @@ const App = () => (
             <BrowserRouter>
               <ScrollToTop />
               <AnimatedRoutes />
+              <ChatBot />
             </BrowserRouter>
           </TooltipProvider>
         </BrandingProvider>

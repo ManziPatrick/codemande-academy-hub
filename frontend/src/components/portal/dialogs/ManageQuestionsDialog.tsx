@@ -111,7 +111,7 @@ export function ManageQuestionsDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-4 sm:px-6">
+        <ScrollArea className="flex-1 px-4 sm:px-6 custom-scrollbar">
           <div className="py-4 space-y-6">
             {isAdding ? (
               <div className="p-4 bg-muted/30 rounded-lg border border-border/50 space-y-4">

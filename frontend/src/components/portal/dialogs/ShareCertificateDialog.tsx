@@ -70,7 +70,7 @@ export function ShareCertificateDialog({
             Share Certificate
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 px-4 sm:px-6">
+        <ScrollArea className="flex-1 px-4 sm:px-6 custom-scrollbar">
           <div className="space-y-4 py-4">
           {/* Certificate Info */}
           <div className="p-4 bg-accent/10 rounded-lg border border-accent/30 text-center">

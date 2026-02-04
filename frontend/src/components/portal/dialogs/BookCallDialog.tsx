@@ -121,7 +121,7 @@ export function BookCallDialog({
             {mentorName && <span className="text-muted-foreground font-normal">with {mentorName}</span>}
           </DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 px-4 sm:px-6">
+        <ScrollArea className="flex-1 px-4 sm:px-6 custom-scrollbar">
           <div className="space-y-4 py-4">
             <div>
               <Label htmlFor="callType">Call Type *</Label>

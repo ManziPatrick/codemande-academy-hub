@@ -20,11 +20,13 @@ import {
   Star,
   ArrowRight,
   Eye,
+  Briefcase,
 } from "lucide-react";
 import { 
   EnrollCourseDialog, 
   FilterCoursesDialog,
   ViewCourseDetailDialog,
+  ApplyInternshipDialog,
 } from "@/components/portal/dialogs";
 import type { CourseFilters } from "@/components/portal/dialogs/FilterCoursesDialog";
 import { toast } from "sonner";
@@ -52,6 +54,7 @@ export default function StudentCourses() {
     rating: 0,
     priceRange: "Any Price",
   });
+  const [applyInternshipOpen, setApplyInternshipOpen] = useState(false);
 
   if (meLoading || coursesLoading) {
     return (
@@ -104,6 +107,14 @@ export default function StudentCourses() {
               Track your progress and explore new learning opportunities
             </p>
           </div>
+          <Button 
+            variant="gold" 
+            className="shadow-lg shadow-gold/20"
+            onClick={() => setApplyInternshipOpen(true)}
+          >
+            <Briefcase className="w-4 h-4 mr-2" />
+            Apply for Internship
+          </Button>
         </motion.div>
 
         {/* Search & Filters */}
@@ -361,6 +372,10 @@ export default function StudentCourses() {
         open={!!viewCourse}
         onOpenChange={(open) => !open && setViewCourse(null)}
         course={viewCourse}
+      />
+      <ApplyInternshipDialog
+        open={applyInternshipOpen}
+        onOpenChange={setApplyInternshipOpen}
       />
     </PortalLayout>
   );

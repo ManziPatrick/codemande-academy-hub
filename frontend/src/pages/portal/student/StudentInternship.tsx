@@ -24,7 +24,7 @@ import {
   Award,
   Loader2,
 } from "lucide-react";
-import { ApplyInternshipDialog, BookCallDialog, TeamChatDialog } from "@/components/portal/dialogs";
+import { ApplyInternshipDialog, BookCallDialog, TeamChatDialog, ProjectDetailsDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_MY_INTERNSHIP } from "@/lib/graphql/queries";
@@ -58,6 +58,8 @@ export default function StudentInternship() {
   const [applyOpen, setApplyOpen] = useState(false);
   const [bookCallOpen, setBookCallOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [activeProject, setActiveProject] = useState<any>(null);
+  const [projectDetailsOpen, setProjectDetailsOpen] = useState(false);
 
   if (loading) return (
     <PortalLayout>
@@ -242,9 +244,24 @@ export default function StudentInternship() {
                             </div>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" className="w-full sm:w-auto">
-                          Update Progress
-                        </Button>
+                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => { setActiveProject(proj); setChatOpen(true); }}
+                            className="bg-accent/5 hover:bg-accent/10 border-accent/20"
+                          >
+                            <MessageSquare className="w-4 h-4 mr-2 text-accent" />
+                            Team Chat
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => { setActiveProject(proj); setProjectDetailsOpen(true); }}
+                          >
+                            Full Info & Progress
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   ))
@@ -256,32 +273,98 @@ export default function StudentInternship() {
               </div>
             </div>
 
-            {/* Right Column: Mentor & Stats */}
+            {/* Right Column: Mentor & Tasks */}
             <div className="space-y-6">
               <Card className="border-border/50 overflow-hidden">
                 <div className="h-2 bg-accent" />
                 <CardContent className="p-6">
-                  <h3 className="font-bold mb-4">Your Mentor</h3>
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center ring-4 ring-accent/5">
-                      <span className="text-xl font-bold text-accent">
-                        {internship.mentor?.username?.charAt(0) || "M"}
-                      </span>
+                  <h3 className="font-bold mb-4 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-accent" />
+                    Your Mentor
+                  </h3>
+                  {internship.mentor ? (
+                    <>
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center ring-4 ring-accent/5">
+                          <span className="text-xl font-bold text-accent">
+                            {internship.mentor.username?.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-bold text-foreground">{internship.mentor.username}</p>
+                          <p className="text-xs text-muted-foreground uppercase tracking-widest">Industry Expert</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Button variant="gold" className="w-full shadow-lg shadow-gold/10" onClick={() => setChatOpen(true)}>
+                          <MessageSquare className="w-4 h-4 mr-2" />
+                          Community Chat
+                        </Button>
+                        <Button variant="outline" className="w-full" onClick={() => setBookCallOpen(true)}>
+                          <Calendar className="w-4 h-4 mr-2" />
+                          Book 1:1 Review
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-6">
+                      <div className="w-14 h-14 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-3">
+                        <Users className="w-7 h-7 text-muted-foreground/50" />
+                      </div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Mentor Assignment Pending</p>
+                      <p className="text-xs text-muted-foreground/70">
+                        An industry expert will be assigned to guide you soon
+                      </p>
                     </div>
-                    <div>
-                      <p className="font-bold text-foreground">{internship.mentor?.username || "Assigning..."}</p>
-                      <p className="text-xs text-muted-foreground uppercase tracking-widest">Industry Expert</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Button variant="gold" className="w-full shadow-lg shadow-gold/10" onClick={() => setChatOpen(true)}>
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Community Chat
-                    </Button>
-                    <Button variant="outline" className="w-full" onClick={() => setBookCallOpen(true)}>
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Book 1:1 Review
-                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Tasks Card */}
+              <Card className="border-border/50">
+                <CardContent className="p-6">
+                  <h3 className="font-bold mb-4 flex items-center gap-2">
+                    <FileCode className="w-4 h-4 text-accent" />
+                    My Tasks
+                    <Badge variant="outline" className="ml-auto text-[10px]">
+                      {internship.tasks?.filter((t: any) => t.status === "completed").length || 0}/{internship.tasks?.length || 0}
+                    </Badge>
+                  </h3>
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                    {internship.tasks?.map((task: any) => (
+                      <div
+                        key={task.id}
+                        className="flex items-center gap-3 p-2 bg-muted/20 rounded border border-border/50"
+                      >
+                        <div
+                          className={`w-4 h-4 rounded border flex items-center justify-center ${
+                            task.status === "completed"
+                              ? "bg-green-500 border-green-500"
+                              : "border-muted-foreground/30"
+                          }`}
+                        >
+                          {task.status === "completed" && <CheckCircle className="w-3 h-3 text-white" />}
+                        </div>
+                        <span
+                          className={`text-sm flex-1 ${
+                            task.status === "completed"
+                              ? "line-through text-muted-foreground"
+                              : "text-foreground font-medium"
+                          }`}
+                        >
+                          {task.title}
+                        </span>
+                        <Badge variant="outline" className="text-[9px] uppercase opacity-50">
+                          {task.priority}
+                        </Badge>
+                      </div>
+                    ))}
+                    {!internship.tasks?.length && (
+                      <div className="py-8 text-center">
+                        <FileCode className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                        <p className="text-xs text-muted-foreground italic">No tasks assigned yet</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -338,8 +421,16 @@ export default function StudentInternship() {
       <TeamChatDialog
         open={chatOpen}
         onOpenChange={setChatOpen}
-        projectTitle={`${internship?.title || "Internship"} Discussion`}
-        teamMembers={[]}
+        projectId={activeProject?.id || ""}
+        conversationId={activeProject?.conversationId}
+        projectTitle={activeProject?.title || ((internship?.projects && internship?.projects.length > 0) ? internship.projects[0].title : "Internship") + " Discussion"}
+        teamMembers={activeProject?.team || []}
+      />
+      <ProjectDetailsDialog
+        open={projectDetailsOpen}
+        onOpenChange={setProjectDetailsOpen}
+        project={activeProject}
+        refetch={refetch}
       />
     </PortalLayout>
   );

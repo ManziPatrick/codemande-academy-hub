@@ -12,6 +12,19 @@ import { Booking } from './models/Booking';
 import { Question } from './models/Question';
 import { Badge } from './models/Badge';
 import { Payment } from './models/Payment';
+import { StudentProfile } from './models/StudentProfile';
+import { InternshipProgram } from './models/internship/InternshipProgram';
+import { InternshipPayment } from './models/internship/Payment';
+import { InternshipApplication } from './models/internship/InternshipApplication';
+import { InternshipProject } from './models/internship/InternshipProject';
+import { InternshipTeam } from './models/internship/Team';
+import { InternshipTeamMember } from './models/internship/TeamMember';
+import { InternshipMilestone } from './models/internship/Milestone';
+import { InternshipSubmission } from './models/internship/Submission';
+import { InternshipMentorFeedback } from './models/internship/MentorFeedback';
+import { InternshipActivityLog } from './models/internship/ActivityLog';
+import { InternshipCertificate } from './models/internship/Certificate';
+import { InternshipInvoice } from './models/internship/Invoice';
 import connectDB from './config/db';
 
 dotenv.config();
@@ -92,340 +105,301 @@ const seedData = async () => {
   try {
     await connectDB();
 
-    console.log('Clearing existing data...');
-    await User.deleteMany({});
-    await Message.deleteMany({});
-    await Conversation.deleteMany({});
-    await Course.deleteMany({});
-    await Project.deleteMany({});
-    await Certificate.deleteMany({});
-    await Internship.deleteMany({});
-    await Booking.deleteMany({});
-    await Question.deleteMany({});
-    await Badge.deleteMany({});
-    await Payment.deleteMany({});
+    console.log('🧹 Clearing existing data...');
+    const models = [
+      User, Message, Conversation, Course, Project, Certificate, Internship, Booking, Question, Badge, Payment,
+      StudentProfile, InternshipProgram, InternshipPayment, InternshipApplication, InternshipProject,
+      InternshipTeam, InternshipTeamMember, InternshipMilestone, InternshipSubmission, 
+      InternshipMentorFeedback, InternshipActivityLog, InternshipCertificate, InternshipInvoice
+    ];
+    
+    for (const model of models) {
+      await (model as any).deleteMany({});
+    }
 
-    console.log('Seeding Users...');
+    console.log('👤 Creating Users...');
     const hashedPassword = await bcrypt.hash('password123', 10);
     
-    // Fixed IDs for stability if possible, but mongoose generate is fine
-    const userData = [
-      { username: 'StartAdmin', email: 'admin@codemande.com', password: hashedPassword, role: 'super_admin', permissions: ['all'], currentStage: 6, level: 10, academicStatus: 'alumni' },
-      { username: 'Admin User', email: 'adminuser@codemande.com', password: hashedPassword, role: 'admin', permissions: ['manage_users', 'manage_courses', 'manage_internships', 'manage_projects', 'manage_certificates'] },
-      { username: 'Dr. Smith', email: 'smith@codemande.com', password: hashedPassword, role: 'trainer', level: 8, academicStatus: 'graduate' },
-      { username: 'Jane Doe', email: 'jane@codemande.com', password: hashedPassword, role: 'trainer', level: 7, academicStatus: 'graduate' },
-      { username: 'Alice Student', email: 'alice@example.com', password: hashedPassword, role: 'student', level: 3, academicStatus: 'active' },
-      { username: 'Bob Learner', email: 'bob@example.com', password: hashedPassword, role: 'student', level: 2, academicStatus: 'active' },
-      { username: 'Charlie Newbie', email: 'charlie@example.com', password: hashedPassword, role: 'student', level: 1, academicStatus: 'active' },
-      { username: 'Diana Intern', email: 'diana@example.com', password: hashedPassword, role: 'student', level: 4, academicStatus: 'intern' },
-    ];
+    const admin = await new User({
+      username: 'admin',
+      email: 'admin@codemande.com',
+      password: hashedPassword,
+      role: 'admin',
+      fullName: 'System Administrator',
+      title: 'Head of Academy',
+      avatar: 'https://i.pravatar.cc/150?u=admin'
+    }).save();
 
-    const users: any[] = [];
-    for (const u of userData) {
-      const user = new User(u);
-      await user.save();
-      users.push(user);
-    }
+    const trainer1 = await new User({
+      username: 'innovator_john',
+      email: 'john@codemande.com',
+      password: hashedPassword,
+      role: 'trainer',
+      fullName: 'John Innovator',
+      title: 'Senior Full Stack Engineer',
+      bio: 'Ex-Google engineer with 10 years of experience in React and Node.js. Passionate about teaching the next generation of African tech leaders.',
+      skills: ['React', 'Node.js', 'System Design', 'Cloud Architecture'],
+      avatar: 'https://i.pravatar.cc/150?u=john'
+    }).save();
 
-    const instructor1 = users[1]; // Admin/Instructor
-    const instructor2 = users[2]; // Dr. Smith
-    const instructor3 = users[3]; // Jane Doe
-    const student1 = users[4]; // Alice
-    const student2 = users[5]; // Bob
-    const student3 = users[6]; // Charlie
-    const student4 = users[7]; // Diana
+    const trainer2 = await new User({
+      username: 'sarah_ai',
+      email: 'sarah@codemande.com',
+      password: hashedPassword,
+      role: 'trainer',
+      fullName: 'Sarah Data',
+      title: 'Lead Data Scientist',
+      bio: 'PhD in Machine Learning. Expert in Python, TensorFlow, and extracting insights from complex datasets.',
+      skills: ['Python', 'Machine Learning', 'Data Visualization', 'SQL'],
+      avatar: 'https://i.pravatar.cc/150?u=sarah'
+    }).save();
 
-    console.log('Seeding Badges...');
-    const badgesData = [
-       { title: 'Code Warrior', description: 'Awarded for completing 5 coding challenges.', icon: 'trophy', category: 'Achievement' },
-       { title: 'Bug Hunter', description: 'Awarded for finding and fixing critical bugs in assignments.', icon: 'bug', category: 'Skill' },
-       { title: 'Top Performer', description: 'Ranked in the top 10% of the class.', icon: 'star', category: 'Performance' },
-       { title: 'Fast Learner', description: 'Completed a module in record time.', icon: 'zap', category: 'Speed' },
-    ];
+    // Students
+    const student1 = await new User({
+      username: 'student_alice',
+      email: 'alice@student.com',
+      password: hashedPassword,
+      role: 'student',
+      fullName: 'Alice Keza',
+      title: 'Aspiring Frontend Developer',
+      avatar: 'https://i.pravatar.cc/150?u=alice'
+    }).save();
 
-    const badges: any[] = [];
-    for (const b of badgesData) {
-        const badge = new Badge(b);
-        await badge.save();
-        badges.push(badge);
-    }
-    
-    // Award a badge to Alice
-    student1.badges.push({ badgeId: badges[0]._id, awardedAt: new Date() });
-    await student1.save();
+    const student2 = await new User({
+      username: 'student_bob',
+      email: 'bob@student.com',
+      password: hashedPassword,
+      role: 'student',
+      fullName: 'Bob Manzi',
+      title: 'Backend Enthusiast',
+      avatar: 'https://i.pravatar.cc/150?u=bob'
+    }).save();
 
+    console.log('📚 Creating Courses...');
+    // Trainer 1 references this course in his internship project
+    const fullStackCourse = await new Course({
+      title: 'Full Stack Masterclass: React & Node.js',
+      description: 'The ultimate guide to building scalable web applications. From zero to hero with modern stack.',
+      instructor: trainer1._id,
+      price: 0, // Free course
+      category: 'Development',
+      level: 'Advanced',
+      thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=2070&auto=format&fit=crop',
+      modules: [
+        {
+          title: 'Core Fundamentals',
+          description: 'Getting started with the MERN stack',
+          lessons: createLessons('Full Stack', 10)
+        }
+      ],
+      published: true,
+      studentsEnrolled: [student1._id, student2._id]
+    } as any).save();
 
-    console.log('Seeding Courses (Full Content)...');
-    const courseTemplate = [
-      { title: 'Full Stack Web Development Bootcamp', price: 99.99, instructor: instructor2, category: 'Development', level: 'Intermediate', thumb: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085' },
-      { title: 'Data Science with Python', price: 89.99, instructor: instructor2, category: 'Data Science', level: 'Beginner', thumb: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71' },
-      { title: 'UI/UX Design Masterclass', price: 79.99, instructor: instructor3, category: 'Design', level: 'Beginner', thumb: 'https://images.unsplash.com/photo-1561070791-2526d30994b5' },
-      { title: 'Cybersecurity Fundamentals', price: 129.99, instructor: instructor1, category: 'Cybersecurity', level: 'Advanced', thumb: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b' },
-      { title: 'Cloud Computing with AWS', price: 149.99, instructor: instructor1, category: 'Cloud', level: 'Intermediate', thumb: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa' },
-      { title: 'Mobile App Development with Flutter', price: 95.00, instructor: instructor3, category: 'Development', level: 'Intermediate', thumb: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c' },
-      { title: 'Advanced DevOps & CI/CD', price: 199.00, instructor: instructor1, category: 'DevOps', level: 'Advanced', thumb: 'https://images.unsplash.com/photo-1618401471353-b98afee0b2eb' },
-      { title: 'AI & Machine Learning Engineering', price: 159.00, instructor: instructor2, category: 'AI', level: 'Advanced', thumb: 'https://images.unsplash.com/photo-1677442136019-21780ecad995' },
-      { title: 'Digital Marketing & Content Strategy', price: 65.00, instructor: instructor3, category: 'Business', level: 'Beginner', thumb: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f' },
-      { title: 'Blockchain & Web3 Development', price: 175.00, instructor: instructor1, category: 'Blockchain', level: 'Advanced', thumb: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0' },
-    ];
+    const dataScienceCourse = await new Course({
+      title: 'Data Science Bootcamp',
+      description: 'Master Python and Machine Learning. Real world projects and datasets.',
+      instructor: trainer2._id,
+      price: 49.99,
+      category: 'Data Science',
+      level: 'Intermediate',
+      thumbnail: 'https://images.unsplash.com/photo-1551288049-nebda4ff7141?q=80&w=2070&auto=format&fit=crop',
+      modules: [
+        {
+          title: 'Python Basics',
+          description: 'Introduction to Python for Data Analysis',
+          lessons: createLessons('Data Science', 8)
+        }
+      ],
+      published: true,
+      studentsEnrolled: [student2._id]
+    } as any).save();
 
-    const courses: any[] = [];
-    for (const t of courseTemplate) {
-      const course = new Course({
-        title: t.title,
-        description: `Experience the highest quality education with our ${t.title}. This course is designed to take you from a complete beginner to a job-ready professional in the field of ${t.category}. You will learn through hands-on projects, expert mentorship, and a comprehensive curriculum developed by industry leaders.`,
-        thumbnail: t.thumb,
-        instructor: t.instructor._id,
-        price: t.price,
-        discountPrice: t.price * 0.8,
-        level: t.level,
-        category: t.category,
-        status: 'published',
-        studentsEnrolled: [],
-        modules: [
-          {
-            title: 'I. Foundational Mastery',
-            description: 'Building the core foundations required for advanced concepts.',
-            lessons: createLessons(`${t.title} Foundation`, 5)
-          },
-          {
-            title: 'II. Advanced Implementation',
-            description: 'Moving into complex structures and professional application.',
-            lessons: createLessons(`${t.title} Advanced`, 5)
-          }
-        ]
-      });
-      await course.save();
-      courses.push(course);
-    }
+    console.log('🎓 Creating Student Profiles...');
+    // Create rich profiles for students
+    await new StudentProfile({
+      userId: student1._id,
+      school: 'University of Rwanda',
+      educationLevel: 'undergraduate',
+      fieldOfStudy: 'Computer Engineering',
+      skills: ['HTML', 'CSS', 'JavaScript', 'React'],
+      availability: 'full_time',
+      bio: 'Third year student looking for industrial attachment. Passionate about UI/UX.',
+      githubUrl: 'https://github.com/alice',
+      linkedinUrl: 'https://linkedin.com/in/alice',
+      portfolioUrl: 'https://alice.dev',
+      phoneNumber: '+250780000001'
+    }).save();
 
-    // Enroll students and populate the reciprocal studentsEnrolled array
-    const studentMap = [
-      { student: student1, idxs: [0, 2, 5, 7] },
-      { student: student2, idxs: [0, 1, 6, 7] },
-      { student: student3, idxs: [1, 3, 8] },
-      { student: student4, idxs: [0, 2, 4, 8] },
-    ];
+    await new StudentProfile({
+      userId: student2._id,
+      school: 'Carnegie Mellon University Africa',
+      educationLevel: 'graduate',
+      fieldOfStudy: 'Electrical and Computer Engineering',
+      skills: ['Python', 'Django', 'PostgreSQL', 'Docker'],
+      availability: 'part_time',
+      bio: 'Graduate student specializing in backend systems and distributed computing.',
+      githubUrl: 'https://github.com/bob',
+      linkedinUrl: 'https://linkedin.com/in/bob',
+      phoneNumber: '+250780000002'
+    }).save();
 
-    for (const sm of studentMap) {
-      const enrolledIds = sm.idxs.map(i => courses[i]._id);
-      await User.findByIdAndUpdate(sm.student._id, { $set: { enrolledCourses: enrolledIds } });
-      
-      // Update each course to include this student
-      for (const courseId of enrolledIds) {
-        await Course.findByIdAndUpdate(courseId, { $addToSet: { studentsEnrolled: sm.student._id } });
-      }
-    }
+    console.log('🚀 Creating Internship Programs...');
+    const program1 = await new InternshipProgram({
+      title: 'Advanced Full Stack Internship',
+      description: `Join our elite engineering team and work on production-grade applications. 
+      Prerequisites: Completion of '${fullStackCourse.title}' is highly recommended.`, // Reference to course
+      duration: '3 months',
+      startDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Starts in 1 week
+      endDate: new Date(Date.now() + 97 * 24 * 60 * 60 * 1000),
+      applicationDeadline: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+      eligibility: ['React', 'Node.js', 'Git'],
+      maxParticipants: 10,
+      price: 100000, // 100k RWF
+      currency: 'RWF',
+      status: 'active',
+      isActive: true,
+      batches: [{ name: 'Batch 1', startDate: new Date(), endDate: new Date() }]
+    } as any).save();
 
-    console.log('Seeding Payments...');
-    // Create payments for enrolled courses
-    for (const sm of studentMap) {
-      for (const i of sm.idxs) {
-        const c = courses[i];
-        await new Payment({
-          userId: sm.student._id,
-          courseId: c._id,
-          amount: c.price,
-          currency: 'RWF',
-          status: 'completed',
-          paymentMethod: 'Mobile Money',
-          transactionId: `TXN-${Math.random().toString(36).substring(7).toUpperCase()}`,
-          type: 'Course Enrollment',
-          itemTitle: c.title
-        }).save();
-      }
-    }
+    const program2 = await new InternshipProgram({
+      title: 'Data Analytics For Business',
+      description: 'Learn to drive business decisions with data.',
+      duration: '2 months',
+      startDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      endDate: new Date(Date.now() + 74 * 24 * 60 * 60 * 1000),
+      applicationDeadline: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
+      eligibility: ['Excel', 'Basic Python'],
+      maxParticipants: 20,
+      price: 0, // Free
+      currency: 'RWF',
+      status: 'active',
+      isActive: true
+    } as any).save();
 
-    console.log('Seeding Questions...');
-    // Add questions to each course
-    for (const course of courses) {
-      await new Question({
-        courseId: course._id,
-        questionText: `What is the primary goal of ${course.title}?`,
-        options: ["Master the skills", "Just watch videos", "Nothing", "Skip everything"],
-        correctOptionIndex: 0,
-        explanation: "The goal is to provide deep mastery of the subject matter."
-      }).save();
-      
-      await new Question({
-        courseId: course._id,
-        questionText: `Which level is ${course.title} designed for?`,
-        options: ["Beginner", "Intermediate", "Advanced", "All Levels"],
-        correctOptionIndex: course.level === 'Beginner' ? 0 : (course.level === 'Intermediate' ? 1 : 2),
-        explanation: `This course is specifically tailored for ${course.level} learners.`
-      }).save();
-    }
+    console.log('🏗️ Creating Internship Projects...');
+    // Link Project to Trainer and refer to Course in description
+    const project1 = await new InternshipProject({
+      internshipProgramId: program1._id,
+      title: 'E-Commerce Microservices Migration',
+      description: `
+        <p>In this project, you will break down a monolithic e-commerce app into microservices.</p>
+        <p><strong>Reference Material:</strong> Please review Unit 5 of the <a href="/courses/${fullStackCourse._id}/learn">${fullStackCourse.title}</a> course before starting.</p>
+        <p>Your mentor for this project will be <strong>${(trainer1 as any).fullName}</strong>, the author of the course.</p>
+      `,
+      trainerId: trainer1._id,
+      requiredSkills: ['Node.js', 'Docker', 'Kubernetes'],
+      objectives: ['Analyze monolith', 'Design service boundaries', 'Implement auth service', 'Deploy to cluster'],
+      status: 'published',
+      teamSizeRange: { min: 2, max: 4 }
+    } as any).save();
 
-    console.log('Seeding Conversations...');
-    const conv1 = new Conversation({ participants: [student1._id, instructor2._id] });
-    await conv1.save();
-    const msg1 = new Message({ conversationId: conv1._id, sender: instructor2._id, content: 'Welcome to the bootcamp, Alice! I am looking forward to seeing your progress.', read: true });
-    await msg1.save();
-    conv1.lastMessage = msg1._id as any;
-    await conv1.save();
+    // Create milestones for project
+    const m1 = await new InternshipMilestone({
+      internshipProjectId: project1._id,
+      title: 'System Analysis & Design',
+      description: 'Document the existing system and propose microservice architecture.',
+      deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      order: 1
+    }).save();
 
-    console.log('Seeding Internships...');
-    const internshipData = [
-      {
-        userId: student4._id,
-        title: 'Full Stack Developer Intern',
-        company: 'CODEMANDE Tech',
-        duration: '3 months',
-        status: 'in_progress',
-        mentorId: instructor2._id,
-        progress: 45,
-        payment: { amount: 50000, currency: 'RWF', status: 'paid', paidAt: new Date() }
-      },
-      {
-        userId: student1._id,
-        title: 'Software Engineering Trainee',
-        company: 'Apex Solutions',
-        duration: '6 months',
-        status: 'eligible',
-        mentorId: instructor1._id,
-        progress: 0,
-        payment: { amount: 25000, currency: 'RWF', status: 'pending' }
-      }
-    ];
+    const m2 = await new InternshipMilestone({
+      internshipProjectId: project1._id,
+      title: 'Service Implementation',
+      description: 'Implement the User and Product services using Node.js.',
+      deadline: new Date(Date.now() + 28 * 24 * 60 * 60 * 1000),
+      order: 2
+    }).save();
 
-    for (const idata of internshipData) {
-      await new Internship(idata).save();
-    }
+    console.log('📝 Creating Applications...');
+    // Alice applies to Program 1
+    const app1 = await new InternshipApplication({
+      userId: student1._id,
+      internshipProgramId: program1._id,
+      status: 'approved',
+      reviewedBy: admin._id,
+      reviewedAt: new Date(),
+      cvUrl: 'https://example.com/cv.pdf'
+    }).save();
 
-    console.log('Seeding Projects...');
-    const projectsData = [
-      {
-        userId: student1._id,
-        title: 'E-Commerce Platform for Local Artisans',
-        course: courses[0].title, // Full Stack Dev
-        type: 'Individual',
-        status: 'in_progress',
-        progress: 65,
-        description: 'Building a fully functional e-commerce site using MERN stack, featuring user authentication, product management, and payment integration.',
-        deadline: new Date(Date.now() + 86400000 * 14), // 2 weeks from now
-        tasks: [
-          { title: 'Setup React Frontend', completed: true },
-          { title: 'Design Database Schema', completed: true },
-          { title: 'Implement Stripe Payment', completed: false },
-          { title: 'Deploy to Vercel', completed: false }
-        ]
-      },
-      {
-        userId: student1._id,
-        title: 'Smart Home IoT Dashboard',
-        course: courses[6].title, // DevOps
-        type: 'Team Project',
-        status: 'completed',
-        progress: 100,
-        description: 'A centralized dashboard to monitor and control IoT devices, deployed using Kubernetes and ensuring high availability.',
-        submittedAt: new Date(),
-        grade: 'A',
-        feedback: 'Excellent work on the CI/CD pipeline implementation.',
-        team: [
-          { name: 'Alice Student', role: 'DevOps Engineer' },
-          { name: 'David Lee', role: 'Frontend Developer' }
-        ],
-        tasks: [
-          { title: 'Containerize Applications', completed: true },
-          { title: 'Setup Jenkins Pipeline', completed: true },
-          { title: 'Configure Monitoring (Prometheus/Grafana)', completed: true }
-        ],
-        submissionUrl: 'https://github.com/alice/iot-dashboard'
-      },
-      {
-        userId: student2._id,
-        title: 'Predictive Analytics for Retail',
-        course: courses[1].title, // Data Science
-        type: 'Individual',
-        status: 'pending_review',
-        progress: 95,
-        description: 'Using Python and Pandas to analyze retail sales data and predict future trends using machine learning models.',
-        submittedAt: new Date(),
-        submissionUrl: 'https://github.com/bob/retail-analytics',
-        tasks: [
-          { title: 'Data Cleaning', completed: true },
-          { title: 'Exploratory Data Analysis', completed: true },
-          { title: 'Model Training', completed: true },
-          { title: 'Final Report Generation', completed: false }
-        ]
-      },
-      {
-        userId: student3._id,
-        title: 'Blockchain Voting System',
-        course: courses[9].title, // Blockchain
-        type: 'Team Project',
-        status: 'in_progress',
-        progress: 40,
-        description: 'A decentralized voting application built on Ethereum to ensure transparency and security in local elections.',
-        team: [
-          { name: 'Charlie Newbie', role: 'Smart Contract Dev' },
-          { name: 'Sarah Jones', role: 'UI/UX Designer' }
-        ],
-        tasks: [
-          { title: 'Write Smart Contracts', completed: true },
-          { title: 'Integrate Web3.js', completed: false },
-          { title: 'Test on Ropsten Network', completed: false }
-        ]
-      }
-    ];
+    // Bob applies to Program 1
+    const app2 = await new InternshipApplication({
+      userId: student2._id,
+      internshipProgramId: program1._id,
+      status: 'approved',
+      reviewedBy: admin._id,
+      reviewedAt: new Date(),
+      cvUrl: 'https://example.com/cv-bob.pdf'
+    }).save();
 
-    for (const p of projectsData) {
-      const project = new Project(p);
-      await project.save();
-    }
+    console.log('💳 Creating Payments...');
+    // Alice pays
+    await new InternshipPayment({
+      userId: student1._id,
+      internshipProgramId: program1._id,
+      amount: 100000,
+      currency: 'RWF',
+      status: 'paid',
+      paymentMethod: 'card',
+      transactionId: 'pi_test_12345ABCDE',
+      paidAt: new Date()
+    }).save();
 
-    console.log('Seeding Certificates...');
-    const certificatesData = [
-      {
-        userId: student1._id,
-        courseId: courses[0]._id, // Full Stack Dev
-        courseTitle: courses[0].title,
-        issueDate: new Date(),
-        credentialId: `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-        status: 'issued',
-        progress: 100,
-        requirements: [
-          { title: 'Complete all video lessons', completed: true, current: 50, total: 50 },
-          { title: 'Pass final exam with >80%', completed: true, current: 1, total: 1 },
-          { title: 'Submit final project', completed: true, current: 1, total: 1 }
-        ]
-      },
-      {
-        userId: student2._id,
-        courseId: courses[1]._id,
-        courseTitle: courses[1].title,
-        status: 'in_progress',
-        progress: 60,
-        requirements: [
-          { title: 'Complete all video lessons', completed: false, current: 20, total: 40 },
-          { title: 'Pass final exam with >80%', completed: false, current: 0, total: 1 },
-          { title: 'Submit final project', completed: false, current: 0, total: 1 }
-        ]
-      },
-      {
-         userId: student4._id,
-         courseId: courses[4]._id, // Cloud
-         courseTitle: courses[4].title,
-         status: 'issued',
-         issueDate: new Date(Date.now() - 86400000 * 30), // 1 month ago
-         credentialId: `CERT-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
-         progress: 100,
-         requirements: [
-             { title: 'Complete AWS Cloud Practitioner Essentials', completed: true },
-             { title: 'Pass Capstone Project', completed: true }
-         ]
-      }
-    ];
+    // Bob is waived
+    await new InternshipPayment({
+      userId: student2._id,
+      internshipProgramId: program1._id,
+      amount: 100000,
+      currency: 'RWF',
+      status: 'waived',
+      waivedReason: 'Merit Scholarship',
+      waivedBy: admin._id
+    }).save();
 
-    for (const c of certificatesData) {
-      const certificate = new Certificate(c);
-      await certificate.save();
-    }
+    console.log('👥 Creating Teams...');
+    // Create Team for Project 1
+    const team1 = await new InternshipTeam({
+      internshipProgramId: program1._id,
+      internshipProjectId: project1._id,
+      name: 'Team Alpha',
+      status: 'active',
+      mentorId: trainer1._id
+    }).save();
 
-    console.log('Seeding Completed Successfully!');
+    // Add members
+    await new InternshipTeamMember({
+      teamId: team1._id,
+      userId: student1._id,
+      role: 'lead',
+      joinedAt: new Date()
+    }).save();
+
+    await new InternshipTeamMember({
+      teamId: team1._id,
+      userId: student2._id,
+      role: 'member',
+      joinedAt: new Date()
+    }).save();
+
+    console.log('📤 Creating Submissions...');
+    // Alice submits Milestone 1
+    await new InternshipSubmission({
+      milestoneId: m1._id,
+      teamId: team1._id,
+      userId: student1._id,
+      contentUrl: 'https://figma.com/design-doc',
+      description: 'Here is our architecture diagram and design doc.',
+      status: 'approved',
+      feedback: 'Excellent detailed analysis.',
+      gradedBy: trainer1._id,
+      gradedAt: new Date()
+    }).save();
+
+    console.log('✅ Seeding Completed Successfully!');
     process.exit(0);
+
   } catch (error) {
-    console.error('Error seeding data:', error);
+    console.error('❌ Error seeding data:', error);
     process.exit(1);
   }
 };

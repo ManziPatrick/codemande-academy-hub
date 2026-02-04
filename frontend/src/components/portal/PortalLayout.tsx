@@ -69,6 +69,8 @@ const trainerNavItems: NavItem[] = [
   { label: "Assignments", href: "/portal/trainer/assignments", icon: FolderOpen },
   { label: "Schedule", href: "/portal/trainer/schedule", icon: Calendar },
   { label: "Mentorship", href: "/portal/trainer/mentorship", icon: GraduationCap },
+  { label: "Internships", href: "/portal/trainer/internships", icon: Briefcase },
+  { label: "Projects", href: "/portal/admin/projects", icon: FolderOpen },
   { label: "Messages", href: "/chat", icon: MessageSquare },
 ];
 
@@ -77,6 +79,7 @@ const adminNavItems: NavItem[] = [
   { label: "Users", href: "/portal/admin/users", icon: Users },
   { label: "Courses", href: "/portal/admin/courses", icon: BookOpen },
   { label: "Internships", href: "/portal/admin/internships", icon: Briefcase },
+  { label: "Projects", href: "/portal/admin/projects", icon: FolderOpen },
   { label: "Payments", href: "/portal/admin/payments", icon: CreditCard },
   { label: "Badges", href: "/portal/admin/badges", icon: Award },
   { label: "Analytics", href: "/portal/admin/analytics", icon: BarChart3 },
@@ -170,7 +173,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   return (
     <div className="min-h-screen bg-background flex w-full">
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-sidebar border-r border-border/50 fixed h-full">
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-card border-r border-border/50 fixed h-full">
         {/* Logo */}
         <div className="h-16 flex items-center px-6 border-b border-border/50">
           <Link to="/" className="flex items-center gap-2">
@@ -179,7 +182,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
             ) : (
               <span className="text-2xl font-bold" style={{ color: branding.primaryColor }}>≪</span>
             )}
-            <span className="font-heading text-lg font-semibold text-sidebar-foreground tracking-wide">
+            <span className="font-heading text-lg font-semibold text-card-foreground tracking-wide">
               {branding.siteName}
             </span>
           </Link>
@@ -193,7 +196,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-3">
+        <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
           <ul className="space-y-1">
             {navItems.map((item) => {
               const isActive = location.pathname === item.href;
@@ -204,7 +207,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       isActive
                         ? "bg-accent text-accent-foreground"
-                        : "text-sidebar-foreground/70 hover:bg-background/50 hover:text-sidebar-foreground"
+                        : "text-card-foreground/70 hover:bg-background/50 hover:text-card-foreground"
                     }`}
                   >
                     <item.icon className="w-5 h-5" strokeWidth={1.5} />
@@ -220,7 +223,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
         <div className="p-4 border-t border-border/50">
           <Link
             to="/portal/help"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-background/50 hover:text-sidebar-foreground transition-all"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-card-foreground/70 hover:bg-background/50 hover:text-card-foreground transition-all"
           >
             <HelpCircle className="w-5 h-5" strokeWidth={1.5} />
             Help & Support
@@ -244,12 +247,12 @@ export function PortalLayout({ children }: PortalLayoutProps) {
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: "tween", duration: 0.3 }}
-              className="fixed left-0 top-0 bottom-0 w-64 bg-sidebar z-50 lg:hidden flex flex-col"
+              className="fixed left-0 top-0 bottom-0 w-64 bg-card z-50 lg:hidden flex flex-col"
             >
               {/* Close button */}
               <button
                 onClick={() => setSidebarOpen(false)}
-                className="absolute top-4 right-4 p-2 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                className="absolute top-4 right-4 p-2 text-card-foreground/70 hover:text-card-foreground"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -262,7 +265,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
                   ) : (
                     <span className="text-2xl font-bold" style={{ color: branding.primaryColor }}>≪</span>
                   )}
-                  <span className="font-heading text-lg font-semibold text-sidebar-foreground tracking-wide">
+                  <span className="font-heading text-lg font-semibold text-card-foreground tracking-wide">
                     {branding.siteName}
                   </span>
                 </Link>
@@ -276,7 +279,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
               </div>
 
               {/* Navigation */}
-              <nav className="flex-1 overflow-y-auto py-4 px-3">
+              <nav className="flex-1 overflow-y-auto py-4 px-3 custom-scrollbar">
                 <ul className="space-y-1">
                   {navItems.map((item) => {
                     const isActive = location.pathname === item.href;
@@ -288,7 +291,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
                           className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                             isActive
                               ? "bg-accent text-accent-foreground"
-                              : "text-sidebar-foreground/70 hover:bg-background/50 hover:text-sidebar-foreground"
+                              : "text-card-foreground/70 hover:bg-background/50 hover:text-card-foreground"
                           }`}
                         >
                           <item.icon className="w-5 h-5" strokeWidth={1.5} />
@@ -305,20 +308,20 @@ export function PortalLayout({ children }: PortalLayoutProps) {
       </AnimatePresence>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-64 flex flex-col min-h-screen">
+      <div className="flex-1 lg:ml-64 flex flex-col h-screen overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 bg-sidebar border-b border-border/50 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
+        <header className="h-16 bg-card border-b border-border/50 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30">
           {/* Mobile Menu Button */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 text-sidebar-foreground/70 hover:text-sidebar-foreground"
+            className="lg:hidden p-2 text-card-foreground/70 hover:text-card-foreground"
           >
             <Menu className="w-6 h-6" />
           </button>
 
           {/* Page Title - Mobile */}
           <div className="lg:hidden">
-            <span className="font-heading font-semibold text-sidebar-foreground">
+            <span className="font-heading font-semibold text-card-foreground">
               {roleLabel}
             </span>
           </div>
@@ -340,7 +343,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
             <ThemeToggle />
             
             {/* Notifications */}
-            <button className="relative p-2 text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors">
+            <button className="relative p-2 text-card-foreground/70 hover:text-card-foreground transition-colors">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
             </button>
@@ -355,10 +358,10 @@ export function PortalLayout({ children }: PortalLayoutProps) {
                       {getInitials(user.fullName)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden md:block text-sm font-medium text-sidebar-foreground">
+                  <span className="hidden md:block text-sm font-medium text-card-foreground">
                     {user.fullName}
                   </span>
-                  <ChevronDown className="w-4 h-4 text-sidebar-foreground/50 hidden md:block" />
+                  <ChevronDown className="w-4 h-4 text-card-foreground/50 hidden md:block" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -395,7 +398,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+        <main className="flex-1 p-4 lg:p-6 overflow-y-auto custom-scrollbar">
           {children}
         </main>
       </div>

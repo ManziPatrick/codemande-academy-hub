@@ -67,7 +67,7 @@ export function SubmitProjectDialog({ open, onOpenChange, projectTitle, projectI
         <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
           <DialogTitle>Submit Project</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="flex-1 px-4 sm:px-6">
+        <ScrollArea className="flex-1 px-4 sm:px-6 custom-scrollbar">
           <div className="space-y-4 py-4">
             <div className="p-3 bg-background/50 rounded-lg">
               <p className="text-sm text-card-foreground/60">Submitting:</p>
