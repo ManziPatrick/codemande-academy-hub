@@ -3,6 +3,7 @@ services:
     name: academy-hub-backend
     env: docker
     plan: free
+    autoDeploy: false
     rootDirectory: backend
     envVars:
       - key: NODE_VERSION
