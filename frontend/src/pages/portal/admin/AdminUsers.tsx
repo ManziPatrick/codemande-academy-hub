@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  Award,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -27,15 +28,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  AddUserDialog, 
-  EditUserDialog, 
-  ViewUserDialog, 
-  SendEmailDialog, 
-  DeleteConfirmDialog 
-} from "@/components/portal/dialogs";
+import { BadgeAwardDialog } from "@/components/portal/BadgeAwardDialog";
 import { toast } from "sonner";
-
+import { useQuery, useMutation } from "@apollo/client/react";
+import { GET_USERS } from "@/lib/graphql/queries";
+import { CREATE_USER, UPDATE_USER, DELETE_USER } from "@/lib/graphql/mutations";
 
 const getRoleBadge = (role: string) => {
   const styles: Record<string, string> = {
@@ -58,20 +55,17 @@ const getRoleBadge = (role: string) => {
   );
 };
 
-import { useQuery, useMutation } from "@apollo/client/react";
-import { GET_USERS } from "@/lib/graphql/queries";
-import { CREATE_USER, UPDATE_USER, DELETE_USER } from "@/lib/graphql/mutations";
-
 export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
-  
+
   // Dialog states
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [viewUser, setViewUser] = useState<any | null>(null);
   const [editUser, setEditUser] = useState<any | null>(null);
   const [deleteUser, setDeleteUser] = useState<any | null>(null);
   const [emailUser, setEmailUser] = useState<any | null>(null);
+  const [awardUser, setAwardUser] = useState<any | null>(null);
 
   // Queries & Mutations
   const { data, loading, refetch } = useQuery(GET_USERS);
@@ -83,59 +77,58 @@ export default function AdminUsers() {
 
   const filteredUsers = users.filter((u: any) => {
     const matchesSearch = (u.username?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
-                          (u.email?.toLowerCase() || "").includes(searchQuery.toLowerCase());
+      (u.email?.toLowerCase() || "").includes(searchQuery.toLowerCase());
     const matchesRole = filterRole === "all" || u.role === filterRole;
     return matchesSearch && matchesRole;
   });
 
   const handleAddUser = async (newUser: any) => {
     try {
-        await createUserMutation({
-            variables: {
-                username: newUser.username,
-                email: newUser.email,
-                password: newUser.password,
-                role: newUser.role
-            }
-        });
-        toast.success("User created successfully!");
-        refetch();
-        setIsAddOpen(false);
+      await createUserMutation({
+        variables: {
+          username: newUser.username,
+          email: newUser.email,
+          password: newUser.password,
+          role: newUser.role
+        }
+      });
+      toast.success("User created successfully!");
+      refetch();
+      setIsAddOpen(false);
     } catch (err: any) {
-        toast.error(err.message);
+      toast.error(err.message);
     }
   };
 
   const handleSaveUser = async (updatedUser: any) => {
     try {
-        await updateUserMutation({
-            variables: {
-                id: updatedUser.id,
-                username: updatedUser.username,
-                email: updatedUser.email,
-                role: updatedUser.role
-            }
-        });
-        toast.success("User updated successfully!");
-        refetch();
-        setEditUser(null);
+      await updateUserMutation({
+        variables: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role
+        }
+      });
+      toast.success("User updated successfully!");
+      refetch();
+      setEditUser(null);
     } catch (err: any) {
-        toast.error(err.message);
+      toast.error(err.message);
     }
   };
 
   const handleDeleteUser = async () => {
     if (!deleteUser) return;
     try {
-        await deleteUserMutation({ variables: { id: deleteUser.id } });
-        toast.success("User deleted successfully!");
-        refetch();
-        setDeleteUser(null);
+      await deleteUserMutation({ variables: { id: deleteUser.id } });
+      toast.success("User deleted successfully!");
+      refetch();
+      setDeleteUser(null);
     } catch (err: any) {
-        toast.error(err.message);
+      toast.error(err.message);
     }
   };
-
 
   return (
     <PortalLayout>
@@ -151,7 +144,7 @@ export default function AdminUsers() {
               User Management
             </h1>
             <p className="text-muted-foreground mt-1">
-              Manage students, trainers, and administrators
+              Manage platform users, roles, and permissions
             </p>
           </div>
           <Button variant="gold" onClick={() => setIsAddOpen(true)}>
@@ -160,140 +153,84 @@ export default function AdminUsers() {
           </Button>
         </motion.div>
 
-        {/* Stats */}
+        {/* Filters */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-        >
-          <Card className="border-border/50">
-            <CardContent className="p-4 text-center">
-              <Users className="w-8 h-8 text-accent mx-auto mb-2" />
-              <p className="text-2xl font-bold text-card-foreground">{users.length}</p>
-              <p className="text-xs text-card-foreground/60">Total Users</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-4 text-center">
-              <GraduationCap className="w-8 h-8 text-blue-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-card-foreground">
-                {users.filter((u: any) => u.role === "student").length}
-              </p>
-              <p className="text-xs text-card-foreground/60">Students</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-4 text-center">
-              <UserCog className="w-8 h-8 text-accent mx-auto mb-2" />
-              <p className="text-2xl font-bold text-card-foreground">
-                {users.filter((u: any) => u.role === "trainer").length}
-              </p>
-              <p className="text-xs text-card-foreground/60">Trainers</p>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-4 text-center">
-              <Shield className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-card-foreground">
-                {users.filter((u: any) => u.role === "admin" || u.role === "super_admin").length}
-              </p>
-              <p className="text-xs text-card-foreground/60">Admins</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Search & Filter */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex flex-col sm:flex-row gap-4"
+          className="flex flex-col md:flex-row gap-4"
         >
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
-              placeholder="Search users..."
+              placeholder="Search users by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
             />
           </div>
-          <select
-            value={filterRole}
-            onChange={(e) => setFilterRole(e.target.value)}
-            className="h-10 px-3 rounded-md border border-input bg-background text-sm min-w-[150px]"
-          >
-            <option value="all">All Roles</option>
-            <option value="student">Students</option>
-            <option value="trainer">Trainers</option>
-            <option value="admin">Admins</option>
-          </select>
+          <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
+            {["all", "student", "trainer", "admin", "super_admin"].map((role) => (
+              <Button
+                key={role}
+                variant={filterRole === role ? "gold" : "outline"}
+                size="sm"
+                onClick={() => setFilterRole(role)}
+                className="capitalize whitespace-nowrap"
+              >
+                {role.replace("_", " ")}
+              </Button>
+            ))}
+          </div>
         </motion.div>
 
         {/* Users Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.2 }}
         >
           <Card className="border-border/50">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-background/50 border-b border-border/50">
-                    <tr>
-                      <th className="text-left px-6 py-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        User
-                      </th>
-                      <th className="text-left px-6 py-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Role
-                      </th>
-                      <th className="text-left px-6 py-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="text-left px-6 py-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Courses
-                      </th>
-                      <th className="text-left px-6 py-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Joined
-                      </th>
-                      <th className="text-right px-6 py-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Actions
-                      </th>
+                  <thead>
+                    <tr className="border-b border-border/50">
+                      <th className="text-left p-4 text-sm font-medium text-card-foreground/70">User</th>
+                      <th className="text-left p-4 text-sm font-medium text-card-foreground/70">Role</th>
+                      <th className="text-center p-4 text-sm font-medium text-card-foreground/70">Courses</th>
+                      <th className="text-left p-4 text-sm font-medium text-card-foreground/70">Joined</th>
+                      <th className="text-right p-4 text-sm font-medium text-card-foreground/70">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/50">
+                  <tbody>
                     {filteredUsers.map((user: any) => (
-                      <tr key={user.id} className="hover:bg-background/30 transition-colors">
-                        <td className="px-6 py-4">
+                      <tr key={user.id} className="border-b border-border/30 hover:bg-background/50 transition-colors">
+                        <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarFallback className="bg-accent/20 text-accent text-sm">
-                                {user.username?.split(" ").map((n: string) => n[0]).join("")}
+                            <Avatar className="h-9 w-9 border border-border/50">
+                              <AvatarFallback className="bg-accent/10 text-accent">
+                                {user.username?.substring(0, 2).toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
                             <div>
                               <p className="font-medium text-card-foreground">{user.username}</p>
-                              <p className="text-sm text-card-foreground/60">{user.email}</p>
+                              <p className="text-xs text-card-foreground/60">{user.email}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="p-4">
                           {getRoleBadge(user.role)}
                         </td>
-                        <td className="px-6 py-4">
-                          <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-400/30">
-                            active
-                          </Badge>
+                        <td className="p-4 text-center">
+                          <span className="text-sm font-medium text-card-foreground">
+                            {user.enrolledCourses?.length || 0}
+                          </span>
                         </td>
-                        <td className="px-6 py-4 text-card-foreground">
-                          0
+                        <td className="p-4 text-sm text-card-foreground/70">
+                          {new Date(parseInt(user.createdAt || Date.now().toString())).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 text-card-foreground/60 text-sm">
-                          Recently
-                        </td>
-                        <td className="px-6 py-4 text-right">
+                        <td className="p-4 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm">
@@ -301,88 +238,59 @@ export default function AdminUsers() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setAwardUser(user)}>
+                                <Award className="w-4 h-4 mr-2" /> Award Badge
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setViewUser(user)}>
-                                <Eye className="w-4 h-4 mr-2" />
-                                View
+                                <Eye className="w-4 h-4 mr-2" /> View Details
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setEditUser(user)}>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Edit
+                                <Edit className="w-4 h-4 mr-2" /> Edit User
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => setEmailUser(user)}>
-                                <Mail className="w-4 h-4 mr-2" />
-                                Send Email
+                                <Mail className="w-4 h-4 mr-2" /> Send Email
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-destructive"
+                              <div className="h-px bg-border/50 my-1" />
+                              <DropdownMenuItem
+                                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                                 onClick={() => setDeleteUser(user)}
                               >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
+                                <Trash2 className="w-4 h-4 mr-2" /> Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
                       </tr>
                     ))}
-
                   </tbody>
                 </table>
               </div>
-              
-              {/* Pagination */}
-              <div className="flex items-center justify-between px-6 py-4 border-t border-border/50">
-                <p className="text-sm text-muted-foreground">
-                  Showing {filteredUsers.length} of {users.length} users
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" disabled>
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" disabled>
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
             </CardContent>
           </Card>
+
+          {/* Pagination */}
+          <div className="flex items-center justify-between mt-6">
+            <p className="text-sm text-muted-foreground">
+              Showing <b>{filteredUsers.length}</b> users
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled>
+                <ChevronLeft className="w-4 h-4 mr-2" /> Previous
+              </Button>
+              <Button variant="outline" size="sm" disabled>
+                Next <ChevronRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
         </motion.div>
       </div>
 
-      {/* Dialogs */}
-      <AddUserDialog
-        open={isAddOpen}
-        onOpenChange={setIsAddOpen}
-        onAdd={handleAddUser}
+      <BadgeAwardDialog
+        isOpen={!!awardUser}
+        onClose={() => setAwardUser(null)}
+        user={awardUser}
       />
-      <ViewUserDialog
-        open={!!viewUser}
-        onOpenChange={(open) => !open && setViewUser(null)}
-        user={viewUser}
-        onSendEmail={(user) => {
-          setViewUser(null);
-          setEmailUser(user);
-        }}
-      />
-      <EditUserDialog
-        open={!!editUser}
-        onOpenChange={(open) => !open && setEditUser(null)}
-        user={editUser}
-        onSave={handleSaveUser}
-      />
-      <SendEmailDialog
-        open={!!emailUser}
-        onOpenChange={(open) => !open && setEmailUser(null)}
-        recipientName={emailUser?.name || ""}
-        recipientEmail={emailUser?.email || ""}
-      />
-      <DeleteConfirmDialog
-        open={!!deleteUser}
-        onOpenChange={(open) => !open && setDeleteUser(null)}
-        title="Delete User"
-        description={`Are you sure you want to delete ${deleteUser?.name}? This will remove their account and all associated data.`}
-        onConfirm={handleDeleteUser}
-      />
+
     </PortalLayout>
   );
 }

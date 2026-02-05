@@ -194,7 +194,7 @@ export default function PortalHelp() {
                     </div>
                     <div>
                       <p className="text-sm text-card-foreground/60">Phone</p>
-                      <p className="text-card-foreground">+250 788 123 456</p>
+                      <p className="text-card-foreground">+250 790 706 170</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

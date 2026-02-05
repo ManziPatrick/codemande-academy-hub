@@ -5,10 +5,10 @@ import { APPLY_TO_INTERNSHIP_WITH_VALIDATION } from "@/lib/graphql/mutations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Calendar, 
-  Clock, 
-  CheckCircle, 
+import {
+  Calendar,
+  Clock,
+  CheckCircle,
   AlertCircle,
   ExternalLink,
   Send
@@ -46,7 +46,7 @@ export function ProgramCatalog() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const skills = (formData.get("skills") as string).split(",").map(s => s.trim());
-    
+
     applyToProgram({
       variables: {
         internshipProgramId: applyingTo.id,
@@ -68,10 +68,10 @@ export function ProgramCatalog() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {programs.filter((p: any) => p.status === 'active').map((program: any) => {
           const deadlinePassed = isDeadlinePassed(program.applicationDeadline);
-          
+
           return (
-            <Card 
-              key={program.id} 
+            <Card
+              key={program.id}
               className="group overflow-hidden border-border/50 hover:border-accent/40 transition-all hover:shadow-lg"
             >
               <CardHeader className="bg-gradient-to-br from-accent/10 to-accent/5 pb-4 relative overflow-hidden">
@@ -92,7 +92,7 @@ export function ProgramCatalog() {
                   </CardTitle>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="pt-6 space-y-4">
                 <p className="text-sm text-muted-foreground line-clamp-4 min-h-[5.5rem]">
                   {program.description}
@@ -102,13 +102,13 @@ export function ProgramCatalog() {
                   <div className="flex items-center gap-2 text-xs">
                     <Calendar className="w-3.5 h-3.5 text-accent" />
                     <span className="text-muted-foreground">
-                      {new Date(program.startDate).toLocaleDateString()} - {new Date(program.endDate).toLocaleDateString()}
+                      {program.startDate ? new Date(program.startDate).toLocaleDateString() : 'TBD'} - {program.endDate ? new Date(program.endDate).toLocaleDateString() : 'TBD'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <Clock className="w-3.5 h-3.5 text-accent" />
                     <span className="text-muted-foreground">
-                      Apply by: <strong className="text-foreground">{new Date(program.applicationDeadline).toLocaleDateString()}</strong>
+                      Apply by: <strong className="text-foreground">{program.applicationDeadline ? new Date(program.applicationDeadline).toLocaleDateString() : 'TBD'}</strong>
                     </span>
                   </div>
                 </div>
@@ -118,8 +118,8 @@ export function ProgramCatalog() {
                     <p className="text-[10px] uppercase font-bold text-muted-foreground">Requirements</p>
                     <div className="flex flex-wrap gap-1">
                       {program.eligibility.map((req: string, idx: number) => (
-                        <span 
-                          key={idx} 
+                        <span
+                          key={idx}
                           className="text-[10px] bg-muted px-2 py-1 rounded-md text-muted-foreground flex items-center gap-1"
                         >
                           <CheckCircle className="w-3 h-3 text-accent" />
@@ -131,9 +131,9 @@ export function ProgramCatalog() {
                 )}
 
                 <div className="pt-4 flex gap-2">
-                  <Button 
-                    variant="default" 
-                    className="w-full gap-2" 
+                  <Button
+                    variant="default"
+                    className="w-full gap-2"
                     onClick={() => setApplyingTo(program)}
                     disabled={deadlinePassed}
                   >
@@ -161,13 +161,13 @@ export function ProgramCatalog() {
                   Profile Incomplete
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  You must complete your student profile before applying for internships. 
+                  You must complete your student profile before applying for internships.
                   Currently, your profile is <strong>{profile?.completionPercentage || 0}%</strong> complete.
                 </p>
-                <Button 
-                  type="button" 
-                  variant="destructive" 
-                  size="sm" 
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
                   className="w-full text-xs"
                   onClick={() => window.location.href = '/portal/student/profile'}
                 >
@@ -191,32 +191,32 @@ export function ProgramCatalog() {
 
             <div className="space-y-2">
               <Label htmlFor="skills">Technical Skills (comma-separated) *</Label>
-              <Input 
-                id="skills" 
-                name="skills" 
-                placeholder="e.g., JavaScript, React, Node.js, Python" 
-                required 
+              <Input
+                id="skills"
+                name="skills"
+                placeholder="e.g., JavaScript, React, Node.js, Python"
+                required
               />
               <p className="text-xs text-muted-foreground">List all relevant programming languages and frameworks</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="availability">Availability *</Label>
-              <Input 
-                id="availability" 
-                name="availability" 
-                placeholder="e.g., Full-time, Part-time (20hrs/week)" 
-                required 
+              <Input
+                id="availability"
+                name="availability"
+                placeholder="e.g., Full-time, Part-time (20hrs/week)"
+                required
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="portfolioUrl">Portfolio / GitHub URL (Optional)</Label>
-              <Input 
-                id="portfolioUrl" 
-                name="portfolioUrl" 
+              <Input
+                id="portfolioUrl"
+                name="portfolioUrl"
                 type="url"
-                placeholder="https://github.com/yourusername" 
+                placeholder="https://github.com/yourusername"
               />
               <p className="text-xs text-muted-foreground">Share your best work to stand out</p>
             </div>
@@ -225,15 +225,15 @@ export function ProgramCatalog() {
               <Button type="button" variant="outline" onClick={() => setApplyingTo(null)}>
                 Cancel
               </Button>
-                <Button 
-                  type="submit" 
-                  variant="default" 
-                  className="gap-2"
-                  disabled={!profile?.isComplete}
-                >
-                  <Send className="w-4 h-4" />
-                  {profile?.isComplete ? 'Submit Application' : 'Profile Required'}
-                </Button>
+              <Button
+                type="submit"
+                variant="default"
+                className="gap-2"
+                disabled={!profile?.isComplete}
+              >
+                <Send className="w-4 h-4" />
+                {profile?.isComplete ? 'Submit Application' : 'Profile Required'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

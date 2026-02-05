@@ -51,15 +51,19 @@ const userSchema = new mongoose.Schema({
   // Account Status & Soft Delete
   status: { type: String, enum: ['active', 'suspended', 'deactivated'], default: 'active' },
   isDeleted: { type: Boolean, default: false },
-  
+
+  // Password Reset
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
+
   // Tracking & Presence
   lastActive: { type: Date },
   isOnline: { type: Boolean, default: false },
   totalTimeSpent: { type: Number, default: 0 }, // in seconds
-  
+
   // Navigation Tracking (Last known path)
   lastPath: { type: String },
-  
+
   // Theme Preferences
   themePreference: {
     primaryColor: { type: String },

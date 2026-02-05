@@ -26,6 +26,7 @@ import {
   Eye,
   MoreVertical,
   TrendingUp,
+  HelpCircle,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,10 +35,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ViewCourseDialog, EditCourseDialog, DeleteConfirmDialog } from "@/components/portal/dialogs";
+import { QuestionManagerDialog } from "@/components/portal/QuestionManagerDialog";
 import { toast } from "sonner";
-
-
-
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_COURSES, GET_STATS, GET_USERS } from "@/lib/graphql/queries";
 import { CREATE_COURSE, UPDATE_COURSE, DELETE_COURSE } from "@/lib/graphql/mutations";
@@ -45,12 +44,13 @@ import { CREATE_COURSE, UPDATE_COURSE, DELETE_COURSE } from "@/lib/graphql/mutat
 export default function AdminCourses() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  
+
   // Dialog states
   const [viewCourse, setViewCourse] = useState<any | null>(null);
   const [editCourse, setEditCourse] = useState<any | null>(null);
   const [deleteCourse, setDeleteCourse] = useState<any | null>(null);
   const [editPricingCourse, setEditPricingCourse] = useState<any | null>(null);
+  const [manageQuestionsCourse, setManageQuestionsCourse] = useState<any | null>(null);
 
   // Queries & Mutations
   const { data, loading, refetch } = useQuery(GET_COURSES);
@@ -77,6 +77,7 @@ export default function AdminCourses() {
     status: "draft",
   });
 
+
   const handleCreateCourse = async () => {
     if (!newCourse.title || !newCourse.description) {
       toast.error("Please fill in all required fields");
@@ -84,38 +85,38 @@ export default function AdminCourses() {
     }
 
     try {
-        await createCourseMutation({
-            variables: {
-                title: newCourse.title,
-                description: newCourse.description,
-                price: newCourse.isFree ? 0 : Number(newCourse.price),
-                discountPrice: Number(newCourse.discountPrice) || 0,
-                level: newCourse.level,
-                category: newCourse.category,
-                instructorId: newCourse.instructorId,
-                thumbnail: newCourse.thumbnail,
-                status: newCourse.status,
-                modules: [] 
-            }
-        });
-        toast.success("Course created successfully!");
-        refetch();
-        setIsCreateOpen(false);
-        setNewCourse({ title: "", description: "", price: 0, discountPrice: 0, level: "Beginner", category: "Development", instructorId: "", thumbnail: "https://images.unsplash.com/photo-1498050108023-c5249f4df085", isFree: false, status: "draft" });
+      await createCourseMutation({
+        variables: {
+          title: newCourse.title,
+          description: newCourse.description,
+          price: newCourse.isFree ? 0 : Number(newCourse.price),
+          discountPrice: Number(newCourse.discountPrice) || 0,
+          level: newCourse.level,
+          category: newCourse.category,
+          instructorId: newCourse.instructorId,
+          thumbnail: newCourse.thumbnail,
+          status: newCourse.status,
+          modules: []
+        }
+      });
+      toast.success("Course created successfully!");
+      refetch();
+      setIsCreateOpen(false);
+      setNewCourse({ title: "", description: "", price: 0, discountPrice: 0, level: "Beginner", category: "Development", instructorId: "", thumbnail: "https://images.unsplash.com/photo-1498050108023-c5249f4df085", isFree: false, status: "draft" });
     } catch (err: any) {
-        toast.error(err.message);
+      toast.error(err.message);
     }
   };
 
   const handleDeleteCourse = async () => {
     if (!deleteCourse) return;
     try {
-        await deleteCourseMutation({ variables: { id: deleteCourse.id } });
-        toast.success("Course deleted successfully!");
-        refetch();
-        setDeleteCourse(null);
+      await deleteCourseMutation({ variables: { id: deleteCourse.id } });
+      toast.success("Course deleted successfully!");
+      refetch();
+      setDeleteCourse(null);
     } catch (err: any) {
-        toast.error(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -124,27 +125,27 @@ export default function AdminCourses() {
 
   const handleSaveCourse = async (updatedCourse: any) => {
     try {
-        await updateCourseMutation({
-            variables: {
-                id: updatedCourse.id,
-                title: updatedCourse.title,
-                description: updatedCourse.description,
-                price: Number(updatedCourse.price),
-                discountPrice: Number(updatedCourse.discountPrice),
-                level: updatedCourse.level,
-                category: updatedCourse.category,
-                instructorId: updatedCourse.instructorId,
-                thumbnail: updatedCourse.thumbnail,
-                status: updatedCourse.status,
-                modules: updatedCourse.modules
-            }
-        });
-        toast.success("Course updated successfully!");
-        refetch();
-        setEditCourse(null);
-        setEditPricingCourse(null);
+      await updateCourseMutation({
+        variables: {
+          id: updatedCourse.id,
+          title: updatedCourse.title,
+          description: updatedCourse.description,
+          price: Number(updatedCourse.price),
+          discountPrice: Number(updatedCourse.discountPrice),
+          level: updatedCourse.level,
+          category: updatedCourse.category,
+          instructorId: updatedCourse.instructorId,
+          thumbnail: updatedCourse.thumbnail,
+          status: updatedCourse.status,
+          modules: updatedCourse.modules
+        }
+      });
+      toast.success("Course updated successfully!");
+      refetch();
+      setEditCourse(null);
+      setEditPricingCourse(null);
     } catch (err: any) {
-        toast.error(err.message);
+      toast.error(err.message);
     }
   };
 
@@ -202,8 +203,8 @@ export default function AdminCourses() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Price ($) {!newCourse.isFree && <span className="text-[10px] text-accent font-normal">(Editable)</span>}</label>
-                      <Input 
-                        type="number" 
+                      <Input
+                        type="number"
                         placeholder="99.99"
                         value={newCourse.price}
                         onChange={(e) => setNewCourse({ ...newCourse, price: parseFloat(e.target.value) || 0 })}
@@ -213,8 +214,8 @@ export default function AdminCourses() {
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Discount Price ($)</label>
-                      <Input 
-                        type="number" 
+                      <Input
+                        type="number"
                         placeholder="e.g. 79.99"
                         value={newCourse.discountPrice}
                         onChange={(e) => setNewCourse({ ...newCourse, discountPrice: parseFloat(e.target.value) || 0 })}
@@ -226,7 +227,7 @@ export default function AdminCourses() {
                       <p className="font-medium text-sm">Make Course Free</p>
                       <p className="text-xs text-muted-foreground">Sets price to 0 and disables editing</p>
                     </div>
-                    <Switch 
+                    <Switch
                       checked={newCourse.isFree}
                       onCheckedChange={(checked) => setNewCourse({ ...newCourse, isFree: checked })}
                     />
@@ -237,16 +238,16 @@ export default function AdminCourses() {
                       <p className="text-xs text-muted-foreground">Toggle between Draft and Live</p>
                     </div>
                     <div className="flex items-center gap-2">
-                       <span className="text-[10px] uppercase font-bold text-muted-foreground">{newCourse.status === 'published' ? 'Live' : 'Draft'}</span>
-                       <Switch 
-                         checked={newCourse.status === 'published'}
-                         onCheckedChange={(checked) => setNewCourse({ ...newCourse, status: checked ? 'published' : 'draft' })}
-                       />
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground">{newCourse.status === 'published' ? 'Live' : 'Draft'}</span>
+                      <Switch
+                        checked={newCourse.status === 'published'}
+                        onCheckedChange={(checked) => setNewCourse({ ...newCourse, status: checked ? 'published' : 'draft' })}
+                      />
                     </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Course Title *</label>
-                    <Input 
+                    <Input
                       placeholder="e.g., Advanced JavaScript"
                       value={newCourse.title}
                       onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
@@ -254,8 +255,8 @@ export default function AdminCourses() {
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Description *</label>
-                    <Textarea 
-                      placeholder="Course description..." 
+                    <Textarea
+                      placeholder="Course description..."
                       rows={3}
                       value={newCourse.description}
                       onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
@@ -264,7 +265,7 @@ export default function AdminCourses() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium mb-2 block">Level</label>
-                      <Input 
+                      <Input
                         placeholder="Beginner"
                         value={newCourse.level}
                         onChange={(e) => setNewCourse({ ...newCourse, level: e.target.value })}
@@ -272,7 +273,7 @@ export default function AdminCourses() {
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-2 block">Category</label>
-                      <Input 
+                      <Input
                         placeholder="Development"
                         value={newCourse.category}
                         onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value })}
@@ -440,12 +441,12 @@ export default function AdminCourses() {
                         </td>
                         <td className="p-4 text-center text-sm text-card-foreground/70">$0</td>
                         <td className="p-4 text-center">
-                          <Badge 
-                            variant={course.status === 'published' ? 'default' : 'secondary'} 
+                          <Badge
+                            variant={course.status === 'published' ? 'default' : 'secondary'}
                             className={
-                              course.status === 'draft' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" : 
-                              course.status === 'archived' ? "bg-red-500/10 text-red-500 border-red-500/20" : 
-                              "bg-green-500/10 text-green-500 border-green-500/20"
+                              course.status === 'draft' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                                course.status === 'archived' ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                                  "bg-green-500/10 text-green-500 border-green-500/20"
                             }
                           >
                             {course.status === 'published' ? 'Live' : course.status === 'draft' ? 'Draft' : 'Archived'}
@@ -468,7 +469,11 @@ export default function AdminCourses() {
                               <DropdownMenuItem onClick={() => setEditPricingCourse(course)}>
                                 <DollarSign className="w-4 h-4 mr-2" /> Edit Pricing
                               </DropdownMenuItem>
-                              
+
+                              <DropdownMenuItem onClick={() => setManageQuestionsCourse(course)}>
+                                <HelpCircle className="w-4 h-4 mr-2" /> Manage Questions
+                              </DropdownMenuItem>
+
                               <div className="h-px bg-border/50 my-1" />
                               <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase">Set Status</div>
                               <DropdownMenuItem onClick={() => handleUpdateStatus(course.id, 'published')} disabled={course.status === 'published'}>
@@ -480,9 +485,9 @@ export default function AdminCourses() {
                               <DropdownMenuItem onClick={() => handleUpdateStatus(course.id, 'archived')} disabled={course.status === 'archived'}>
                                 <div className="w-2 h-2 rounded-full bg-red-500 mr-2" /> Archive
                               </DropdownMenuItem>
-                              
+
                               <div className="h-px bg-border/50 my-1" />
-                              <DropdownMenuItem 
+                              <DropdownMenuItem
                                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
                                 onClick={() => setDeleteCourse(course)}
                               >
@@ -525,6 +530,11 @@ export default function AdminCourses() {
         title="Delete Course"
         description={`Are you sure you want to delete "${deleteCourse?.title}"? This action cannot be undone and will remove all associated data.`}
         onConfirm={handleDeleteCourse}
+      />
+      <QuestionManagerDialog
+        isOpen={!!manageQuestionsCourse}
+        onClose={() => setManageQuestionsCourse(null)}
+        course={manageQuestionsCourse}
       />
     </PortalLayout>
   );

@@ -10,34 +10,36 @@ interface AuthAwareLinkProps {
   className?: string;
   /** If true, this is an enrollment/apply action that should go to portal */
   isEnrollAction?: boolean;
+  to?: string;
 }
 
-export function AuthAwareLink({ 
-  children, 
-  variant = "gold", 
+export function AuthAwareLink({
+  children,
+  variant = "gold",
   size = "default",
   className,
-  isEnrollAction = true 
+  isEnrollAction = true,
+  to
 }: AuthAwareLinkProps) {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const handleClick = () => {
     if (isLoading) return;
-    
+
     if (user) {
-      // User is logged in, go to student portal
-      navigate("/portal/student");
+      // User is logged in, go to target path or student portal
+      navigate(to || "/portal/student");
     } else {
-      // Not logged in, go to auth page
-      navigate("/auth");
+      // Not logged in, go to auth page with redirect back
+      navigate("/auth", { state: { from: to ? { pathname: to } : undefined } });
     }
   };
 
   return (
-    <Button 
-      variant={variant} 
-      size={size} 
+    <Button
+      variant={variant}
+      size={size}
       className={cn(className)}
       onClick={handleClick}
       disabled={isLoading}

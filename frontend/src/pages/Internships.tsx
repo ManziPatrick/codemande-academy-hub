@@ -9,28 +9,28 @@ import internshipImage from "@/assets/internship-work.jpg";
 import heroImage from "@/assets/hero-training.jpg";
 
 const internships = [
-  { 
-    icon: Code, 
-    title: "Software Development Intern", 
-    duration: "3 months", 
+  {
+    icon: Code,
+    title: "Software Development Intern",
+    duration: "3 months",
     type: "Online / Hybrid",
     description: "Work on real web and mobile application projects under the guidance of senior developers.",
     skills: ["React/Vue.js", "Node.js", "Python", "Git", "Agile"],
     projects: ["E-commerce platform", "Mobile app features", "API integrations"]
   },
-  { 
-    icon: Database, 
-    title: "Data Science Intern", 
-    duration: "3 months", 
+  {
+    icon: Database,
+    title: "Data Science Intern",
+    duration: "3 months",
     type: "Online",
     description: "Apply data analysis and machine learning techniques to solve real business problems.",
     skills: ["Python", "SQL", "Machine Learning", "Tableau", "Statistics"],
     projects: ["Customer analytics", "Predictive models", "Data dashboards"]
   },
-  { 
-    icon: Wifi, 
-    title: "IoT Development Intern", 
-    duration: "3 months", 
+  {
+    icon: Wifi,
+    title: "IoT Development Intern",
+    duration: "3 months",
     type: "Hybrid",
     description: "Design and build connected devices and smart systems for agriculture and industry.",
     skills: ["Arduino", "Raspberry Pi", "Cloud IoT", "Sensors", "MQTT"],
@@ -91,11 +91,11 @@ const Internships = () => {
                 Gain Real-World Experience That Matters
               </h1>
               <p className="text-card-foreground/80 max-w-2xl mx-auto text-lg">
-                Bridge the gap between learning and employment with our structured internship programs. 
+                Bridge the gap between learning and employment with our structured internship programs.
                 Work on real projects, get mentored by experts, and build a portfolio that stands out.
               </p>
               <div className="flex flex-wrap justify-center gap-4 mt-8">
-                <AuthAwareLink variant="gold" size="lg">Apply for Internship</AuthAwareLink>
+                <AuthAwareLink variant="gold" size="lg" to="/portal/student/internship">Apply for Internship</AuthAwareLink>
                 <Link to="/training">
                   <Button variant="outline" size="lg">View Training First</Button>
                 </Link>
@@ -118,7 +118,7 @@ const Internships = () => {
                 What You'll Gain
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Our internships are designed to give you the practical experience employers want to see, 
+                Our internships are designed to give you the practical experience employers want to see,
                 combined with the support you need to succeed.
               </p>
             </motion.div>
@@ -152,9 +152,9 @@ const Internships = () => {
               viewport={{ once: true }}
               className="relative h-64 lg:h-96 rounded-xl overflow-hidden group"
             >
-              <img 
-                src={internshipImage} 
-                alt="Interns collaborating on a project" 
+              <img
+                src={internshipImage}
+                alt="Interns collaborating on a project"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/40 to-transparent flex items-end">
@@ -163,7 +163,7 @@ const Internships = () => {
                     Collaborate. Create. Grow.
                   </h3>
                   <p className="text-card-foreground/80">
-                    Join a community of driven individuals working together to build real solutions 
+                    Join a community of driven individuals working together to build real solutions
                     while developing skills that will define your career.
                   </p>
                 </div>
@@ -205,9 +205,9 @@ const Internships = () => {
                       <p className="text-xs text-muted-foreground">{internship.duration} • {internship.type}</p>
                     </div>
                   </div>
-                  
+
                   <p className="text-sm text-muted-foreground mb-4">{internship.description}</p>
-                  
+
                   <div className="mb-4">
                     <p className="text-xs font-medium text-foreground mb-2">Skills You'll Use:</p>
                     <div className="flex flex-wrap gap-1">
@@ -231,7 +231,7 @@ const Internships = () => {
                   </div>
 
                   <div className="mt-auto">
-                    <AuthAwareLink variant="gold" size="sm" className="w-full">
+                    <AuthAwareLink variant="gold" size="sm" className="w-full" to="/portal/student/internship">
                       Apply Now <ArrowRight className="w-4 h-4 ml-2" />
                     </AuthAwareLink>
                   </div>
@@ -329,11 +329,11 @@ const Internships = () => {
                 Ready to Start Your Internship?
               </h2>
               <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-                Applications are reviewed on a rolling basis. Apply early to secure your spot 
+                Applications are reviewed on a rolling basis. Apply early to secure your spot
                 in our next cohort of interns.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
-                <AuthAwareLink variant="gold" size="lg">Apply Now</AuthAwareLink>
+                <AuthAwareLink variant="gold" size="lg" to="/portal/student/internship">Apply Now</AuthAwareLink>
                 <Link to="/training">
                   <Button variant="outline" size="lg">Explore Training First</Button>
                 </Link>

@@ -10,12 +10,14 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 
 import { BrandingProvider } from "@/components/BrandingProvider";
 import { ChatBot } from "@/components/chatbot/ChatBot";
+import { GoogleOneTap } from "@/components/auth/GoogleOneTap";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
+      <GoogleOneTap />
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <BrandingProvider>
           <TooltipProvider>

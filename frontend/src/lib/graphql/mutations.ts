@@ -999,3 +999,8 @@ export const UPDATE_INTERNSHIP_TEAM_NEW = gql`
     }
   }
 `;
+export const SUBSCRIBE_TO_NEWSLETTER = gql`
+  mutation SubscribeToNewsletter($email: String!) {
+    subscribeToNewsletter(email: $email)
+  }
+`;

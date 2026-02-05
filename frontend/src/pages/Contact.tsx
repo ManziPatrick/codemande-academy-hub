@@ -11,9 +11,9 @@ import heroImage from "@/assets/hero-training.jpg";
 import { supabase } from "@/integrations/supabase/client";
 
 const contactInfo = [
-  { icon: MapPin, label: "Address", value: "KG 123 Street, Kigali Innovation City, Kigali, Rwanda" },
+  { icon: MapPin, label: "Address", value: "Kigali, Rwanda" },
   { icon: Mail, label: "Email", value: "info@codemande.com" },
-  { icon: Phone, label: "Phone", value: "+250 788 000 000" },
+  { icon: Phone, label: "Phone", value: "+250 790 706 170" },
   { icon: Clock, label: "Office Hours", value: "Monday - Friday: 8:00 AM - 5:00 PM" },
 ];
 
@@ -89,7 +89,7 @@ const Contact = () => {
                 We'd Love to Hear From You
               </h1>
               <p className="text-card-foreground/80 max-w-2xl mx-auto text-lg">
-                Whether you're interested in enrolling, partnering, or just want to learn more about 
+                Whether you're interested in enrolling, partnering, or just want to learn more about
                 what we do, we're here to help. Reach out and let's start a conversation.
               </p>
             </motion.div>
@@ -137,7 +137,7 @@ const Contact = () => {
                 <p className="text-muted-foreground mb-8">
                   Reach out to us directly or fill out the form. We typically respond within 24 hours.
                 </p>
-                
+
                 <div className="space-y-6 mb-8">
                   {contactInfo.map((item) => (
                     <div key={item.label} className="flex items-start gap-4">
@@ -177,7 +177,7 @@ const Contact = () => {
                   <p className="text-sm text-card-foreground/70 mb-6">
                     Fill out the form below and we'll get back to you as soon as possible.
                   </p>
-                  
+
                   <div className="space-y-5">
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
@@ -202,7 +202,7 @@ const Contact = () => {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm text-card-foreground/70 mb-1.5 block">Phone Number</label>
@@ -210,7 +210,7 @@ const Contact = () => {
                           type="tel"
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                          placeholder="+250 788 000 000"
+                          placeholder="+250 790 706 170"
                           className="bg-background"
                         />
                       </div>
@@ -230,7 +230,7 @@ const Contact = () => {
                         </select>
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="text-sm text-card-foreground/70 mb-1.5 block">Subject *</label>
                       <Input
@@ -241,7 +241,7 @@ const Contact = () => {
                         className="bg-background"
                       />
                     </div>
-                    
+
                     <div>
                       <label className="text-sm text-card-foreground/70 mb-1.5 block">Message *</label>
                       <Textarea
@@ -253,7 +253,7 @@ const Contact = () => {
                         className="bg-background"
                       />
                     </div>
-                    
+
                     <Button type="submit" variant="gold" size="lg" className="w-full" disabled={isSubmitting}>
                       {isSubmitting ? (
                         <>
@@ -264,7 +264,7 @@ const Contact = () => {
                         "Send Message"
                       )}
                     </Button>
-                    
+
                     <p className="text-xs text-card-foreground/50 text-center">
                       By submitting this form, you agree to our privacy policy and terms of service.
                     </p>

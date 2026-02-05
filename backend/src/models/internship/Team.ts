@@ -5,7 +5,7 @@ export interface IInternshipTeam extends Document {
     internshipProjectId: mongoose.Types.ObjectId;
     internshipProgramId: mongoose.Types.ObjectId;
     mentorId?: mongoose.Types.ObjectId;
-    status: 'active' | 'disbanded' | 'completed';
+    status: 'active' | 'disbanded' | 'completed' | 'on_hold';
     isDeleted: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -19,7 +19,7 @@ const InternshipTeamSchema: Schema = new Schema(
         mentorId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
         status: {
             type: String,
-            enum: ['active', 'disbanded', 'completed'],
+            enum: ['active', 'disbanded', 'completed', 'on_hold'],
             default: 'active',
             index: true
         },

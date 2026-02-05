@@ -11,7 +11,7 @@ import {
   Minus,
   Maximize2
 } from 'lucide-react';
-import { useMutation } from '@apollo/client/react';
+import { useMutation } from "@apollo/client/react";
 import { CHAT_WITH_AI } from '@/lib/graphql/mutations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

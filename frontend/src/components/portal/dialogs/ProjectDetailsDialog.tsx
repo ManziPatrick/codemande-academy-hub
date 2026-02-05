@@ -80,7 +80,7 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
                 {project.deadline && (
                   <Badge variant="outline" className="text-[10px] uppercase font-bold">
                     <Clock className="w-3 h-3 mr-1" />
-                    Due {new Date(project.deadline).toLocaleDateString()}
+                    Due {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'TBD'}
                   </Badge>
                 )}
               </div>
@@ -100,27 +100,24 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
         <div className="flex border-b border-border/50 bg-muted/30">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`px-6 py-3 text-sm font-medium transition-all relative ${
-              activeTab === "overview" ? "text-accent" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-6 py-3 text-sm font-medium transition-all relative ${activeTab === "overview" ? "text-accent" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Overview
             {activeTab === "overview" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />}
           </button>
           <button
             onClick={() => setActiveTab("tasks")}
-            className={`px-6 py-3 text-sm font-medium transition-all relative ${
-              activeTab === "tasks" ? "text-accent" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-6 py-3 text-sm font-medium transition-all relative ${activeTab === "tasks" ? "text-accent" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Tasks ({tasks.length})
             {activeTab === "tasks" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />}
           </button>
           <button
             onClick={() => setActiveTab("documentation")}
-            className={`px-6 py-3 text-sm font-medium transition-all relative ${
-              activeTab === "documentation" ? "text-accent" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-6 py-3 text-sm font-medium transition-all relative ${activeTab === "documentation" ? "text-accent" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Full Documentation
             {activeTab === "documentation" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />}
@@ -166,7 +163,7 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
 
                   <div className="p-4 rounded-xl border border-border/50 bg-muted/10 space-y-3">
                     <h4 className="font-bold flex items-center gap-2">
-                    <Circle className="w-4 h-4 text-accent fill-accent/10" />
+                      <Circle className="w-4 h-4 text-accent fill-accent/10" />
                       Mentors Assigned
                     </h4>
                     <div className="space-y-2">
@@ -196,29 +193,27 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
                   <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Deliverables Checklist</h3>
                   <span className="text-xs font-medium text-muted-foreground">{completedTasks} of {tasks.length} completed</span>
                 </div>
-                
+
                 <div className="space-y-3">
                   {tasks.map((task: any) => (
-                    <div 
+                    <div
                       key={task.id}
-                      className={`group flex items-start gap-4 p-4 rounded-xl border transition-all ${
-                        task.completed 
-                          ? "bg-green-500/5 border-green-500/20" 
+                      className={`group flex items-start gap-4 p-4 rounded-xl border transition-all ${task.completed
+                          ? "bg-green-500/5 border-green-500/20"
                           : "bg-muted/5 border-border/50 hover:border-accent/30"
-                      }`}
+                        }`}
                     >
                       <button
                         onClick={() => handleToggleTask(task.id, task.completed)}
                         disabled={updatingTask}
-                        className={`mt-0.5 w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
-                          task.completed 
-                            ? "bg-green-500 border-green-500 text-white" 
+                        className={`mt-0.5 w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${task.completed
+                            ? "bg-green-500 border-green-500 text-white"
                             : "border-muted-foreground/30 hover:border-accent"
-                        }`}
+                          }`}
                       >
                         {task.completed && <CheckCircle2 className="w-4 h-4" />}
                       </button>
-                      
+
                       <div className="flex-1">
                         <div className="flex items-center gap-2 justify-between">
                           <p className={`font-medium ${task.completed ? "text-muted-foreground line-through" : "text-foreground"}`}>
@@ -317,10 +312,10 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {project.documentation?.links?.map((link: any, idx: number) => (
-                      <a 
-                        key={idx} 
-                        href={link.url} 
-                        target="_blank" 
+                      <a
+                        key={idx}
+                        href={link.url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-4 p-4 rounded-xl border border-border/50 bg-muted/5 hover:border-accent/30 hover:bg-accent/5 transition-all group"
                       >
@@ -335,38 +330,38 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
                       </a>
                     ))}
                     {project.submissionUrl && (
-                      <a 
-                      href={project.submissionUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-4 p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 transition-all group"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
-                        <Github className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold">Base Repository</p>
-                        <p className="text-[10px] text-muted-foreground truncate max-w-[150px]">{project.submissionUrl}</p>
-                      </div>
-                      <ChevronRight className="w-4 h-4 ml-auto text-muted-foreground" />
-                    </a>
+                      <a
+                        href={project.submissionUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-4 p-4 rounded-xl border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 transition-all group"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                          <Github className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">Base Repository</p>
+                          <p className="text-[10px] text-muted-foreground truncate max-w-[150px]">{project.submissionUrl}</p>
+                        </div>
+                        <ChevronRight className="w-4 h-4 ml-auto text-muted-foreground" />
+                      </a>
                     )}
                   </div>
                 </div>
 
                 {/* In Person Assistance */}
                 {project.documentation?.inPersonNotes && (
-                   <div className="space-y-4">
-                   <h3 className="font-bold flex items-center gap-2 text-amber-500">
-                     <AlertCircle className="w-4 h-4" />
-                     In-Person Workspace & Support
-                   </h3>
-                   <div className="p-5 rounded-xl border border-amber-500/20 bg-amber-500/5">
+                  <div className="space-y-4">
+                    <h3 className="font-bold flex items-center gap-2 text-amber-500">
+                      <AlertCircle className="w-4 h-4" />
+                      In-Person Workspace & Support
+                    </h3>
+                    <div className="p-5 rounded-xl border border-amber-500/20 bg-amber-500/5">
                       <p className="text-sm text-foreground/90 leading-relaxed font-medium">
                         {project.documentation.inPersonNotes}
                       </p>
-                   </div>
-                 </div>
+                    </div>
+                  </div>
                 )}
               </motion.div>
             )}
@@ -375,15 +370,15 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
 
         {/* Footer */}
         <div className="p-4 border-t border-border/50 bg-muted/30 flex justify-between items-center">
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-              Close Project View
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+            Close Project View
+          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="h-9 px-4">
+              <FileCode className="w-4 h-4 mr-2" />
+              Submit Milestone
             </Button>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="h-9 px-4">
-                <FileCode className="w-4 h-4 mr-2" />
-                Submit Milestone
-              </Button>
-            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

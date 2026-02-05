@@ -29,6 +29,7 @@ interface AuthContextType {
   signup: (data: SignupData) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
+  loginWithToken: (token: string, userData: any) => void;
 }
 
 interface SignupData {
@@ -81,7 +82,7 @@ const mockUsers: Record<string, User & { password: string }> = {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [loginMutation] = useMutation(LOGIN_USER);
   const [registerMutation] = useMutation(REGISTER_USER);
 
@@ -89,7 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Check for saved session
     const savedUser = localStorage.getItem("codemande_user");
     const savedToken = localStorage.getItem("codemande_token");
-    
+
     if (savedUser && savedToken) {
       try {
         setUser(JSON.parse(savedUser));
@@ -109,64 +110,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-        const { data } = await loginMutation({
-            variables: { email, password }
-        });
-        
-        const { token, user: userData } = (data as any).login;
-        
-        // Store Token
-        localStorage.setItem("codemande_token", token);
-        
-        // Adapt backend user to frontend User interface (mapping fields)
-        const appUser: User = {
-            id: userData.id,
-            email: userData.email,
-            fullName: userData.username, 
-            role: userData.role || "student", 
-            createdAt: new Date().toISOString(),
-            themePreference: userData.themePreference
-        };
+      const { data } = await loginMutation({
+        variables: { email, password }
+      });
 
-        setUser(appUser);
-        localStorage.setItem("codemande_user", JSON.stringify(appUser));
+      const { token, user: userData } = (data as any).login;
+
+      // Store Token
+      localStorage.setItem("codemande_token", token);
+
+      // Adapt backend user to frontend User interface (mapping fields)
+      const appUser: User = {
+        id: userData.id,
+        email: userData.email,
+        fullName: userData.username,
+        role: userData.role || "student",
+        createdAt: new Date().toISOString(),
+        themePreference: userData.themePreference
+      };
+
+      setUser(appUser);
+      localStorage.setItem("codemande_user", JSON.stringify(appUser));
     } catch (err: any) {
-        throw new Error(err.message || "Login failed");
+      throw new Error(err.message || "Login failed");
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
   const signup = async (data: SignupData) => {
     setIsLoading(true);
     try {
-        const { data: resData } = await registerMutation({
-            variables: { 
-                username: data.fullName, // using fullName as username
-                email: data.email, 
-                password: data.password 
-            }
-        });
+      const { data: resData } = await registerMutation({
+        variables: {
+          username: data.fullName, // using fullName as username
+          email: data.email,
+          password: data.password
+        }
+      });
 
-        const { token, user: userData } = (resData as any).register;
+      const { token, user: userData } = (resData as any).register;
 
-        localStorage.setItem("codemande_token", token);
+      localStorage.setItem("codemande_token", token);
 
-        const appUser: User = {
-            id: userData.id,
-            email: userData.email,
-            fullName: userData.username,
-            role: "student",
-            createdAt: new Date().toISOString(),
-            themePreference: userData.themePreference
-        };
+      const appUser: User = {
+        id: userData.id,
+        email: userData.email,
+        fullName: userData.username,
+        role: "student",
+        createdAt: new Date().toISOString(),
+        themePreference: userData.themePreference
+      };
 
-        setUser(appUser);
-        localStorage.setItem("codemande_user", JSON.stringify(appUser));
+      setUser(appUser);
+      localStorage.setItem("codemande_user", JSON.stringify(appUser));
     } catch (err: any) {
-        throw new Error(err.message || "Signup failed");
+      throw new Error(err.message || "Signup failed");
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -185,6 +186,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithToken = (token: string, userData: any) => {
+    localStorage.setItem("codemande_token", token);
+    const appUser: User = {
+      id: userData.id,
+      email: userData.email,
+      fullName: userData.username,
+      role: userData.role || "student",
+      createdAt: new Date().toISOString(),
+      themePreference: userData.themePreference
+    };
+    setUser(appUser);
+    localStorage.setItem("codemande_user", JSON.stringify(appUser));
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -195,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signup,
         logout,
         updateUser,
+        loginWithToken,
       }}
     >
       {children}

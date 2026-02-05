@@ -27,6 +27,7 @@ import {
   Sparkles,
   Check,
   RotateCcw,
+  Layout,
 } from "lucide-react";
 
 const colorPresets = [
@@ -41,7 +42,7 @@ const colorPresets = [
 export default function PortalSettings() {
   const { user, updateUser } = useAuth();
   const { theme, setTheme } = useTheme();
-  
+
   const [updateThemeMutation, { loading: saving }] = useMutation(UPDATE_THEME, {
     refetchQueries: [{ query: GET_ME }],
     onCompleted: (data: any) => {
@@ -193,8 +194,8 @@ export default function PortalSettings() {
 
                   <div>
                     <label className="text-sm font-medium mb-2 block">Professional Bio</label>
-                    <Textarea 
-                      placeholder="Share a bit about your journey..." 
+                    <Textarea
+                      placeholder="Share a bit about your journey..."
                       rows={4}
                       className="bg-muted/30 resize-none"
                     />
@@ -215,31 +216,31 @@ export default function PortalSettings() {
                 <CardHeader className="bg-muted/20">
                   <div className="flex items-center justify-between gap-4">
                     <CardTitle className="text-lg font-heading flex items-center gap-2">
-                        <Palette className="w-5 h-5 text-primary" />
-                        Visual Personalization
+                      <Palette className="w-5 h-5 text-primary" />
+                      Visual Personalization
                     </CardTitle>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-muted-foreground hover:text-primary h-8"
-                        onClick={async () => {
-                            try {
-                                await updateThemeMutation({
-                                    variables: {
-                                        primaryColor: null,
-                                        mode: "light",
-                                        lightBg: null,
-                                        darkBg: null,
-                                    }
-                                });
-                                toast.success("Reset to default branding");
-                            } catch (e) {
-                                toast.error("Failed to reset");
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-primary h-8"
+                      onClick={async () => {
+                        try {
+                          await updateThemeMutation({
+                            variables: {
+                              primaryColor: null,
+                              mode: "light",
+                              lightBg: null,
+                              darkBg: null,
                             }
-                        }}
+                          });
+                          toast.success("Reset to default branding");
+                        } catch (e) {
+                          toast.error("Failed to reset");
+                        }
+                      }}
                     >
-                        <RotateCcw className="w-3.5 h-3.5 mr-2" />
-                        Reset to Default
+                      <RotateCcw className="w-3.5 h-3.5 mr-2" />
+                      Reset to Default
                     </Button>
                   </div>
                 </CardHeader>
@@ -252,19 +253,17 @@ export default function PortalSettings() {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <button
-                        onClick={() => setLocalTheme({...localTheme, mode: 'light'})}
-                        className={`p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${
-                          localTheme.mode === 'light' ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-border'
-                        }`}
+                        onClick={() => setLocalTheme({ ...localTheme, mode: 'light' })}
+                        className={`p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${localTheme.mode === 'light' ? 'border-primary bg-primary/5' : 'border-border/50 hover:border-border'
+                          }`}
                       >
                         <div className="w-full h-12 bg-white rounded-md border border-border shadow-inner" />
                         <span className="text-sm font-medium">Light Mode</span>
                       </button>
                       <button
-                        onClick={() => setLocalTheme({...localTheme, mode: 'dark'})}
-                        className={`p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${
-                          localTheme.mode === 'dark' ? 'border-primary bg-primary/20' : 'border-border/50 hover:border-border'
-                        }`}
+                        onClick={() => setLocalTheme({ ...localTheme, mode: 'dark' })}
+                        className={`p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${localTheme.mode === 'dark' ? 'border-primary bg-primary/20' : 'border-border/50 hover:border-border'
+                          }`}
                       >
                         <div className="w-full h-12 bg-slate-900 rounded-md border border-slate-700 shadow-inner" />
                         <span className="text-sm font-medium">Dark Mode</span>
@@ -282,15 +281,14 @@ export default function PortalSettings() {
                       {colorPresets.map((preset) => (
                         <button
                           key={preset.color}
-                          onClick={() => setLocalTheme({...localTheme, primaryColor: preset.color})}
-                          className={`group relative flex flex-col items-center gap-2 p-2 rounded-lg border-2 transition-all ${
-                            localTheme.primaryColor === preset.color 
-                            ? 'border-primary bg-primary/5' 
-                            : 'border-transparent hover:border-border'
-                          }`}
+                          onClick={() => setLocalTheme({ ...localTheme, primaryColor: preset.color })}
+                          className={`group relative flex flex-col items-center gap-2 p-2 rounded-lg border-2 transition-all ${localTheme.primaryColor === preset.color
+                              ? 'border-primary bg-primary/5'
+                              : 'border-transparent hover:border-border'
+                            }`}
                         >
-                          <div 
-                            className="w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-transform group-hover:scale-110" 
+                          <div
+                            className="w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-transform group-hover:scale-110"
                             style={{ backgroundColor: preset.color }}
                           >
                             {localTheme.primaryColor === preset.color && <Check className="w-4 h-4 text-white shadow-sm" />}
@@ -299,102 +297,102 @@ export default function PortalSettings() {
                         </button>
                       ))}
                     </div>
-                    
+
                     <div className="flex items-center gap-4 mt-6 p-4 bg-muted/20 rounded-xl border border-border/50">
-                       <div className="relative group overflow-hidden w-12 h-12 rounded-lg border-2 border-border shadow-md">
-                          <input 
-                            type="color" 
-                            value={localTheme.primaryColor}
-                            onChange={(e) => setLocalTheme({...localTheme, primaryColor: e.target.value})}
-                            className="absolute inset-0 opacity-0 cursor-pointer scale-[5]"
-                          />
-                          <div className="w-full h-full" style={{ backgroundColor: localTheme.primaryColor }} />
-                       </div>
-                       <div className="flex-1">
-                          <p className="text-sm font-medium">Custom Color</p>
-                          <p className="text-xs text-muted-foreground">Choose your own hex code or pick from the spectrum</p>
-                       </div>
-                       <Input 
+                      <div className="relative group overflow-hidden w-12 h-12 rounded-lg border-2 border-border shadow-md">
+                        <input
+                          type="color"
                           value={localTheme.primaryColor}
-                          onChange={(e) => setLocalTheme({...localTheme, primaryColor: e.target.value})}
-                          className="w-24 h-9 font-mono uppercase text-xs"
-                       />
+                          onChange={(e) => setLocalTheme({ ...localTheme, primaryColor: e.target.value })}
+                          className="absolute inset-0 opacity-0 cursor-pointer scale-[5]"
+                        />
+                        <div className="w-full h-full" style={{ backgroundColor: localTheme.primaryColor }} />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Custom Color</p>
+                        <p className="text-xs text-muted-foreground">Choose your own hex code or pick from the spectrum</p>
+                      </div>
+                      <Input
+                        value={localTheme.primaryColor}
+                        onChange={(e) => setLocalTheme({ ...localTheme, primaryColor: e.target.value })}
+                        className="w-24 h-9 font-mono uppercase text-xs"
+                      />
                     </div>
                   </div>
 
                   {/* Background Customization */}
                   <div className="space-y-6 pt-6 border-t border-border/50">
                     <div className="flex items-center gap-2">
-                       <Layout className="w-4 h-4 text-primary" />
-                       <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Background Environment</h4>
+                      <Layout className="w-4 h-4 text-primary" />
+                      <h4 className="font-semibold text-sm uppercase tracking-wider text-muted-foreground">Background Environment</h4>
                     </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-6">
-                       {/* Light Background */}
-                       <div className="p-4 bg-background/40 rounded-xl border-2 border-border/50 space-y-4">
-                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight">Light Background Mode</p>
-                          <div className="flex items-center gap-4">
-                             <div className="relative group overflow-hidden w-10 h-10 rounded-lg border-2 border-border shadow-sm">
-                                <input 
-                                   type="color" 
-                                   value={localTheme.lightBg}
-                                   onChange={(e) => setLocalTheme({...localTheme, lightBg: e.target.value})}
-                                   className="absolute inset-0 opacity-0 cursor-pointer scale-150"
-                                />
-                                <div className="w-full h-full" style={{ backgroundColor: localTheme.lightBg }} />
-                             </div>
-                             <div className="flex-1">
-                                <Input 
-                                   value={localTheme.lightBg}
-                                   onChange={(e) => setLocalTheme({...localTheme, lightBg: e.target.value})}
-                                   className="h-8 font-mono text-xs bg-muted/30 border-border"
-                                />
-                             </div>
-                          </div>
-                          <div className="flex gap-2">
-                             {['#FFFFFF', '#F8FAFC', '#F1F5F9', '#FFF7ED'].map(c => (
-                                <button 
-                                   key={c}
-                                   onClick={() => setLocalTheme({...localTheme, lightBg: c})}
-                                   className="w-6 h-6 rounded-full border border-border shadow-sm hover:scale-110 transition-transform" 
-                                   style={{ backgroundColor: c }} 
-                                />
-                             ))}
-                          </div>
-                       </div>
 
-                       {/* Dark Background */}
-                       <div className="p-4 bg-muted/20 rounded-xl border-2 border-border/50 space-y-4">
-                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight">Dark Background Mode</p>
-                          <div className="flex items-center gap-4">
-                             <div className="relative group overflow-hidden w-10 h-10 rounded-lg border-2 border-border shadow-sm">
-                                <input 
-                                   type="color" 
-                                   value={localTheme.darkBg}
-                                   onChange={(e) => setLocalTheme({...localTheme, darkBg: e.target.value})}
-                                   className="absolute inset-0 opacity-0 cursor-pointer scale-150"
-                                />
-                                <div className="w-full h-full" style={{ backgroundColor: localTheme.darkBg }} />
-                             </div>
-                             <div className="flex-1">
-                                <Input 
-                                   value={localTheme.darkBg}
-                                   onChange={(e) => setLocalTheme({...localTheme, darkBg: e.target.value})}
-                                   className="h-8 font-mono text-xs bg-muted/30 border-border"
-                                />
-                             </div>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      {/* Light Background */}
+                      <div className="p-4 bg-background/40 rounded-xl border-2 border-border/50 space-y-4">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight">Light Background Mode</p>
+                        <div className="flex items-center gap-4">
+                          <div className="relative group overflow-hidden w-10 h-10 rounded-lg border-2 border-border shadow-sm">
+                            <input
+                              type="color"
+                              value={localTheme.lightBg}
+                              onChange={(e) => setLocalTheme({ ...localTheme, lightBg: e.target.value })}
+                              className="absolute inset-0 opacity-0 cursor-pointer scale-150"
+                            />
+                            <div className="w-full h-full" style={{ backgroundColor: localTheme.lightBg }} />
                           </div>
-                          <div className="flex gap-2">
-                             {['#020617', '#0F172A', '#1C1917', '#000000'].map(c => (
-                                <button 
-                                   key={c}
-                                   onClick={() => setLocalTheme({...localTheme, darkBg: c})}
-                                   className="w-6 h-6 rounded-full border border-border shadow-sm hover:scale-110 transition-transform" 
-                                   style={{ backgroundColor: c }} 
-                                />
-                             ))}
+                          <div className="flex-1">
+                            <Input
+                              value={localTheme.lightBg}
+                              onChange={(e) => setLocalTheme({ ...localTheme, lightBg: e.target.value })}
+                              className="h-8 font-mono text-xs bg-muted/30 border-border"
+                            />
                           </div>
-                       </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {['#FFFFFF', '#F8FAFC', '#F1F5F9', '#FFF7ED'].map(c => (
+                            <button
+                              key={c}
+                              onClick={() => setLocalTheme({ ...localTheme, lightBg: c })}
+                              className="w-6 h-6 rounded-full border border-border shadow-sm hover:scale-110 transition-transform"
+                              style={{ backgroundColor: c }}
+                            />
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Dark Background */}
+                      <div className="p-4 bg-muted/20 rounded-xl border-2 border-border/50 space-y-4">
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight">Dark Background Mode</p>
+                        <div className="flex items-center gap-4">
+                          <div className="relative group overflow-hidden w-10 h-10 rounded-lg border-2 border-border shadow-sm">
+                            <input
+                              type="color"
+                              value={localTheme.darkBg}
+                              onChange={(e) => setLocalTheme({ ...localTheme, darkBg: e.target.value })}
+                              className="absolute inset-0 opacity-0 cursor-pointer scale-150"
+                            />
+                            <div className="w-full h-full" style={{ backgroundColor: localTheme.darkBg }} />
+                          </div>
+                          <div className="flex-1">
+                            <Input
+                              value={localTheme.darkBg}
+                              onChange={(e) => setLocalTheme({ ...localTheme, darkBg: e.target.value })}
+                              className="h-8 font-mono text-xs bg-muted/30 border-border"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          {['#020617', '#0F172A', '#1C1917', '#000000'].map(c => (
+                            <button
+                              key={c}
+                              onClick={() => setLocalTheme({ ...localTheme, darkBg: c })}
+                              className="w-6 h-6 rounded-full border border-border shadow-sm hover:scale-110 transition-transform"
+                              style={{ backgroundColor: c }}
+                            />
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </CardContent>

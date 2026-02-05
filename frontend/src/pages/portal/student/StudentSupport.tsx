@@ -20,9 +20,10 @@ import {
   FileText,
   User,
 } from "lucide-react";
-import { useQuery, useMutation } from "@apollo/client/react";
+import { useQuery, useMutation, useSubscription } from "@apollo/client/react";
 import { GET_CONVERSATIONS, GET_MESSAGES, GET_USERS } from "@/lib/graphql/queries";
 import { SEND_MESSAGE } from "@/lib/graphql/mutations";
+import { MESSAGE_ADDED } from "@/lib/graphql/subscriptions";
 import { useSocket } from "@/hooks/use-socket";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -61,21 +62,27 @@ export default function StudentSupport() {
 
   const [sendMessageMutation] = useMutation(SEND_MESSAGE);
 
-  // Socket listener
+  // GraphQL Subscription
+  useSubscription(MESSAGE_ADDED, {
+    variables: { conversationId: activeConversationId },
+    skip: !activeConversationId,
+    onData: () => {
+      refetchMsgs();
+      refetchConvs();
+    }
+  });
+
+  // Keep socket for other legacy real-time features if any, 
+  // but remove message listener if it's redundant
   useEffect(() => {
     if (socket) {
-      socket.on('receive_message', (payload: any) => {
-        if (payload.conversationId === activeConversationId) {
-          refetchMsgs();
-        }
-        refetchConvs();
-      });
+      // socket.on('receive_message', ...) removed in favor of subscriptions
 
       return () => {
-        socket.off('receive_message');
+        // socket.off('receive_message');
       };
     }
-  }, [socket, activeConversationId, refetchMsgs, refetchConvs]);
+  }, [socket]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -94,14 +101,14 @@ export default function StudentSupport() {
     try {
       const conv = conversations.find((c: any) => c.id === activeConversationId);
       const otherParticipant = conv.participants.find((p: any) => p.id !== currentUser?.id);
-      
+
       await sendMessageMutation({
         variables: {
           receiverId: otherParticipant.id,
           content: newMessage
         }
       });
-      
+
       setNewMessage("");
       refetchMsgs();
       refetchConvs();
@@ -147,17 +154,15 @@ export default function StudentSupport() {
           <div className="flex bg-background/50 p-1 rounded-lg border border-border/50 mt-4 md:mt-0">
             <button
               onClick={() => setActiveTab("contact")}
-              className={`px-4 py-2 rounded-md text-sm transition-all ${
-                activeTab === "contact" ? "bg-accent text-accent-foreground shadow-sm" : "hover:text-accent"
-              }`}
+              className={`px-4 py-2 rounded-md text-sm transition-all ${activeTab === "contact" ? "bg-accent text-accent-foreground shadow-sm" : "hover:text-accent"
+                }`}
             >
               Support Center
             </button>
             <button
               onClick={() => setActiveTab("chat")}
-              className={`px-4 py-2 rounded-md text-sm transition-all ${
-                activeTab === "chat" ? "bg-accent text-accent-foreground shadow-sm" : "hover:text-accent"
-              }`}
+              className={`px-4 py-2 rounded-md text-sm transition-all ${activeTab === "chat" ? "bg-accent text-accent-foreground shadow-sm" : "hover:text-accent"
+                }`}
             >
               Messages
             </button>
@@ -173,7 +178,7 @@ export default function StudentSupport() {
               transition={{ delay: 0.1 }}
               className="grid sm:grid-cols-3 gap-4"
             >
-              <Card 
+              <Card
                 className="border-border/50 hover:border-accent/30 transition-all cursor-pointer overflow-hidden group"
                 onClick={() => setActiveTab("chat")}
               >
@@ -214,7 +219,7 @@ export default function StudentSupport() {
                     </h2>
                     <div className="grid sm:grid-cols-2 gap-4">
                       {trainers.map((trainer: any) => (
-                        <div 
+                        <div
                           key={trainer.id}
                           className="flex items-center justify-between p-3 bg-background/50 rounded-lg border border-border/50 hover:border-accent/30 transition-all"
                         >
@@ -229,9 +234,9 @@ export default function StudentSupport() {
                               <Badge variant="outline" className="text-[10px] py-0 h-4">Trainer</Badge>
                             </div>
                           </div>
-                          <Button 
-                            variant="gold" 
-                            size="sm" 
+                          <Button
+                            variant="gold"
+                            size="sm"
                             className="h-8 text-xs"
                             onClick={() => startNewChat(trainer.id)}
                           >
@@ -254,8 +259,8 @@ export default function StudentSupport() {
                           <label className="text-sm font-medium text-card-foreground mb-2 block">
                             Subject
                           </label>
-                          <Input 
-                            placeholder="What's your question about?" 
+                          <Input
+                            placeholder="What's your question about?"
                             value={ticketSubject}
                             onChange={(e) => setTicketSubject(e.target.value)}
                           />
@@ -285,8 +290,8 @@ export default function StudentSupport() {
                           onChange={(e) => setTicketMessage(e.target.value)}
                         />
                       </div>
-                      <Button 
-                        variant="gold" 
+                      <Button
+                        variant="gold"
                         className="w-full sm:w-auto"
                         onClick={() => {
                           toast.success("Ticket submitted successfully!");
@@ -359,9 +364,8 @@ export default function StudentSupport() {
                       <div
                         key={conv.id}
                         onClick={() => setActiveConversationId(conv.id)}
-                        className={`p-4 border-b border-border/50 cursor-pointer transition-colors flex items-center gap-3 ${
-                          isActive ? "bg-accent/10 border-r-2 border-r-accent" : "hover:bg-muted/30"
-                        }`}
+                        className={`p-4 border-b border-border/50 cursor-pointer transition-colors flex items-center gap-3 ${isActive ? "bg-accent/10 border-r-2 border-r-accent" : "hover:bg-muted/30"
+                          }`}
                       >
                         <Avatar className="h-10 w-10">
                           <AvatarFallback className="bg-accent/20 text-accent text-xs">
@@ -411,14 +415,14 @@ export default function StudentSupport() {
                   </div>
 
                   {/* Messages */}
-                  <div 
+                  <div
                     ref={scrollRef}
                     className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"
                   >
                     {messages.map((msg: any) => {
                       const isMe = msg.sender.id === currentUser?.id;
                       return (
-                        <div 
+                        <div
                           key={msg.id}
                           className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
                         >
@@ -428,11 +432,10 @@ export default function StudentSupport() {
                                 <AvatarFallback className="text-[8px] bg-accent/20">{msg.sender.username[0]}</AvatarFallback>
                               </Avatar>
                             )}
-                            <div className={`p-3 rounded-2xl text-sm ${
-                              isMe 
-                                ? 'bg-accent text-accent-foreground rounded-br-none' 
-                                : 'bg-muted text-foreground rounded-bl-none border border-border/50'
-                            }`}>
+                            <div className={`p-3 rounded-2xl text-sm ${isMe
+                              ? 'bg-accent text-accent-foreground rounded-br-none'
+                              : 'bg-muted text-foreground rounded-bl-none border border-border/50'
+                              }`}>
                               {msg.content}
                               <p className={`text-[9px] mt-1 opacity-50 ${isMe ? 'text-right' : 'text-left'}`}>
                                 {format(new Date(parseInt(msg.createdAt)), 'HH:mm')}
@@ -447,8 +450,8 @@ export default function StudentSupport() {
                   {/* Input Area */}
                   <div className="p-4 border-t border-border/50 bg-muted/20">
                     <div className="flex items-center gap-2">
-                      <Input 
-                        placeholder="Type your message..." 
+                      <Input
+                        placeholder="Type your message..."
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}

@@ -38,6 +38,7 @@ import {
   Bell,
   HelpCircle,
   GraduationCap,
+  Table,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSocket } from "@/hooks/use-socket";
@@ -83,6 +84,7 @@ const adminNavItems: NavItem[] = [
   { label: "Payments", href: "/portal/admin/payments", icon: CreditCard },
   { label: "Badges", href: "/portal/admin/badges", icon: Award },
   { label: "Analytics", href: "/portal/admin/analytics", icon: BarChart3 },
+  { label: "Toolbox", href: "/portal/admin/tools", icon: Table },
   { label: "Branding", href: "/portal/admin/branding", icon: Palette },
   { label: "Messages", href: "/chat", icon: MessageSquare },
 ];
@@ -204,11 +206,10 @@ export function PortalLayout({ children }: PortalLayoutProps) {
                 <li key={item.href}>
                   <Link
                     to={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                      isActive
-                        ? "bg-accent text-accent-foreground"
-                        : "text-card-foreground/70 hover:bg-background/50 hover:text-card-foreground"
-                    }`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive
+                      ? "bg-accent text-accent-foreground"
+                      : "text-card-foreground/70 hover:bg-background/50 hover:text-card-foreground"
+                      }`}
                   >
                     <item.icon className="w-5 h-5" strokeWidth={1.5} />
                     {item.label}
@@ -288,11 +289,10 @@ export function PortalLayout({ children }: PortalLayoutProps) {
                         <Link
                           to={item.href}
                           onClick={() => setSidebarOpen(false)}
-                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                            isActive
-                              ? "bg-accent text-accent-foreground"
-                              : "text-card-foreground/70 hover:bg-background/50 hover:text-card-foreground"
-                          }`}
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${isActive
+                            ? "bg-accent text-accent-foreground"
+                            : "text-card-foreground/70 hover:bg-background/50 hover:text-card-foreground"
+                            }`}
                         >
                           <item.icon className="w-5 h-5" strokeWidth={1.5} />
                           {item.label}
@@ -341,7 +341,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
           <div className="flex items-center gap-3">
             {/* Theme Toggle */}
             <ThemeToggle />
-            
+
             {/* Notifications */}
             <button className="relative p-2 text-card-foreground/70 hover:text-card-foreground transition-colors">
               <Bell className="w-5 h-5" />
@@ -385,7 +385,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={handleLogout}
                   className="text-destructive focus:text-destructive cursor-pointer"
                 >

@@ -8,6 +8,10 @@ import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHt
 import { Server } from 'socket.io';
 import bodyParser from 'body-parser';
 import jwt from 'jsonwebtoken';
+import { WebSocketServer } from 'ws';
+import { useServer } from 'graphql-ws/use/ws';
+import { makeExecutableSchema } from '@graphql-tools/schema';
+import { Context } from 'graphql-ws';
 
 import connectDB from './config/db';
 import { typeDefs } from './graphql/typeDefs';
@@ -28,11 +32,45 @@ const startServer = async () => {
     // Connect to Database
     await connectDB();
 
+    const schema = makeExecutableSchema({ typeDefs, resolvers });
+
+    // WebSocket Server Setup
+    const wsServer = new WebSocketServer({
+        server: httpServer,
+        path: '/graphql',
+    });
+
+    const serverCleanup = useServer({
+        schema,
+        context: async (ctx: Context) => {
+            const token = ctx.connectionParams?.authorization as string || '';
+            let user = null;
+            if (token) {
+                try {
+                    user = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET || 'secret');
+                } catch (e) {
+                    // Invalid token
+                }
+            }
+            return { user };
+        }
+    }, wsServer);
+
     // Apollo Server Setup
     const server = new ApolloServer({
-        typeDefs,
-        resolvers,
-        plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+        schema,
+        plugins: [
+            ApolloServerPluginDrainHttpServer({ httpServer }),
+            {
+                async serverWillStart() {
+                    return {
+                        async drainServer() {
+                            await serverCleanup.dispose();
+                        },
+                    };
+                },
+            },
+        ],
     });
 
     await server.start();

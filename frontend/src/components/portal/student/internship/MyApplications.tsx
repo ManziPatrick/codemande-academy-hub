@@ -2,10 +2,10 @@ import { useQuery } from "@apollo/client/react";
 import { GET_MY_INTERNSHIP_APPLICATIONS } from "@/lib/graphql/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  FileText, 
-  Clock, 
-  CheckCircle, 
+import {
+  FileText,
+  Clock,
+  CheckCircle,
   XCircle,
   AlertCircle,
   Calendar,
@@ -71,8 +71,8 @@ export function MyApplications() {
           ) : (
             <div className="space-y-4">
               {applications.map((app: any) => (
-                <div 
-                  key={app.id} 
+                <div
+                  key={app.id}
                   className="p-6 rounded-xl border border-border/50 bg-muted/20 hover:bg-muted/30 transition-all"
                 >
                   <div className="flex items-start justify-between mb-4">
@@ -86,7 +86,7 @@ export function MyApplications() {
                         </h4>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Calendar className="w-3.5 h-3.5" />
-                          Applied on {new Date(app.createdAt).toLocaleDateString()}
+                          Applied on {app.createdAt ? new Date(app.createdAt).toLocaleDateString() : 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -101,16 +101,16 @@ export function MyApplications() {
                           Congratulations! Your application has been approved.
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {app.payment?.status === 'paid' 
-                            ? "Payment confirmed. You'll be assigned to a team soon." 
+                          {app.payment?.status === 'paid'
+                            ? "Payment confirmed. You'll be assigned to a team soon."
                             : `Secure your spot by paying the enrollment fee of ${(app.internshipProgram.price || 0).toLocaleString()} ${app.internshipProgram.currency || 'RWF'}`}
                         </p>
                       </div>
-                      
+
                       {app.payment?.status !== 'paid' && (
-                        <Button 
-                          variant="gold" 
-                          size="sm" 
+                        <Button
+                          variant="gold"
+                          size="sm"
                           className="gap-2 shadow-lg shadow-gold/20"
                           onClick={() => setPayingFor(app)}
                         >
@@ -118,7 +118,7 @@ export function MyApplications() {
                           Secure My Spot
                         </Button>
                       )}
-                      
+
                       {app.payment?.status === 'paid' && (
                         <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 gap-1">
                           <ShieldCheck className="w-3.5 h-3.5" />

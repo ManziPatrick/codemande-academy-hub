@@ -280,7 +280,7 @@ const Training = () => {
                 Industry-Ready Technology Training
               </h1>
               <p className="text-card-foreground/80 max-w-2xl mx-auto text-lg mb-8">
-                Comprehensive programs designed with industry input, delivered by experts, 
+                Comprehensive programs designed with industry input, delivered by experts,
                 and focused on practical skills that employers demand.
               </p>
               <div className="flex flex-wrap justify-center gap-4 text-sm text-card-foreground/70">
@@ -312,7 +312,7 @@ const Training = () => {
                 Choose Your Learning Path
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Each program includes hands-on projects, mentorship, and career support to ensure 
+                Each program includes hands-on projects, mentorship, and career support to ensure
                 you're ready for real-world challenges.
               </p>
             </motion.div>
@@ -334,37 +334,37 @@ const Training = () => {
                   className="bg-card rounded-2xl overflow-hidden shadow-sm border border-border/30 group hover:shadow-xl transition-all h-full flex flex-col"
                 >
                   <div className="aspect-video relative overflow-hidden">
-                    <img 
-                        src={course.thumbnail} 
-                        alt={course.title} 
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                    <img
+                      src={course.thumbnail}
+                      alt={course.title}
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     />
                     <div className="absolute top-4 left-4">
-                        <Badge className="bg-white/90 text-black hover:bg-white border-0 shadow-sm">{course.category}</Badge>
+                      <Badge className="bg-white/90 text-black hover:bg-white border-0 shadow-sm">{course.category}</Badge>
                     </div>
                   </div>
 
                   <div className="p-6 flex-1 flex flex-col">
                     <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1 bg-accent/5 px-2 py-1 rounded-full text-accent font-medium uppercase tracking-wider">{course.level}</span>
+                      <span className="flex items-center gap-1 bg-accent/5 px-2 py-1 rounded-full text-accent font-medium uppercase tracking-wider">{course.level}</span>
                     </div>
                     <h3 className="font-heading text-xl font-bold text-card-foreground mb-3 line-clamp-2">
-                        {course.title}
+                      {course.title}
                     </h3>
-                    <div 
-                        className="text-muted-foreground text-sm mb-6 line-clamp-3 prose prose-sm prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ __html: course.description }}
+                    <div
+                      className="text-muted-foreground text-sm mb-6 line-clamp-3 prose prose-sm prose-invert max-w-none"
+                      dangerouslySetInnerHTML={{ __html: course.description }}
                     />
                     <div className="mt-auto pt-6 border-t border-border/30 flex items-center justify-between">
-                        <div className="flex flex-col">
-                            <span className="text-xs text-muted-foreground">Instructor</span>
-                            <span className="text-sm font-semibold">{course.instructor.username}</span>
-                        </div>
-                        <Link to={`/course/${course.id}`}>
-                            <Button variant="gold" size="sm" className="rounded-full">
-                                Details <ArrowRight className="w-4 h-4 ml-2" />
-                            </Button>
-                        </Link>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-muted-foreground">Instructor</span>
+                        <span className="text-sm font-semibold">{course.instructor.username}</span>
+                      </div>
+                      <Link to={`/course/${course.id}`}>
+                        <Button variant="gold" size="sm" className="rounded-full">
+                          Details <ArrowRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 </motion.div>
@@ -387,7 +387,7 @@ const Training = () => {
                 AI Courses: How to Use & How to Prevent Risks
               </h2>
               <p className="text-muted-foreground max-w-3xl mx-auto">
-                Empower your teams with practical AI skills. Each course covers both productive AI applications 
+                Empower your teams with practical AI skills. Each course covers both productive AI applications
                 and essential safeguards to prevent misuse, bias, and security risks.
               </p>
             </motion.div>
@@ -477,7 +477,7 @@ const Training = () => {
 
                     {/* CTA */}
                     <div className="mt-4 pt-4 border-t border-border/30">
-                      <AuthAwareLink variant="gold" size="sm" className="w-full">
+                      <AuthAwareLink variant="gold" size="sm" className="w-full" to={`/course`}>
                         Enroll Now <ArrowRight className="w-4 h-4 ml-2" />
                       </AuthAwareLink>
                     </div>
@@ -498,7 +498,7 @@ const Training = () => {
                 Need Custom AI Training for Your Organization?
               </h3>
               <p className="text-card-foreground/70 max-w-2xl mx-auto mb-6">
-                We design tailored AI training programs for enterprises, government agencies, and institutions. 
+                We design tailored AI training programs for enterprises, government agencies, and institutions.
                 Cover multiple departments with a unified curriculum that addresses your specific industry challenges.
               </p>
               <Link to="/contact">
@@ -519,9 +519,9 @@ const Training = () => {
               viewport={{ once: true }}
               className="relative h-64 lg:h-80 rounded-xl overflow-hidden group"
             >
-              <img 
-                src={aboutImage} 
-                alt="Training session at CODEMANDE" 
+              <img
+                src={aboutImage}
+                alt="Training session at CODEMANDE"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-card/90 to-transparent flex items-center">
@@ -530,7 +530,7 @@ const Training = () => {
                     Hands-On Learning Environment
                   </h3>
                   <p className="text-card-foreground/80">
-                    Our training facilities feature modern equipment and collaborative spaces 
+                    Our training facilities feature modern equipment and collaborative spaces
                     designed for effective learning.
                   </p>
                 </div>
@@ -620,12 +620,12 @@ const Training = () => {
                 Start Your Tech Career Today
               </h2>
               <p className="text-card-foreground/80 mb-6 max-w-xl mx-auto">
-                Join our next cohort and take the first step toward a rewarding career in technology. 
+                Join our next cohort and take the first step toward a rewarding career in technology.
                 Enrollment is now open!
               </p>
               <div className="flex flex-wrap justify-center gap-4">
-                <AuthAwareLink variant="gold" size="lg">Apply Now</AuthAwareLink>
-                <AuthAwareLink variant="outline" size="lg">Explore Internships</AuthAwareLink>
+                <AuthAwareLink variant="gold" size="lg" to="/training">Apply Now</AuthAwareLink>
+                <AuthAwareLink variant="outline" size="lg" to="/internships">Explore Internships</AuthAwareLink>
               </div>
             </motion.div>
           </div>

@@ -15,7 +15,9 @@ import Blog from "@/pages/Blog";
 import Contact from "@/pages/Contact";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
+import ResetPassword from "@/pages/ResetPassword";
 import CoursePage from "@/pages/CoursePage";
+import PaymentSuccess from "@/pages/PaymentSuccess";
 
 // Student Portal
 import StudentDashboard from "@/pages/portal/student/StudentDashboard";
@@ -46,6 +48,7 @@ import AdminPayments from "@/pages/portal/admin/AdminPayments";
 import AdminBadges from "@/pages/portal/admin/AdminBadges";
 import AdminAnalytics from "@/pages/portal/admin/AdminAnalytics";
 import AdminBranding from "@/pages/portal/admin/AdminBranding";
+import AdminTools from "@/pages/portal/admin/AdminTools";
 
 // Super Admin Portal
 import SuperAdminDashboard from "@/pages/portal/super-admin/SuperAdminDashboard";
@@ -77,6 +80,8 @@ export function AnimatedRoutes() {
         <Route path="/blog" element={<PageTransition><Blog /></PageTransition>} />
         <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/success" element={<PaymentSuccess />} />
 
         {/* Student Portal */}
         <Route path="/portal/student" element={<ProtectedRoute allowedRoles={["student"]}><StudentDashboard /></ProtectedRoute>} />
@@ -108,6 +113,7 @@ export function AnimatedRoutes() {
         <Route path="/portal/admin/badges" element={<ProtectedRoute allowedRoles={["admin"]}><AdminBadges /></ProtectedRoute>} />
         <Route path="/portal/admin/analytics" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnalytics /></ProtectedRoute>} />
         <Route path="/portal/admin/branding" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><AdminBranding /></ProtectedRoute>} />
+        <Route path="/portal/admin/tools" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><AdminTools /></ProtectedRoute>} />
 
         {/* Super Admin Portal */}
         <Route path="/portal/super-admin" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminDashboard /></ProtectedRoute>} />
@@ -119,7 +125,7 @@ export function AnimatedRoutes() {
         {/* Shared Portal Routes */}
         <Route path="/portal/settings" element={<ProtectedRoute allowedRoles={["student", "trainer", "admin", "super_admin"]}><PortalSettings /></ProtectedRoute>} />
         <Route path="/portal/help" element={<ProtectedRoute allowedRoles={["student", "trainer", "admin", "super_admin"]}><PortalHelp /></ProtectedRoute>} />
-        
+
         {/* Experimental/Testing */}
         <Route path="/course/:id" element={<PageTransition><CoursePage /></PageTransition>} />
         <Route path="/chat" element={<PageTransition><Chat /></PageTransition>} />

@@ -1,9 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  Users, 
-  Target, 
+import { toast } from "sonner";
+import {
+  Users,
+  Target,
   Calendar,
   Clock,
   CheckCircle,
@@ -12,7 +14,11 @@ import {
   TrendingUp,
   Shield
 } from "lucide-react";
+import { useState } from "react";
 import { Progress } from "@/components/ui/progress";
+import { LogTimeDialog } from "../../dialogs/LogTimeDialog";
+import { SubmitWorkDialog } from "../../dialogs/SubmitWorkDialog";
+import { TeamChatDialog } from "../../dialogs/TeamChatDialog";
 
 interface MyInternshipDashboardProps {
   team: any;
@@ -20,6 +26,11 @@ interface MyInternshipDashboardProps {
 }
 
 export function MyInternshipDashboard({ team, loading }: MyInternshipDashboardProps) {
+  const [showLogTime, setShowLogTime] = useState(false);
+  const [showSubmitWork, setShowSubmitWork] = useState(false);
+  const [showTeamChat, setShowTeamChat] = useState(false);
+  const [selectedMilestone, setSelectedMilestone] = useState<{ id: string; title: string } | null>(null);
+
   if (loading) {
     return <div className="flex items-center justify-center p-20">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
@@ -33,10 +44,12 @@ export function MyInternshipDashboard({ team, loading }: MyInternshipDashboardPr
           <AlertCircle className="w-16 h-16 text-muted-foreground/30 mb-4" />
           <h3 className="text-xl font-semibold mb-2">No Active Internship</h3>
           <p className="text-muted-foreground text-center max-w-md mb-6">
-            You haven't been assigned to an internship team yet. Check the "Available Tracks" tab to apply, 
+            You haven't been assigned to an internship team yet. Check the "Available Tracks" tab to apply,
             or wait for admin approval if you've already submitted an application.
           </p>
-          <Button variant="gold">Browse Programs</Button>
+          <Link to="/internships">
+            <Button variant="gold">Browse Programs</Button>
+          </Link>
         </CardContent>
       </Card>
     );
@@ -45,7 +58,9 @@ export function MyInternshipDashboard({ team, loading }: MyInternshipDashboardPr
   const project = team.internshipProject;
   const milestones = project?.milestones || [];
   const completedMilestones = milestones.filter((m: any) => m.completed).length;
-  const progressPercentage = milestones.length > 0 ? (completedMilestones / milestones.length) * 100 : 0;
+  const progressPercentage = team.status === 'completed'
+    ? 100
+    : (milestones.length > 0 ? (completedMilestones / milestones.length) * 100 : 0);
 
   return (
     <div className="space-y-6">
@@ -75,7 +90,7 @@ export function MyInternshipDashboard({ team, loading }: MyInternshipDashboardPr
               </div>
               <p className="text-lg font-semibold">{team.mentor?.username || 'Not Assigned'}</p>
             </div>
-            
+
             <div className="bg-background/80 backdrop-blur-sm p-4 rounded-xl border border-border/50">
               <div className="flex items-center gap-3 mb-2">
                 <Users className="w-5 h-5 text-accent" />
@@ -123,34 +138,32 @@ export function MyInternshipDashboard({ team, loading }: MyInternshipDashboardPr
 
                     <div className="space-y-3">
                       {milestones.map((milestone: any, idx: number) => {
-                        const isPast = new Date(milestone.deadline) < new Date();
+                        const isPast = milestone.deadline ? new Date(milestone.deadline) < new Date() : false;
                         const isCompleted = milestone.completed;
-                        
+
                         return (
-                          <div 
-                            key={milestone.id} 
-                            className={`p-4 rounded-lg border transition-all ${
-                              isCompleted 
-                                ? 'bg-green-500/5 border-green-500/20' 
-                                : isPast 
-                                ? 'bg-destructive/5 border-destructive/20' 
+                          <div
+                            key={milestone.id}
+                            className={`p-4 rounded-lg border transition-all ${isCompleted
+                              ? 'bg-green-500/5 border-green-500/20'
+                              : isPast
+                                ? 'bg-destructive/5 border-destructive/20'
                                 : 'bg-muted/30 border-border/50'
-                            }`}
+                              }`}
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex items-start gap-3 flex-1">
-                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                                  isCompleted 
-                                    ? 'bg-green-500 text-white' 
-                                    : 'bg-muted text-muted-foreground'
-                                }`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${isCompleted
+                                  ? 'bg-green-500 text-white'
+                                  : 'bg-muted text-muted-foreground'
+                                  }`}>
                                   {isCompleted ? <CheckCircle className="w-4 h-4" /> : idx + 1}
                                 </div>
                                 <div className="flex-1">
                                   <h4 className="font-semibold text-sm mb-1">{milestone.title}</h4>
                                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <Calendar className="w-3 h-3" />
-                                    Due: {new Date(milestone.deadline).toLocaleDateString()}
+                                    Due: {milestone.deadline ? new Date(milestone.deadline).toLocaleDateString() : 'TBD'}
                                     {isPast && !isCompleted && (
                                       <Badge variant="destructive" className="text-[10px] ml-2">Overdue</Badge>
                                     )}
@@ -158,7 +171,15 @@ export function MyInternshipDashboard({ team, loading }: MyInternshipDashboardPr
                                 </div>
                               </div>
                               {!isCompleted && (
-                                <Button size="sm" variant="outline" className="gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="gap-2"
+                                  onClick={() => {
+                                    setSelectedMilestone({ id: milestone.id, title: milestone.title });
+                                    setShowSubmitWork(true);
+                                  }}
+                                >
                                   <Upload className="w-3 h-3" />
                                   Submit
                                 </Button>
@@ -185,8 +206,8 @@ export function MyInternshipDashboard({ team, loading }: MyInternshipDashboardPr
               </CardHeader>
               <CardContent className="space-y-3">
                 {team.members.map((member: any) => (
-                  <div 
-                    key={member.id} 
+                  <div
+                    key={member.id}
                     className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border/50"
                   >
                     <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-sm font-bold text-accent">
@@ -206,15 +227,11 @@ export function MyInternshipDashboard({ team, loading }: MyInternshipDashboardPr
                 <CardTitle className="text-lg font-heading">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setShowLogTime(true)}>
                   <Clock className="w-4 h-4" />
                   Log Time
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
-                  <Upload className="w-4 h-4" />
-                  Submit Work
-                </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setShowTeamChat(true)}>
                   <Users className="w-4 h-4" />
                   Team Chat
                 </Button>
@@ -222,6 +239,35 @@ export function MyInternshipDashboard({ team, loading }: MyInternshipDashboardPr
             </Card>
           </div>
         </div>
+      )}
+
+      {/* Dialogs */}
+      <LogTimeDialog
+        open={showLogTime}
+        onOpenChange={setShowLogTime}
+        teamId={team?.id}
+      />
+
+      <SubmitWorkDialog
+        open={showSubmitWork}
+        onOpenChange={setShowSubmitWork}
+        teamId={team?.id}
+        milestoneId={selectedMilestone?.id}
+        milestoneTitle={selectedMilestone?.title}
+      />
+
+      {team && (
+        <TeamChatDialog
+          open={showTeamChat}
+          onOpenChange={setShowTeamChat}
+          projectId={team.internshipProjectId}
+          projectTitle={team.internshipProject?.title}
+          teamMembers={team.members.map((m: any) => ({
+            name: m.user.username,
+            role: m.role
+          }))}
+          mentors={team.mentor ? [team.mentor] : []}
+        />
       )}
     </div>
   );

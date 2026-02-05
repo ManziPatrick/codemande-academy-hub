@@ -403,6 +403,14 @@ export const typeDefs = `#graphql
     coursePerformance: [CoursePerformance!]
   }
 
+  type UploadSignature {
+    signature: String!
+    timestamp: Int!
+    folder: String!
+    cloudName: String!
+    apiKey: String!
+  }
+
   type Query {
     hello: String
     users: [User]
@@ -445,6 +453,9 @@ export const typeDefs = `#graphql
     myMentees: [Internship]
     internship(id: ID!): Internship
     internshipStages: [ProgramStage]
+
+    getCourseQuestions(courseId: ID!): [Question!]!
+    getUploadSignature(folder: String): UploadSignature!
   }
 
   input ResourceInput {
@@ -556,9 +567,39 @@ export const typeDefs = `#graphql
 
     chatWithAI(message: String!): ChatResponse
 
+    # Uploads
+    getUploadSignature(folder: String): UploadSignature!
+
     sendMessage(receiverId: ID!, content: String!): Message
-    register(username: String!, email: String!, password: String!): AuthPayload
+    register(username: String!, email: String!, password: String!, role: String): AuthPayload
     login(email: String!, password: String!): AuthPayload
+    googleLogin(idToken: String!): AuthPayload
+    requestPasswordReset(email: String!): Boolean
+    resetPassword(token: String!, newPassword: String!): Boolean
+    
+    # Questions
+    createQuestion(
+      courseId: ID!
+      lessonId: ID
+      questionText: String!
+      options: [String!]!
+      correctOptionIndex: Int!
+      explanation: String
+    ): Question
+
+    updateQuestion(
+      id: ID!
+      questionText: String
+      options: [String!]
+      correctOptionIndex: Int
+      explanation: String
+    ): Question
+
+    deleteQuestion(id: ID!): Boolean
+
+    # Badges
+    awardBadge(userId: ID!, badgeId: ID!): User
+    
     enroll(courseId: ID!): Course
     createCourse(
       title: String!
@@ -595,22 +636,7 @@ export const typeDefs = `#graphql
     
     completeLesson(courseId: ID!, lessonId: String!): User
     trackActivity(action: String!, details: String): User
-    createQuestion(
-      courseId: ID!
-      lessonId: ID
-      questionText: String!
-      options: [String!]!
-      correctOptionIndex: Int!
-      explanation: String
-    ): Question
-    updateQuestion(
-      id: ID!
-      questionText: String
-      options: [String!]
-      correctOptionIndex: Int
-      explanation: String
-    ): Question
-    deleteQuestion(id: ID!): Boolean
+
     
     createBooking(
       mentorId: ID,
@@ -624,7 +650,7 @@ export const typeDefs = `#graphql
     updateBookingStatus(id: ID!, status: String!, meetingLink: String): Booking
     
     createBadge(title: String!, description: String!, icon: String, category: String): Badge
-    awardBadge(userId: ID!, badgeId: ID!): User
+
     awardBadgeToBatch(userIds: [ID!]!, badgeId: ID!): Boolean
     submitGrade(userId: ID!, courseId: ID!, lessonId: String, score: Int!, feedback: String): User
     promoteStudent(userId: ID!, academicStatus: String!, level: Int): User
@@ -1160,6 +1186,7 @@ export const typeDefs = `#graphql
 
     # Stripe Payment
     createStripePaymentIntent(programId: ID!): StripePaymentIntent
+    subscribeToNewsletter(email: String!): Boolean
   }
 
   type StripePaymentIntent {
@@ -1167,5 +1194,20 @@ export const typeDefs = `#graphql
     paymentIntentId: String!
     publishableKey: String!
     paymentId: ID!
+  }
+
+  type Notification {
+    id: ID!
+    userId: ID!
+    type: String!
+    title: String!
+    message: String!
+    read: Boolean!
+    createdAt: String!
+  }
+
+  type Subscription {
+    messageAdded(conversationId: ID!): Message
+    notificationAdded(userId: ID!): Notification
   }
 `;

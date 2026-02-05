@@ -17,6 +17,7 @@
   "type": "commonjs",
   "dependencies": {
     "@apollo/server": "^4.12.2",
+    "@graphql-tools/schema": "^10.0.31",
     "@openrouter/sdk": "^0.5.1",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.9",
@@ -24,17 +25,22 @@
     "axios": "^1.13.4",
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
+    "cloudinary": "^2.9.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "google-auth-library": "^10.5.0",
     "graphql": "^16.12.0",
+    "graphql-subscriptions": "^3.0.0",
+    "graphql-ws": "^6.0.7",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.0",
     "pdfkit": "^0.17.2",
     "socket.io": "^4.8.3",
-    "stripe": "^20.3.0"
+    "stripe": "^20.3.0",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
@@ -43,6 +49,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.2.0",
+    "@types/ws": "^8.18.1",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"

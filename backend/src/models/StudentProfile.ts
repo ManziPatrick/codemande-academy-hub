@@ -23,8 +23,7 @@ const StudentProfileSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      unique: true,
-      index: true
+      unique: true
     },
     school: {
       type: String,
@@ -45,7 +44,7 @@ const StudentProfileSchema: Schema = new Schema(
       type: [String],
       required: true,
       validate: {
-        validator: function(v: string[]) {
+        validator: function (v: string[]) {
           return v && v.length > 0;
         },
         message: 'At least one skill is required'
@@ -90,15 +89,15 @@ const StudentProfileSchema: Schema = new Schema(
 );
 
 // Calculate completion percentage before saving
-StudentProfileSchema.pre('save', async function() {
+StudentProfileSchema.pre('save', async function () {
   const profile = this as unknown as IStudentProfile;
-  
+
   const requiredFields = ['school', 'educationLevel', 'fieldOfStudy', 'skills', 'availability'];
   const optionalFields = ['bio', 'linkedinUrl', 'githubUrl', 'portfolioUrl'];
-  
+
   let filledRequired = 0;
   let filledOptional = 0;
-  
+
   // Check required fields
   requiredFields.forEach(field => {
     if (profile[field as keyof IStudentProfile]) {
@@ -109,24 +108,23 @@ StudentProfileSchema.pre('save', async function() {
       }
     }
   });
-  
+
   // Check optional fields
   optionalFields.forEach(field => {
     if (profile[field as keyof IStudentProfile]) {
       filledOptional++;
     }
   });
-  
+
   // Required fields are 70% weight, optional are 30%
   const requiredPercentage = (filledRequired / requiredFields.length) * 70;
   const optionalPercentage = (filledOptional / optionalFields.length) * 30;
-  
+
   profile.completionPercentage = Math.round(requiredPercentage + optionalPercentage);
   profile.isComplete = filledRequired === requiredFields.length;
 });
 
 // Index for faster queries
-StudentProfileSchema.index({ userId: 1 });
 StudentProfileSchema.index({ isComplete: 1 });
 
 export const StudentProfile = mongoose.model<IStudentProfile>('StudentProfile', StudentProfileSchema);

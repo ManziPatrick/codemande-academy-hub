@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@apollo/client/react';
+import { useQuery, useMutation } from "@apollo/client/react";
 import { gql } from '@apollo/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';

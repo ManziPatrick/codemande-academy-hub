@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation } from '@apollo/client/react';
+import { useMutation } from "@apollo/client/react";
 import { CREATE_INTERNSHIP_PROGRAM } from '@/lib/graphql/mutations';
 import { GET_INTERNSHIP_PROGRAMS } from '@/lib/graphql/queries';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';

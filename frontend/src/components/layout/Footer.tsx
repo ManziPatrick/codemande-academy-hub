@@ -1,5 +1,9 @@
+import { useState } from "react";
+import { useMutation } from "@apollo/client/react";
+import { SUBSCRIBE_TO_NEWSLETTER } from "@/lib/graphql/mutations";
+import { toast } from "sonner";
+import { Facebook, Twitter, Linkedin, Instagram, Youtube, Mail, MapPin, Phone, Clock, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Facebook, Twitter, Linkedin, Instagram, Youtube, Mail, MapPin, Phone, Clock } from "lucide-react";
 
 const footerLinks = {
   company: [
@@ -35,18 +39,44 @@ const socialLinks = [
   { icon: Linkedin, href: "#", label: "LinkedIn" },
   { icon: Instagram, href: "#", label: "Instagram" },
   { icon: Youtube, href: "#", label: "YouTube" },
+  {
+    icon: (props: any) => (
+      <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+      </svg>
+    ), href: "https://wa.me/250790706170", label: "WhatsApp"
+  },
 ];
 
 import { useBranding } from "@/components/BrandingProvider";
 
 export function Footer() {
   const { branding } = useBranding();
+  const [email, setEmail] = useState("");
+  const [subscribe, { loading }] = useMutation(SUBSCRIBE_TO_NEWSLETTER);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    try {
+      const { data } = await subscribe({ variables: { email } });
+      if (data.subscribeToNewsletter) {
+        toast.success("Thank you for subscribing to our newsletter!");
+        setEmail("");
+      } else {
+        toast.error("Failed to subscribe. Please try again.");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong.");
+    }
+  };
 
   return (
     <footer className="bg-card text-card-foreground">
       {/* Circuit line decoration */}
       <div className="h-px bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
-      
+
       <div className="container mx-auto px-4 lg:px-8 py-12 lg:py-16">
         {/* Main Footer Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-6">
@@ -67,12 +97,12 @@ export function Footer() {
             <p className="text-card-foreground/70 text-sm leading-relaxed mb-6 max-w-xs">
               Empowering Africa through technology education and innovation. Building the next generation of digital professionals with {branding.siteName}.
             </p>
-            
+
             {/* Contact Info Block */}
             <div className="space-y-3 text-sm text-card-foreground/70">
               <div className="flex items-start gap-3">
                 <MapPin size={16} className="text-accent flex-shrink-0 mt-0.5" />
-                <span>KG 123 Street, Kigali Innovation City,<br />Kigali, Rwanda</span>
+                <span>Kigali, Rwanda</span>
               </div>
               <div className="flex items-center gap-3">
                 <Mail size={16} className="text-accent flex-shrink-0" />
@@ -80,7 +110,7 @@ export function Footer() {
               </div>
               <div className="flex items-center gap-3">
                 <Phone size={16} className="text-accent flex-shrink-0" />
-                <span>+250 788 000 000</span>
+                <span>+250 790 706 170</span>
               </div>
               <div className="flex items-center gap-3">
                 <Clock size={16} className="text-accent flex-shrink-0" />
@@ -177,16 +207,24 @@ export function Footer() {
                 Subscribe to our newsletter for the latest courses, tech insights, and opportunities.
               </p>
             </div>
-            <div className="flex gap-2">
+            <form onSubmit={handleSubscribe} className="flex gap-2">
               <input
                 type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 className="flex-1 px-4 py-2 rounded-md bg-background border border-border text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
               />
-              <button className="px-4 py-2 bg-accent text-accent-foreground rounded-md text-sm font-medium hover:bg-accent/90 transition-colors">
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-accent text-accent-foreground rounded-md text-sm font-medium hover:bg-accent/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 Subscribe
               </button>
-            </div>
+            </form>
           </div>
         </div>
 
@@ -202,7 +240,7 @@ export function Footer() {
                 Leading Technology Education & Innovation in Rwanda and Beyond.
               </p>
             </div>
-            
+
             {/* Social Links */}
             <div className="flex items-center gap-3">
               {socialLinks.map((social) => (

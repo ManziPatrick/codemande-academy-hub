@@ -1,8 +1,12 @@
 import { User } from '../models/User';
+import { OAuth2Client } from 'google-auth-library';
 import { Message } from '../models/Message';
 import { Conversation } from '../models/Conversation';
 import { Course } from '../models/Course';
 import { Question } from '../models/Question';
+import { PubSub, withFilter } from 'graphql-subscriptions';
+
+const pubsub = new PubSub<any>();
 import { Booking } from '../models/Booking';
 import { Badge } from '../models/Badge';
 import { Config } from '../models/Config';
@@ -20,6 +24,7 @@ import { InternshipMilestone } from '../models/internship/Milestone';
 import { InternshipSubmission } from '../models/internship/Submission';
 import { InternshipTimeLog } from '../models/internship/TimeLog';
 import { InternshipMentorFeedback } from '../models/internship/MentorFeedback';
+import { NewsletterSubscription } from '../models/NewsletterSubscription';
 import { InternshipActivityLog } from '../models/internship/ActivityLog';
 import { StudentProfile } from '../models/StudentProfile';
 import { InternshipPayment } from '../models/internship/Payment';
@@ -28,15 +33,27 @@ import { InternshipCertificate } from '../models/internship/Certificate';
 import { logActivity } from '../services/audit.service';
 import { sendNotification, broadcastToTeam } from '../services/notification.service';
 import { createPaymentIntent, createCheckoutSession, confirmPayment, refundPayment } from '../services/stripe.service';
-import { sendApplicationConfirmation, sendApplicationStatusUpdate, sendPaymentConfirmation, sendCertificateIssued, sendFeedbackNotification } from '../services/email.service';
+import { sendApplicationConfirmation, sendApplicationStatusUpdate, sendPaymentConfirmation, sendCertificateIssued, sendFeedbackNotification, sendPasswordResetEmail } from '../services/email.service';
 import { generateCertificatePDF, generateInvoicePDF } from '../services/pdf.service';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { chatWithAIService } from '../services/ai.service';
+import { generateUploadSignature } from '../services/upload.service';
 
 export const resolvers = {
   Query: {
     hello: () => 'Hello world from Apollo Server!',
+
+    getUploadSignature: (_: any, { folder }: { folder?: string }, context: any) => {
+      // Optional: Check if user is authenticated
+      if (!context.user) throw new Error('Not authenticated');
+      return generateUploadSignature(folder);
+    },
+
+    getCourseQuestions: async (_: any, { courseId }: { courseId: string }) => {
+      return await Question.find({ courseId });
+    },
+
     users: async () => await User.find({ isDeleted: { $ne: true } }),
 
     conversations: async (_: any, __: any, context: any) => {
@@ -1011,7 +1028,22 @@ export const resolvers = {
       // Also emit to sender (if they have multiple tabs open)
       context.io.to(senderId).emit('receive_message', message);
 
+      // Publish to GraphQL Subscriptions
+      pubsub.publish('MESSAGE_ADDED', { messageAdded: message });
+
       return message;
+    },
+    subscribeToNewsletter: async (_: any, { email }: { email: string }) => {
+      try {
+        const existing = await NewsletterSubscription.findOne({ email });
+        if (existing) return true;
+
+        await NewsletterSubscription.create({ email });
+        return true;
+      } catch (error) {
+        console.error('Newsletter subscription error:', error);
+        return false;
+      }
     },
     register: async (_: any, { username, email, password }: any) => {
       // Check if user exists
@@ -1065,6 +1097,111 @@ export const resolvers = {
 
       return { token, user };
     },
+    googleLogin: async (_: any, { idToken }: { idToken: string }) => {
+      const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+      try {
+        const ticket = await client.verifyIdToken({
+          idToken,
+          audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        if (!payload || !payload.email) {
+          throw new Error('Invalid Google token');
+        }
+
+        const { email, name, picture, sub: googleId } = payload;
+        let user = await User.findOne({ email });
+
+        if (!user) {
+          // Create new student user
+          user = new User({
+            username: email.split('@')[0] + Math.floor(Math.random() * 1000),
+            email,
+            password: await bcrypt.hash(Math.random().toString(36), 10), // Random password
+            role: 'student',
+            fullName: name,
+          });
+          await user.save();
+        }
+
+        // Check Account Status
+        if ((user as any).status === 'suspended') throw new Error('Account is suspended. Contact support.');
+        if ((user as any).isDeleted) throw new Error('User not found');
+
+        // Update Presence
+        (user as any).isOnline = true;
+        (user as any).lastActive = new Date();
+        await user.save();
+
+        const token = jwt.sign(
+          { id: user.id, email: user.email, username: user.username, role: (user as any).role },
+          process.env.JWT_SECRET || 'secret',
+          { expiresIn: '30d' }
+        );
+
+        return { token, user };
+      } catch (error: any) {
+        console.error('Google login error:', error);
+        throw new Error('Google authentication failed: ' + error.message);
+      }
+    },
+
+    requestPasswordReset: async (_: any, { email }: { email: string }) => {
+      const user = await User.findOne({ email, isDeleted: { $ne: true } });
+      if (!user) {
+        // Return true even if user not found for security (prevent enumeration)
+        return true;
+      }
+
+      // Generate reset token (random 32 bytes hex)
+      const crypto = require('crypto');
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+      // Save hashed token to user
+      (user as any).resetPasswordToken = hashedToken;
+      (user as any).resetPasswordExpires = Date.now() + 3600000; // 1 hour
+      await user.save();
+
+      // Send email with plain token
+      try {
+        await sendPasswordResetEmail(user.email, resetToken);
+      } catch (error) {
+        console.error('Email send error:', error);
+        (user as any).resetPasswordToken = undefined;
+        (user as any).resetPasswordExpires = undefined;
+        await user.save();
+        return false;
+      }
+
+      return true;
+    },
+
+    resetPassword: async (_: any, { token, newPassword }: { token: string, newPassword: string }) => {
+      const crypto = require('crypto');
+      const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+      const user = await User.findOne({
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { $gt: Date.now() },
+        isDeleted: { $ne: true }
+      });
+
+      if (!user) {
+        throw new Error('Invalid or expired password reset token');
+      }
+
+      // Notify user or log activity
+      await logActivity(user.id, 'PASSWORD_RESET', 'User', user.id, 'Password reset successfully');
+
+      return true;
+    },
+
+
+
+
+
     trackActivity: async (_: any, { action, details, path }: { action: string, details?: string, path?: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const user = await User.findById(context.user.id);
@@ -1625,7 +1762,7 @@ export const resolvers = {
 
       // Fetch interns to get names for the project team
       const interns = await Internship.find({ _id: { $in: internshipIds } }).populate('userId');
-      
+
       const projectTeam = interns.map((intern: any) => ({
         userId: intern.userId?._id || intern.userId?.id,
         name: intern.userId?.username || 'Unknown',
@@ -1634,7 +1771,7 @@ export const resolvers = {
 
       // Create Group Conversation
       const participantIds = [
-        context.user.id, 
+        context.user.id,
         ...(mentorIds || []),
         ...interns.map((i: any) => i.userId?._id?.toString() || i.userId?.id?.toString())
       ].filter(Boolean);
@@ -1659,14 +1796,14 @@ export const resolvers = {
         mentors: mentorIds || [context.user.id],
         conversationId: newConversation.id
       });
-      
+
       await newProject.save();
 
       // Assign project to all interns
       await Internship.updateMany(
         { _id: { $in: internshipIds } },
-        { 
-          $push: { projects: newProject.id } 
+        {
+          $push: { projects: newProject.id }
         }
       );
 
@@ -1684,12 +1821,12 @@ export const resolvers = {
       if (!conversationId) {
         const teamUserIds = project.team?.map((t: any) => t.userId).filter(Boolean) || [];
         const uniqueParticipants = [...new Set([project.userId.toString(), ...teamUserIds.map((id: any) => id.toString())])];
-        
+
         const newConversation = new Conversation({
-            participants: uniqueParticipants
+          participants: uniqueParticipants
         });
         await newConversation.save();
-        
+
         project.conversationId = newConversation.id;
         await project.save();
         conversationId = newConversation.id;
@@ -1701,7 +1838,7 @@ export const resolvers = {
         content,
         read: false
       });
-      
+
       await newMessage.save();
 
       await Conversation.findByIdAndUpdate(conversationId, {
@@ -1901,7 +2038,7 @@ export const resolvers = {
       if (!task) throw new Error('Task not found');
 
       task.completed = completed;
-      
+
       // Calculate progress based on completed tasks
       const totalTasks = project.tasks?.length || 0;
       const completedTasks = project.tasks?.filter((t: any) => t.completed).length || 0;
@@ -1960,7 +2097,7 @@ export const resolvers = {
       if (!context.user) throw new Error('Not authenticated');
       const program = await InternshipProgram.findById(args.internshipProgramId);
       if (!program || program.status !== 'active' || program.isDeleted) throw new Error('Internship program is not available for applications');
-      
+
       const application = new InternshipApplication({
         ...args,
         userId: context.user.id,
@@ -1975,13 +2112,13 @@ export const resolvers = {
       if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
       const application = await InternshipApplication.findById(id).populate('userId internshipProgramId');
       if (!application) throw new Error('Application not found');
-      
+
       application.status = status;
       if (rejectionReason) application.rejectionReason = rejectionReason;
       await application.save();
-      
+
       await logActivity(context.user.id, 'REVIEW', 'InternshipApplication', id, `Reviewed application status to: ${status}`);
-      
+
       // Notify via Socket
       sendNotification(application.userId.toString(), {
         type: 'INTERNSHIP_APPLICATION_STATUS',
@@ -2061,7 +2198,7 @@ export const resolvers = {
       if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
       const team = await InternshipTeam.findById(id);
       if (!team) throw new Error('Team not found');
-      
+
       // Verification for mentors
       if (context.user.role === 'trainer' && team.mentorId?.toString() !== context.user.id) throw new Error('Unauthorized');
 
@@ -2075,16 +2212,16 @@ export const resolvers = {
       if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
       const membership = new InternshipTeamMember({ teamId, userId, role });
       await membership.save();
-      
+
       await logActivity(context.user.id, 'ADD_MEMBER', 'InternshipTeam', teamId, `Added intern ${userId} to team`);
-      
+
       // Notify intern
       sendNotification(userId.toString(), {
         type: 'TEAM_ASSIGNMENT',
         teamId,
         message: `You have been assigned to a new internship team.`
       });
-      
+
       return membership;
     },
 
@@ -2092,10 +2229,10 @@ export const resolvers = {
       if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
       const membership = await InternshipTeamMember.findById(teamMemberId);
       if (!membership) throw new Error('Membership not found');
-      
+
       membership.isDeleted = true;
       await membership.save();
-      
+
       await logActivity(context.user.id, 'REMOVE_MEMBER', 'InternshipTeam', membership.teamId.toString(), `Removed intern ${membership.userId} from team`);
       return true;
     },
@@ -2118,9 +2255,9 @@ export const resolvers = {
         status: 'pending'
       });
       await submission.save();
-      
+
       await logActivity(context.user.id, 'SUBMIT_WORK', 'InternshipSubmission', submission.id, `Submitted work for milestone ${args.milestoneId}`);
-      
+
       // Notify team and mentor
       const team = await InternshipTeam.findById(args.teamId);
       if (team && team.mentorId) {
@@ -2131,7 +2268,7 @@ export const resolvers = {
           message: `New submission from team ${team.name}`
         });
       }
-      
+
       return submission;
     },
 
@@ -2139,13 +2276,13 @@ export const resolvers = {
       if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
       const submission = await InternshipSubmission.findById(id);
       if (!submission) throw new Error('Submission not found');
-      
+
       submission.status = status;
       submission.feedback = feedback;
       await submission.save();
-      
+
       await logActivity(context.user.id, 'REVIEW_WORK', 'InternshipSubmission', id, `Reviewed submission status to: ${status}`);
-      
+
       // Notify team member who submitted
       sendNotification(submission.userId.toString(), {
         type: 'SUBMISSION_REVIEWED',
@@ -2153,7 +2290,7 @@ export const resolvers = {
         submissionId: id,
         message: `Your project submission has been reviewed: ${status}`
       });
-      
+
       return submission;
     },
 
@@ -2176,25 +2313,25 @@ export const resolvers = {
       });
       await feedback.save();
       await logActivity(context.user.id, 'SUBMIT_FEEDBACK', 'InternshipMentorFeedback', feedback.id, `Submitted feedback for intern ${args.userId}`);
-      
+
       // Notify student
       sendNotification(args.userId.toString(), {
         type: 'NEW_MENTOR_FEEDBACK',
         mentorId: context.user.id,
         message: `Your mentor has provided new feedback on your performance.`
       });
-      
+
       return feedback;
     },
 
     // ========== STUDENT PROFILE MUTATIONS ==========
     createStudentProfile: async (_: any, args: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       // Check if profile already exists
       const existing = await StudentProfile.findOne({ userId: context.user.id });
       if (existing) throw new Error('Profile already exists. Use updateStudentProfile instead.');
-      
+
       const profile = new StudentProfile({
         userId: context.user.id,
         ...args
@@ -2206,10 +2343,10 @@ export const resolvers = {
 
     updateStudentProfile: async (_: any, args: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       const profile = await StudentProfile.findOne({ userId: context.user.id });
       if (!profile) throw new Error('Profile not found. Create one first.');
-      
+
       Object.assign(profile, args);
       await profile.save();
       await logActivity(context.user.id, 'UPDATE', 'StudentProfile', profile.id, 'Updated student profile');
@@ -2218,12 +2355,12 @@ export const resolvers = {
 
     validateProfileForInternship: async (_: any, __: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       const profile = await StudentProfile.findOne({ userId: context.user.id });
-      
+
       const requiredFields = ['school', 'educationLevel', 'fieldOfStudy', 'skills', 'availability'];
       const missingFields: string[] = [];
-      
+
       if (!profile) {
         return {
           isValid: false,
@@ -2232,20 +2369,20 @@ export const resolvers = {
           message: 'No profile found. Please create your student profile first.'
         };
       }
-      
+
       requiredFields.forEach(field => {
         const value = (profile as any)[field];
         if (!value || (Array.isArray(value) && value.length === 0)) {
           missingFields.push(field);
         }
       });
-      
+
       return {
         isValid: missingFields.length === 0,
         missingFields,
         completionPercentage: profile.completionPercentage,
-        message: missingFields.length === 0 
-          ? 'Profile is complete. You can apply for internships.' 
+        message: missingFields.length === 0
+          ? 'Profile is complete. You can apply for internships.'
           : `Please complete the following fields: ${missingFields.join(', ')}`
       };
     },
@@ -2253,13 +2390,13 @@ export const resolvers = {
     // Enhanced application with profile validation
     applyToInternshipWithValidation: async (_: any, args: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       // Check profile completion
       const profile = await StudentProfile.findOne({ userId: context.user.id });
       if (!profile || !profile.isComplete) {
         throw new Error('PROFILE_INCOMPLETE: Please complete your student profile before applying. Required: school, education level, field of study, skills, and availability.');
       }
-      
+
       // Check if already applied
       const existingApp = await InternshipApplication.findOne({
         userId: context.user.id,
@@ -2267,13 +2404,13 @@ export const resolvers = {
         isDeleted: false
       });
       if (existingApp) throw new Error('You have already applied to this program.');
-      
+
       // Check if program is open for applications
       const program = await InternshipProgram.findById(args.internshipProgramId);
       if (!program || program.isDeleted) throw new Error('Program not found.');
       if (program.status !== 'active') throw new Error('This program is not accepting applications.');
       if (new Date() > new Date(program.applicationDeadline)) throw new Error('Application deadline has passed.');
-      
+
       // Create application
       const application = new InternshipApplication({
         userId: context.user.id,
@@ -2285,14 +2422,14 @@ export const resolvers = {
       });
       await application.save();
       await logActivity(context.user.id, 'APPLY', 'InternshipApplication', application.id, `Applied to program: ${program.title}`);
-      
+
       return application;
     },
 
     // ========== PAYMENT MUTATIONS ==========
     createInternshipPayment: async (_: any, args: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       // Check if payment already exists
       const existing = await InternshipPayment.findOne({
         userId: context.user.id,
@@ -2300,10 +2437,10 @@ export const resolvers = {
         isDeleted: false
       });
       if (existing) throw new Error('Payment record already exists for this program.');
-      
+
       const program = await InternshipProgram.findById(args.internshipProgramId);
       if (!program) throw new Error('Program not found.');
-      
+
       const payment = new InternshipPayment({
         userId: context.user.id,
         internshipProgramId: args.internshipProgramId,
@@ -2313,28 +2450,28 @@ export const resolvers = {
       });
       await payment.save();
       await logActivity(context.user.id, 'CREATE', 'InternshipPayment', payment.id, `Created payment for ${program.title}`);
-      
+
       return payment;
     },
 
     processInternshipPayment: async (_: any, args: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       const payment = await InternshipPayment.findById(args.paymentId);
       if (!payment) throw new Error('Payment not found.');
       if (payment.userId.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
         throw new Error('Unauthorized');
       }
       if (payment.status !== 'pending') throw new Error(`Payment cannot be processed. Current status: ${payment.status}`);
-      
+
       payment.status = 'paid';
       payment.transactionId = args.transactionId;
       payment.paymentMethod = args.paymentMethod;
       payment.paidAt = new Date();
       await payment.save();
-      
+
       await logActivity(context.user.id, 'UPDATE', 'InternshipPayment', payment.id, `Payment processed: ${args.transactionId}`);
-      
+
       // Notify admin
       sendNotification('admin', {
         type: 'PAYMENT_RECEIVED',
@@ -2343,46 +2480,46 @@ export const resolvers = {
         currency: payment.currency,
         message: `New internship payment received`
       });
-      
+
       return payment;
     },
 
     waiveInternshipPayment: async (_: any, args: any, context: any) => {
       if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
-      
+
       const payment = await InternshipPayment.findById(args.paymentId);
       if (!payment) throw new Error('Payment not found.');
       if (payment.status !== 'pending') throw new Error(`Cannot waive payment. Current status: ${payment.status}`);
-      
+
       payment.status = 'waived';
       payment.waivedBy = context.user.id;
       payment.waivedReason = args.reason;
       await payment.save();
-      
+
       await logActivity(context.user.id, 'WAIVE', 'InternshipPayment', payment.id, `Payment waived: ${args.reason}`);
-      
+
       // Notify student
       sendNotification(payment.userId.toString(), {
         type: 'PAYMENT_WAIVED',
         message: `Your internship payment has been waived. You can now proceed with the program.`
       });
-      
+
       return payment;
     },
 
     refundInternshipPayment: async (_: any, args: any, context: any) => {
       if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
-      
+
       const payment = await InternshipPayment.findById(args.paymentId);
       if (!payment) throw new Error('Payment not found.');
       if (payment.status !== 'paid') throw new Error(`Cannot refund. Current status: ${payment.status}`);
-      
+
       payment.status = 'refunded';
       payment.notes = args.reason;
       await payment.save();
-      
+
       await logActivity(context.user.id, 'REFUND', 'InternshipPayment', payment.id, `Payment refunded: ${args.reason}`);
-      
+
       // Notify student
       sendNotification(payment.userId.toString(), {
         type: 'PAYMENT_REFUNDED',
@@ -2390,26 +2527,26 @@ export const resolvers = {
         currency: payment.currency,
         message: `Your internship payment has been refunded.`
       });
-      
+
       return payment;
     },
 
     // ========== INVOICE MUTATIONS ==========
     generateInternshipInvoice: async (_: any, { paymentId }: { paymentId: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       const payment = await InternshipPayment.findById(paymentId);
       if (!payment) throw new Error('Payment not found.');
       if (payment.userId.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user?.role)) {
         throw new Error('Unauthorized');
       }
-      
+
       // Check if invoice already exists
       const existing = await InternshipInvoice.findOne({ paymentId, isDeleted: false });
       if (existing) return existing;
-      
+
       const program = await InternshipProgram.findById(payment.internshipProgramId);
-      
+
       const invoice = new InternshipInvoice({
         paymentId,
         userId: payment.userId,
@@ -2427,24 +2564,24 @@ export const resolvers = {
         }]
       });
       await invoice.save();
-      
+
       // Update payment with invoice reference
       payment.invoiceId = invoice.id as any;
       await payment.save();
-      
+
       await logActivity(context.user.id, 'CREATE', 'InternshipInvoice', invoice.id, `Generated invoice: ${invoice.invoiceNumber}`);
-      
+
       return invoice;
     },
 
     // ========== CERTIFICATE MUTATIONS ==========
     checkCertificateEligibility: async (_: any, { teamId }: { teamId: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       // Get team and project info
       const team = await InternshipTeam.findById(teamId);
       if (!team) throw new Error('Team not found.');
-      
+
       // Check if user is member of team
       const membership = await InternshipTeamMember.findOne({
         teamId,
@@ -2452,14 +2589,14 @@ export const resolvers = {
         isDeleted: false
       });
       if (!membership && context.user.role !== 'admin') throw new Error('You are not a member of this team.');
-      
+
       // 1. Check all milestones completed
       const project = await InternshipProject.findById(team.internshipProjectId);
       const milestones = await InternshipMilestone.find({ internshipProjectId: project?.id, isDeleted: false });
       const submissions = await InternshipSubmission.find({ teamId, userId: context.user.id, status: 'approved', isDeleted: false });
       const completedMilestoneIds = submissions.map((s: any) => s.milestoneId.toString());
       const allMilestonesCompleted = milestones.every((m: any) => completedMilestoneIds.includes(m.id.toString()));
-      
+
       // 2. Check trainer approval
       const feedback = await InternshipMentorFeedback.findOne({
         userId: context.user.id,
@@ -2467,7 +2604,7 @@ export const resolvers = {
         isDeleted: false
       });
       const trainerApproved = feedback && (feedback as any).score >= 70;
-      
+
       // 3. Check payment status
       const payment = await InternshipPayment.findOne({
         userId: context.user.id,
@@ -2477,17 +2614,17 @@ export const resolvers = {
       const program = await InternshipProgram.findById(team.internshipProgramId) as any; // Cast so we can access price
       const isFreeProgram = !program?.price || program.price === 0;
       const paymentConfirmed = isFreeProgram || (payment && ['paid', 'waived'].includes(payment.status));
-      
+
       const isEligible = allMilestonesCompleted && trainerApproved && paymentConfirmed;
-      
+
       let message = isEligible
         ? 'You are eligible for certification!'
         : 'You are not yet eligible for certification.';
-      
+
       if (!allMilestonesCompleted) message += ' Complete all milestones.';
       if (!trainerApproved) message += ' Obtain trainer approval.';
       if (!paymentConfirmed) message += ' Confirm payment.';
-      
+
       return {
         isEligible,
         milestonesCompleted: allMilestonesCompleted,
@@ -2499,22 +2636,22 @@ export const resolvers = {
 
     generateInternshipCertificate: async (_: any, args: any, context: any) => {
       if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
-      
+
       const { userId, teamId, trainerId } = args;
-      
+
       // Check eligibility first
       const team = await InternshipTeam.findById(teamId);
       if (!team) throw new Error('Team not found.');
-      
+
       const program = await InternshipProgram.findById(team.internshipProgramId);
       if (!program) throw new Error('Program not found.');
-      
+
       const trainer = await User.findById(trainerId);
       if (!trainer) throw new Error('Trainer not found.');
-      
+
       const user = await User.findById(userId);
       if (!user) throw new Error('User not found.');
-      
+
       // Check if certificate already exists
       const existing = await InternshipCertificate.findOne({
         userId,
@@ -2522,12 +2659,12 @@ export const resolvers = {
         isDeleted: false
       });
       if (existing) throw new Error('Certificate already exists for this user and program.');
-      
+
       // Get completion metadata
       const milestones = await InternshipMilestone.find({ internshipProjectId: team.internshipProjectId, isDeleted: false });
       const submissions = await InternshipSubmission.find({ teamId, userId, status: 'approved', isDeleted: false });
       const feedback = await InternshipMentorFeedback.findOne({ userId, teamId, isDeleted: false });
-      
+
       const certificate = new InternshipCertificate({
         userId,
         internshipProgramId: team.internshipProgramId,
@@ -2549,9 +2686,9 @@ export const resolvers = {
         }
       });
       await certificate.save();
-      
+
       await logActivity(context.user.id, 'CREATE', 'InternshipCertificate', certificate.id, `Generated certificate for ${(user as any).username}`);
-      
+
       // Notify student
       sendNotification(userId, {
         type: 'CERTIFICATE_READY',
@@ -2559,55 +2696,55 @@ export const resolvers = {
         certificateNumber: certificate.certificateNumber,
         message: `Congratulations! Your certificate for ${program.title} is ready for download.`
       });
-      
+
       return certificate;
     },
 
     revokeCertificate: async (_: any, args: any, context: any) => {
       if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
-      
+
       const certificate = await InternshipCertificate.findById(args.certificateId);
       if (!certificate) throw new Error('Certificate not found.');
       if (certificate.isRevoked) throw new Error('Certificate is already revoked.');
-      
+
       certificate.isRevoked = true;
       certificate.revokedAt = new Date();
       certificate.revokedBy = context.user.id;
       certificate.revocationReason = args.reason;
       await certificate.save();
-      
+
       await logActivity(context.user.id, 'REVOKE', 'InternshipCertificate', certificate.id, `Certificate revoked: ${args.reason}`);
-      
+
       // Notify student
       sendNotification(certificate.userId.toString(), {
         type: 'CERTIFICATE_REVOKED',
         certificateNumber: certificate.certificateNumber,
         message: `Your certificate ${certificate.certificateNumber} has been revoked. Reason: ${args.reason}`
       });
-      
+
       return certificate;
     },
 
     approveMilestone: async (_: any, args: any, context: any) => {
       if (context.user?.role !== 'trainer' && !['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
-      
+
       const milestone = await InternshipMilestone.findById(args.milestoneId);
       if (!milestone) throw new Error('Milestone not found.');
-      
+
       // This would typically update submission status rather than milestone itself
       await logActivity(context.user.id, 'APPROVE', 'InternshipMilestone', milestone.id, `Milestone approved for team ${args.teamId}`);
-      
+
       return milestone;
     },
 
     approveInternForCertificate: async (_: any, args: any, context: any) => {
       if (context.user?.role !== 'trainer' && !['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
-      
+
       const { userId, teamId, finalGrade } = args;
-      
+
       // Check if feedback already exists
       let feedback = await InternshipMentorFeedback.findOne({ userId, teamId, mentorId: context.user.id, isDeleted: false });
-      
+
       if (feedback) {
         (feedback as any).score = parseInt(finalGrade) || 100;
         (feedback as any).comments = 'Approved for certification';
@@ -2622,30 +2759,30 @@ export const resolvers = {
         });
         await feedback.save();
       }
-      
+
       await logActivity(context.user.id, 'APPROVE', 'InternshipMentorFeedback', (feedback as any).id, `Approved intern ${userId} for certification with grade ${finalGrade}`);
-      
+
       // Notify student
       sendNotification(userId, {
         type: 'CERTIFICATE_APPROVAL',
         message: `Your trainer has approved you for certification with grade: ${finalGrade}%`
       });
-      
+
       return feedback;
     },
 
     createStripePaymentIntent: async (_: any, { programId }: { programId: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      
+
       const program = await InternshipProgram.findById(programId);
       if (!program) throw new Error('Program not found');
-      
+
       const user = await User.findById(context.user.id);
       if (!user) throw new Error('User not found');
 
       // Check for existing payment
-      let payment = await InternshipPayment.findOne({ 
-        userId: user.id, 
+      let payment = await InternshipPayment.findOne({
+        userId: user.id,
         internshipProgramId: (program as any).id || (program as any)._id,
         isDeleted: { $ne: true }
       });
@@ -2658,7 +2795,7 @@ export const resolvers = {
       const customerName = anyUser.fullName || anyUser.username || 'Student';
 
       const result = await createPaymentIntent({
-        amount: program.price, 
+        amount: program.price,
         currency: program.currency || 'RWF',
         userId: user.id,
         programId: (program as any).id || (program as any)._id,
@@ -2679,7 +2816,7 @@ export const resolvers = {
           amount: program.price,
           currency: program.currency || 'RWF',
           status: 'pending',
-          transactionId: result.paymentIntentId 
+          transactionId: result.paymentIntentId
         });
       } else {
         payment.transactionId = result.paymentIntentId;
@@ -2788,8 +2925,8 @@ export const resolvers = {
     id: (parent: any) => parent.id || parent._id,
     internshipProgram: async (parent: any) => await InternshipProgram.findById(parent.internshipProgramId),
     user: async (parent: any) => await User.findById(parent.userId),
-    payment: async (parent: any) => await InternshipPayment.findOne({ 
-      userId: parent.userId, 
+    payment: async (parent: any) => await InternshipPayment.findOne({
+      userId: parent.userId,
       internshipProgramId: parent.internshipProgramId,
       isDeleted: false
     }),
@@ -2854,6 +2991,24 @@ export const resolvers = {
     team: async (parent: any) => await InternshipTeam.findById(parent.teamId),
     trainer: async (parent: any) => await User.findById(parent.trainerId),
     revokedByUser: async (parent: any) => parent.revokedBy ? await User.findById(parent.revokedBy) : null,
-  }
+  },
+  Subscription: {
+    messageAdded: {
+      subscribe: withFilter(
+        () => (pubsub as any).asyncIterator(['MESSAGE_ADDED']),
+        (payload, variables) => {
+          return payload.messageAdded.conversationId.toString() === variables.conversationId;
+        }
+      ),
+    },
+    notificationAdded: {
+      subscribe: withFilter(
+        () => (pubsub as any).asyncIterator(['NOTIFICATION_ADDED']),
+        (payload, variables) => {
+          return payload.notificationAdded.userId.toString() === variables.userId;
+        }
+      ),
+    },
+  },
 };
 
