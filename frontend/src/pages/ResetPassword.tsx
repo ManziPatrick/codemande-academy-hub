@@ -34,9 +34,7 @@ export default function ResetPassword() {
 
         try {
             // Use the GRAPHQL_URL from environment or fallback
-            const graphqlUrl = import.meta.env.VITE_API_URL
-                ? `${import.meta.env.VITE_API_URL}/graphql`
-                : 'http://localhost:4000/graphql';
+            const graphqlUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/graphql';
 
             const response = await fetch(graphqlUrl, {
                 method: 'POST',

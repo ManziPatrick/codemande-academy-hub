@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from '@/contexts/AuthContext';
 
-const SOCKET_URL = 'http://localhost:4000';
+const SOCKET_URL = import.meta.env.VITE_API_URL
+  ? import.meta.env.VITE_API_URL.replace('/graphql', '')
+  : 'http://localhost:4000';
 
 export function useSocket() {
   const { user } = useAuth();
@@ -11,7 +13,7 @@ export function useSocket() {
   useEffect(() => {
     // Only connect if user is logged in
     const token = localStorage.getItem('token');
-    
+
     if (user && token) {
       if (!socketRef.current) {
         socketRef.current = io(SOCKET_URL, {

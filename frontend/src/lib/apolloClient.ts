@@ -5,11 +5,11 @@ import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
 
 const httpLink = createHttpLink({
-  uri: 'http://localhost:4000/graphql',
+  uri: import.meta.env.VITE_API_URL || 'http://localhost:4000/graphql',
 });
 
 const wsLink = new GraphQLWsLink(createClient({
-  url: 'ws://localhost:4000/graphql',
+  url: import.meta.env.VITE_WS_URL || 'ws://localhost:4000/graphql',
   connectionParams: () => {
     const token = localStorage.getItem('codemande_token');
     return {

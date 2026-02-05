@@ -81,9 +81,7 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      const graphqlUrl = import.meta.env.VITE_API_URL
-        ? `${import.meta.env.VITE_API_URL}/graphql`
-        : 'http://localhost:4000/graphql';
+      const graphqlUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/graphql';
 
       const response = await fetch(graphqlUrl, {
         method: 'POST',
