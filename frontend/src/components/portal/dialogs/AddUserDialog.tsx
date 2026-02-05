@@ -15,10 +15,10 @@ import { toast } from "sonner";
 interface AddUserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAdd?: (user: any) => void;
+  onSave?: (user: any) => void;
 }
 
-export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps) {
+export function AddUserDialog({ open, onOpenChange, onSave }: AddUserDialogProps) {
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -31,8 +31,8 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
       toast.error("Please fill in all required fields");
       return;
     }
-    
-    onAdd?.(formData);
+
+    onSave?.(formData);
     setFormData({ username: "", email: "", password: "", role: "student" });
     onOpenChange(false);
   };
@@ -45,49 +45,49 @@ export function AddUserDialog({ open, onOpenChange, onAdd }: AddUserDialogProps)
         </DialogHeader>
         <ScrollArea className="flex-1 px-4 sm:px-6 overflow-y-auto">
           <div className="space-y-4 py-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Username *</label>
-            <Input
-              placeholder="Enter username"
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">Email *</label>
-            <Input
-              type="email"
-              placeholder="user@example.com"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">Password *</label>
-            <Input
-              type="password"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">Role</label>
-            <Select
-              value={formData.role}
-              onValueChange={(value) => setFormData({ ...formData, role: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="student">Student</SelectItem>
-                <SelectItem value="trainer">Trainer</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="super_admin">Super Admin</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Username *</label>
+              <Input
+                placeholder="Enter username"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Email *</label>
+              <Input
+                type="email"
+                placeholder="user@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Password *</label>
+              <Input
+                type="password"
+                placeholder="••••••••"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Role</label>
+              <Select
+                value={formData.role}
+                onValueChange={(value) => setFormData({ ...formData, role: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="trainer">Trainer</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </ScrollArea>
         <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
