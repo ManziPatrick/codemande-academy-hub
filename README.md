@@ -1,4 +1,4 @@
-# Codemande Academy Hub
+# Codemande Academy Hub  no for cloning 
 
 A comprehensive learning management system for tech education in Rwanda, featuring student portals, trainer dashboards, admin management, and super admin configuration.
 
