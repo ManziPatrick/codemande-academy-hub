@@ -29,6 +29,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BadgeAwardDialog } from "@/components/portal/BadgeAwardDialog";
+import {
+  AddUserDialog,
+  EditUserDialog,
+  ViewUserDialog,
+  SendEmailDialog,
+  DeleteConfirmDialog
+} from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_USERS } from "@/lib/graphql/queries";
@@ -289,6 +296,44 @@ export default function AdminUsers() {
         isOpen={!!awardUser}
         onClose={() => setAwardUser(null)}
         user={awardUser}
+      />
+
+      <AddUserDialog
+        open={isAddOpen}
+        onOpenChange={setIsAddOpen}
+        onSave={handleAddUser}
+      />
+
+      <EditUserDialog
+        open={!!editUser}
+        onOpenChange={(open) => !open && setEditUser(null)}
+        user={editUser}
+        onSave={handleSaveUser}
+      />
+
+      <ViewUserDialog
+        open={!!viewUser}
+        onOpenChange={(open) => !open && setViewUser(null)}
+        user={viewUser}
+        onSendEmail={(user) => {
+          setViewUser(null);
+          setEmailUser(user);
+        }}
+      />
+
+      <SendEmailDialog
+        open={!!emailUser}
+        onOpenChange={(open) => !open && setEmailUser(null)}
+        recipientName={emailUser?.username || ""}
+        recipientEmail={emailUser?.email || ""}
+      />
+
+      <DeleteConfirmDialog
+        open={!!deleteUser}
+        onOpenChange={(open) => !open && setDeleteUser(null)}
+        onConfirm={handleDeleteUser}
+        title="Delete User"
+        description={`Are you sure you want to delete ${deleteUser?.username}? This action cannot be undone.`}
       />
 
     </PortalLayout>
