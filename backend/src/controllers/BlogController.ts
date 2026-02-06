@@ -12,8 +12,27 @@ export const getBlogs = async (req: Request, res: Response) => {
             query.$text = { $search: search as string };
         }
 
-        const blogs = await Blog.find(query).populate('category').sort({ createdAt: -1 });
-        res.json(blogs);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 9;
+        const skip = (page - 1) * limit;
+
+        const blogs = await Blog.find(query)
+            .populate('category')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Blog.countDocuments(query);
+
+        res.json({
+            blogs,
+            pagination: {
+                total,
+                page,
+                limit,
+                pages: Math.ceil(total / limit)
+            }
+        });
     } catch (error: any) {
         res.status(500).json({ message: error.message });
     }

@@ -29,13 +29,15 @@ const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'h
 const Blog = () => {
   const [blogs, setBlogs] = useState<IBlog[]>([]);
   const [categories, setCategories] = useState<ICategory[]>([]);
+  const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 9, pages: 1 });
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchData();
-  }, [category]);
+  }, [category, currentPage]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -46,13 +48,14 @@ const Blog = () => {
       setCategories(catData);
 
       // Fetch blogs
-      let url = `${API_BASE_URL}/api/blogs`;
+      let url = `${API_BASE_URL}/api/blogs?page=${currentPage}&limit=9`;
       if (category !== "All") {
-        url += `?category=${encodeURIComponent(category)}`;
+        url += `&category=${encodeURIComponent(category)}`;
       }
       const blogRes = await fetch(url);
-      const blogData = await blogRes.json();
-      setBlogs(blogData);
+      const data = await blogRes.json();
+      setBlogs(data.blogs);
+      setPagination(data.pagination);
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -178,7 +181,10 @@ const Blog = () => {
                       <ul className="space-y-2">
                         <li>
                           <button
-                            onClick={() => setCategory("All")}
+                            onClick={() => {
+                              setCategory("All");
+                              setCurrentPage(1);
+                            }}
                             className={`w-full flex items-center justify-between text-sm py-2 px-3 rounded-lg transition-all ${category === "All"
                               ? "bg-accent text-accent-foreground font-bold"
                               : "hover:bg-muted text-muted-foreground hover:text-foreground"
@@ -192,7 +198,10 @@ const Blog = () => {
                         {categories.map((cat) => (
                           <li key={cat._id}>
                             <button
-                              onClick={() => setCategory(cat._id)}
+                              onClick={() => {
+                                setCategory(cat._id);
+                                setCurrentPage(1);
+                              }}
                               className={`w-full flex items-center justify-between text-sm py-2 px-3 rounded-lg transition-all ${category === cat._id
                                 ? "bg-accent text-accent-foreground font-bold"
                                 : "hover:bg-muted text-muted-foreground hover:text-foreground"
@@ -257,6 +266,37 @@ const Blog = () => {
                       <div className="text-center py-20 text-muted-foreground">
                         <h3 className="text-xl">No articles found matching your criteria.</h3>
                         <p className="mt-2">Try searching for something else or changing categories.</p>
+                      </div>
+                    )}
+                    {/* Pagination */}
+                    {pagination.pages > 1 && (
+                      <div className="mt-12 flex justify-center items-center gap-4">
+                        <Button
+                          variant="outline"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        >
+                          Previous
+                        </Button>
+                        <div className="flex gap-2">
+                          {[...Array(pagination.pages)].map((_, i) => (
+                            <Button
+                              key={i + 1}
+                              variant={currentPage === i + 1 ? "gold" : "outline"}
+                              className="w-10 h-10 p-0"
+                              onClick={() => setCurrentPage(i + 1)}
+                            >
+                              {i + 1}
+                            </Button>
+                          ))}
+                        </div>
+                        <Button
+                          variant="outline"
+                          disabled={currentPage === pagination.pages}
+                          onClick={() => setCurrentPage(prev => Math.min(pagination.pages, prev + 1))}
+                        >
+                          Next
+                        </Button>
                       </div>
                     )}
                   </div>

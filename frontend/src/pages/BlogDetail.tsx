@@ -188,7 +188,7 @@ const BlogDetail = () => {
                             </div>
 
                             <div className="prose prose-lg dark:prose-invert max-w-none pt-8 text-muted-foreground leading-relaxed whitespace-pre-wrap font-sans">
-                                {blog.content}
+                                {blog?.content || "No content available."}
                             </div>
 
                             <div className="flex flex-wrap gap-2 pt-10">

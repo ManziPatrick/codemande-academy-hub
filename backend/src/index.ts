@@ -89,9 +89,20 @@ const startServer = async () => {
     initNotificationService(io);
 
     // Middleware
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080'];
+    app.use(cors({
+        origin: function (origin, callback) {
+            if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true
+    }));
+
     app.use(
         '/graphql',
-        cors<cors.CorsRequest>(),
         bodyParser.json({ limit: '50mb' }),
         expressMiddleware(server, {
             context: async ({ req }: any) => {

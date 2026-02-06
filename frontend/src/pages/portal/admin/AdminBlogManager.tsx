@@ -70,9 +70,9 @@ const AdminBlogManager = () => {
     const fetchBlogs = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/blogs`);
+            const response = await fetch(`${API_BASE_URL}/api/blogs?limit=100`); // Fetch more for admin
             const data = await response.json();
-            setBlogs(data);
+            setBlogs(data.blogs || []);
         } catch (error) {
             console.error("Error fetching blogs:", error);
             toast.error("Failed to load blogs");
