@@ -202,7 +202,7 @@ export function FileUpload({
                         onChange={handleFileChange}
                         accept={accept}
                     />
-                    <Button variant="outline" size="sm" onClick={(e) => {
+                    <Button type="button" variant="outline" size="sm" onClick={(e) => {
                         e.stopPropagation();
                         fileInputRef.current?.click();
                     }}>
@@ -226,7 +226,7 @@ export function FileUpload({
                             </div>
                         </div>
                         {!uploading && (
-                            <Button variant="ghost" size="icon" onClick={clearFile} className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                            <Button type="button" variant="ghost" size="icon" onClick={clearFile} className="h-8 w-8 text-muted-foreground hover:text-destructive">
                                 <X className="w-4 h-4" />
                             </Button>
                         )}
@@ -248,7 +248,7 @@ export function FileUpload({
                             <Progress value={progress} className="h-2" />
                         </div>
                     ) : (
-                        <Button className="w-full bg-accent hover:bg-accent/90" onClick={uploadFile}>
+                        <Button type="button" className="w-full bg-accent hover:bg-accent/90" onClick={uploadFile}>
                             Upload Now
                         </Button>
                     )}

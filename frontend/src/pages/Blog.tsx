@@ -40,6 +40,12 @@ const Blog = () => {
     fetchData();
   }, [category, currentPage]);
 
+  const stripHtml = (html: string) => {
+    const tmp = document.createElement("DIV");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -55,8 +61,8 @@ const Blog = () => {
       }
       const blogRes = await fetch(url);
       const data = await blogRes.json();
-      setBlogs(data.blogs);
-      setPagination(data.pagination);
+      setBlogs(data.blogs || []);
+      setPagination(data.pagination || { total: 0, page: 1, limit: 9, pages: 1 });
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -65,8 +71,8 @@ const Blog = () => {
   };
 
   const filteredBlogs = blogs.filter(blog =>
-    blog.title.toLowerCase().includes(search.toLowerCase()) ||
-    blog.content.toLowerCase().includes(search.toLowerCase())
+    (blog.title?.toLowerCase() || "").includes(search.toLowerCase()) ||
+    (blog.content?.toLowerCase() || "").includes(search.toLowerCase())
   );
 
   const featuredPost = blogs[0];
@@ -139,7 +145,7 @@ const Blog = () => {
                             {featuredPost.title}
                           </h2>
                           <p className="text-muted-foreground lg:text-lg mb-10 line-clamp-3 leading-relaxed font-sans">
-                            {featuredPost.content.substring(0, 250)}...
+                            {stripHtml(featuredPost?.content || "").substring(0, 250)}...
                           </p>
                           <div className="flex items-center justify-between pt-8 border-t border-border/40">
                             <div className="flex items-center gap-4">
@@ -248,14 +254,14 @@ const Blog = () => {
                                   {post.category?.name || "Uncategorized"}
                                 </span>
                                 <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1 group-hover:text-foreground transition-colors">
-                                  <Clock className="w-3 h-3" /> {Math.ceil(post.content.length / 500)} min read
+                                  <Clock className="w-3 h-3" /> {Math.ceil((post?.content?.length || 0) / 500)} min read
                                 </span>
                               </div>
                               <h3 className="font-heading text-xl lg:text-2xl font-bold mb-4 group-hover:text-accent transition-colors line-clamp-2 leading-snug">
                                 {post.title}
                               </h3>
                               <p className="text-muted-foreground text-sm lg:text-base mb-6 line-clamp-3 leading-relaxed">
-                                {post.content.substring(0, 140)}...
+                                {stripHtml(post?.content || "").substring(0, 140)}...
                               </p>
                               <div className="mt-auto pt-6 flex items-center justify-between border-t border-border/20 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
                                 <span className="flex items-center gap-1.5 grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all">

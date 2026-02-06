@@ -21,6 +21,9 @@ import { initKronos } from './jobs/cron';
 import { initNotificationService } from './services/notification.service';
 import blogRoutes from './routes/BlogRoutes';
 import blogCategoryRoutes from './routes/BlogCategoryRoutes';
+import uploadRoutes from './routes/UploadRoutes';
+import teamRoutes from './routes/TeamRoutes';
+import aiCourseRoutes from './routes/AICourseRoutes';
 import { authMiddleware } from './middleware/auth';
 
 dotenv.config();
@@ -121,6 +124,9 @@ const startServer = async () => {
     // REST API Routes
     app.use('/api/blogs', blogRoutes);
     app.use('/api/blog-categories', blogCategoryRoutes);
+    app.use('/api/upload', uploadRoutes);
+    app.use('/api/team', teamRoutes);
+    app.use('/api/ai-courses', aiCourseRoutes);
 
     const PORT = process.env.PORT || 4000;
 

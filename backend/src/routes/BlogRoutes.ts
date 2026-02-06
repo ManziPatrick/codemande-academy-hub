@@ -17,7 +17,7 @@ router.get('/:slug', getBlogBySlug);
 router.post('/', createBlog);
 router.put('/:id', updateBlog);
 router.delete('/:id', deleteBlog);
-router.post('/:id/like', requireAuth, likeBlog);
-router.post('/:id/comment', requireAuth, addComment);
+router.post('/:id/like', likeBlog);
+router.post('/:id/comment', addComment);
 
 export default router;

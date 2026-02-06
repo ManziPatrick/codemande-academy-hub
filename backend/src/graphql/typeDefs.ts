@@ -150,6 +150,7 @@ export const typeDefs = `#graphql
     status: String
     modules: [Module!]!
     studentsEnrolled: [User!]!
+    createdAt: String!
     updatedAt: String!
   }
 
@@ -817,6 +818,7 @@ export const typeDefs = `#graphql
     rules: String
     price: Float
     currency: String
+    image: String
     status: String!
     isDeleted: Boolean
     createdAt: String

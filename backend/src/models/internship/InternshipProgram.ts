@@ -12,6 +12,7 @@ export interface IInternshipProgram extends Document {
   price: number;
   currency: string;
   maxParticipants: number;
+  image: string;
   isActive: boolean;
   batches: { name: string; startDate: Date; endDate: Date }[];
   status: 'active' | 'inactive' | 'closed';
@@ -33,11 +34,12 @@ const InternshipProgramSchema: Schema = new Schema(
     price: { type: Number, default: 0 },
     currency: { type: String, default: 'RWF' },
     maxParticipants: { type: Number },
+    image: { type: String },
     isActive: { type: Boolean, default: true },
     batches: [{
-       name: { type: String },
-       startDate: { type: Date },
-       endDate: { type: Date }
+      name: { type: String },
+      startDate: { type: Date },
+      endDate: { type: Date }
     }],
     status: { type: String, enum: ['active', 'inactive', 'closed'], default: 'active', index: true },
     isDeleted: { type: Boolean, default: false, index: true },

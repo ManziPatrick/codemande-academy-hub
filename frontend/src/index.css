@@ -294,7 +294,8 @@
 .prose h1,
 .prose h2,
 .prose h3 {
-  @apply text-foreground mb-6 mt-12 first:mt-0;
+  font-family: var(--font-heading);
+  @apply text-foreground mb-6 mt-12 first:mt-0 font-bold tracking-tight;
 }
 
 .prose p {

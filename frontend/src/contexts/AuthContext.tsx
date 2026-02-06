@@ -7,6 +7,7 @@ export type UserRole = "student" | "trainer" | "admin" | "super_admin";
 export interface User {
   id: string;
   email: string;
+  username?: string;
   fullName: string;
   role: UserRole;
   avatar?: string;

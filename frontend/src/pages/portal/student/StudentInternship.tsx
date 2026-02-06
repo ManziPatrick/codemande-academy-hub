@@ -54,7 +54,7 @@ export default function StudentInternship() {
       }
     });
   };
-  
+
   const [applyOpen, setApplyOpen] = useState(false);
   const [bookCallOpen, setBookCallOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -116,8 +116,8 @@ export default function StudentInternship() {
               </div>
               <h2 className="font-heading text-2xl font-bold mb-4">Start Your Professional Career</h2>
               <p className="text-muted-foreground mb-8">
-                Our internal internship program is designed to bridge the gap between learning and employment. 
-                You'll work on production-level projects, receive 1:1 mentorship, and move through 
+                Our internal internship program is designed to bridge the gap between learning and employment.
+                You'll work on production-level projects, receive 1:1 mentorship, and move through
                 different stages until you're industry-ready.
               </p>
               <div className="grid sm:grid-cols-3 gap-4 mb-8">
@@ -157,18 +157,18 @@ export default function StudentInternship() {
                           Your application is registered! Please pay the one-time application fee of 20,000 RWF to activate your internship and start Stage 1.
                         </p>
                       </div>
-                      <Button 
-                        variant="gold" 
-                        size="lg" 
+                      <Button
+                        variant="gold"
+                        size="lg"
                         className="shrink-0 shadow-lg shadow-gold/20"
                         onClick={handlePay}
                         disabled={isPaying}
                       >
                         {isPaying ? (
-                           <>
-                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                             Processing...
-                           </>
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Processing...
+                          </>
                         ) : (
                           <>
                             Pay Now <ArrowRight className="w-4 h-4 ml-2" />
@@ -191,16 +191,14 @@ export default function StudentInternship() {
                     <div className="flex justify-between items-start">
                       {stages.map((st, idx) => (
                         <div key={st} className="flex flex-col items-center gap-3 relative z-10 flex-1">
-                          <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${
-                            idx <= currentStageIndex 
-                              ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20" 
+                          <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${idx <= currentStageIndex
+                              ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
                               : "bg-muted border-border text-muted-foreground"
-                          }`}>
+                            }`}>
                             {idx < currentStageIndex ? <CheckCircle className="w-5 h-5" /> : idx === currentStageIndex ? <Star className="w-5 h-5 animate-pulse" /> : <Lock className="w-4 h-4" />}
                           </div>
-                          <span className={`text-[10px] text-center font-bold uppercase transition-colors ${
-                            idx === currentStageIndex ? "text-accent" : "text-muted-foreground"
-                          }`}>
+                          <span className={`text-[10px] text-center font-bold uppercase transition-colors ${idx === currentStageIndex ? "text-accent" : "text-muted-foreground"
+                            }`}>
                             {st.split(": ")[1] || st}
                           </span>
                         </div>
@@ -208,8 +206,8 @@ export default function StudentInternship() {
                     </div>
                     {/* Line behind */}
                     <div className="absolute top-7 left-[10%] right-[10%] h-0.5 bg-muted -z-0" />
-                    <div 
-                      className="absolute top-7 left-[10%] h-0.5 bg-accent transition-all duration-1000 -z-0" 
+                    <div
+                      className="absolute top-7 left-[10%] h-0.5 bg-accent transition-all duration-1000 -z-0"
                       style={{ width: `${(currentStageIndex / (stages.length - 1)) * 80}%` }}
                     />
                   </div>
@@ -245,17 +243,17 @@ export default function StudentInternship() {
                           </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-4 sm:mt-0">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => { setActiveProject(proj); setChatOpen(true); }}
                             className="bg-accent/5 hover:bg-accent/10 border-accent/20"
                           >
                             <MessageSquare className="w-4 h-4 mr-2 text-accent" />
                             Team Chat
                           </Button>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => { setActiveProject(proj); setProjectDetailsOpen(true); }}
                           >
@@ -266,9 +264,34 @@ export default function StudentInternship() {
                     </Card>
                   ))
                 ) : (
-                  <div className="p-12 text-center bg-muted/20 border border-dashed border-border rounded-xl">
-                    <p className="text-muted-foreground italic">No projects assigned to this stage yet.</p>
-                  </div>
+                  <Card className="border-border/50 border-dashed bg-muted/5">
+                    <CardContent className="p-10 text-center">
+                      <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Layers size={32} className="text-accent/40" />
+                      </div>
+                      <h4 className="font-bold text-lg mb-2">Awaiting Project Assignment</h4>
+                      <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
+                        Your professional track is active! We are currently matching you with a live academy project that fits your department specialization.
+                      </p>
+
+                      <div className="flex justify-center items-center gap-8 max-w-md mx-auto">
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-white">1</div>
+                          <span className="text-[10px] font-bold uppercase">Review</span>
+                        </div>
+                        <div className="h-[2px] w-8 bg-accent" />
+                        <div className="flex flex-col items-center gap-1">
+                          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-white animate-pulse">2</div>
+                          <span className="text-[10px] font-bold uppercase text-accent">Selection</span>
+                        </div>
+                        <div className="h-[2px] w-8 bg-border" />
+                        <div className="flex flex-col items-center gap-1 opacity-40">
+                          <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] font-bold">3</div>
+                          <span className="text-[10px] font-bold uppercase">Kickoff</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 )}
               </div>
             </div>
@@ -337,20 +360,18 @@ export default function StudentInternship() {
                         className="flex items-center gap-3 p-2 bg-muted/20 rounded border border-border/50"
                       >
                         <div
-                          className={`w-4 h-4 rounded border flex items-center justify-center ${
-                            task.status === "completed"
+                          className={`w-4 h-4 rounded border flex items-center justify-center ${task.status === "completed"
                               ? "bg-green-500 border-green-500"
                               : "border-muted-foreground/30"
-                          }`}
+                            }`}
                         >
                           {task.status === "completed" && <CheckCircle className="w-3 h-3 text-white" />}
                         </div>
                         <span
-                          className={`text-sm flex-1 ${
-                            task.status === "completed"
+                          className={`text-sm flex-1 ${task.status === "completed"
                               ? "line-through text-muted-foreground"
                               : "text-foreground font-medium"
-                          }`}
+                            }`}
                         >
                           {task.title}
                         </span>

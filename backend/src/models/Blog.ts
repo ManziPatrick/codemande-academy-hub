@@ -23,7 +23,7 @@ export interface IBlog extends Document {
 }
 
 const CommentSchema: Schema = new Schema({
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    user: { type: Schema.Types.ObjectId, ref: 'User' },
     userName: { type: String, required: true },
     content: { type: String, required: true },
     createdAt: { type: Date, default: Date.now }
@@ -36,10 +36,10 @@ const BlogSchema: Schema = new Schema({
     author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     authorName: { type: String, required: true },
     category: { type: Schema.Types.ObjectId, ref: 'BlogCategory', required: true },
-    tags: [{ type: String }],
+    tags: [{ type: String, default: [] }],
     image: { type: String },
-    likes: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-    comments: [CommentSchema]
+    likes: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }],
+    comments: { type: [CommentSchema], default: [] }
 }, { timestamps: true });
 
 // Index for faster searching

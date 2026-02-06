@@ -12,7 +12,7 @@ import { CreateInternshipProgramDialog } from '@/components/portal/dialogs';
 export default function ProgramList() {
   const [createOpen, setCreateOpen] = useState(false);
   const { data, loading, error, refetch } = useQuery(GET_INTERNSHIP_PROGRAMS);
-  
+
   const [updateProgramStatus] = useMutation(UPDATE_INTERNSHIP_PROGRAM_NEW, {
     onCompleted: () => {
       toast.success('Program status updated');
@@ -29,7 +29,7 @@ export default function ProgramList() {
   const handleStatusUpdate = (id: string, currentStatus: string) => {
     const statuses = ['active', 'inactive', 'closed'];
     const nextStatus = statuses[(statuses.indexOf(currentStatus) + 1) % statuses.length];
-    
+
     updateProgramStatus({
       variables: { id, status: nextStatus }
     });
@@ -45,28 +45,35 @@ export default function ProgramList() {
         </Button>
       </div>
 
-      <CreateInternshipProgramDialog 
-        open={createOpen} 
-        onOpenChange={setCreateOpen} 
+      <CreateInternshipProgramDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
       />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {programs.map((program: any) => (
           <Card key={program.id}>
             <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle>{program.title}</CardTitle>
-                  <CardDescription>{program.duration}</CardDescription>
+              <div className="flex flex-col gap-4">
+                {program.image && (
+                  <div className="w-full aspect-video rounded-md overflow-hidden mb-2">
+                    <img src={program.image} alt={program.title} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle>{program.title}</CardTitle>
+                    <CardDescription>{program.duration}</CardDescription>
+                  </div>
+                  <Badge
+                    variant={program.status === 'active' ? 'default' : 'secondary'}
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => handleStatusUpdate(program.id, program.status)}
+                    title="Click to toggle status"
+                  >
+                    {program.status}
+                  </Badge>
                 </div>
-                <Badge 
-                  variant={program.status === 'active' ? 'default' : 'secondary'}
-                  className="cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => handleStatusUpdate(program.id, program.status)}
-                  title="Click to toggle status"
-                >
-                  {program.status}
-                </Badge>
               </div>
             </CardHeader>
             <CardContent>
@@ -82,11 +89,11 @@ export default function ProgramList() {
                   <span>{program.applicationDeadline ? new Date(program.applicationDeadline).toLocaleDateString() : 'N/A'}</span>
                 </div>
               </div>
-              
+
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="w-full"
                   onClick={() => handleStatusUpdate(program.id, program.status)}
                 >

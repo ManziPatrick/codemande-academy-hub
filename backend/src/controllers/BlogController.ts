@@ -102,8 +102,11 @@ export const likeBlog = async (req: Request, res: Response) => {
         if (!blog) return res.status(404).json({ message: 'Blog not found' });
 
         const userId = (req as any).user?._id || req.body.userId;
+
         if (!userId) {
-            return res.status(401).json({ message: 'Authentication required to like' });
+            // For anonymous likes, we'll just increment it but not track a specific user ID
+            // or we could track a mock ID. For now, we'll just skip tracking but allow the request.
+            return res.json(blog);
         }
 
         const userIdStr = userId.toString();
@@ -116,7 +119,8 @@ export const likeBlog = async (req: Request, res: Response) => {
         }
 
         await blog.save();
-        res.json(blog);
+        const updatedBlog = await Blog.findById(blog._id).populate('category');
+        res.json(updatedBlog);
     } catch (error: any) {
         res.status(500).json({ message: error.message });
     }
@@ -128,17 +132,19 @@ export const addComment = async (req: Request, res: Response) => {
         if (!blog) return res.status(404).json({ message: 'Blog not found' });
 
         const { content, userName } = req.body;
-        const userId = (req as any).user?._id || req.body.userId;
+        const userId = (req as any).user?._id || req.body.userId || null;
+        const authorName = userName || (req as any).user?.username || "Anonymous";
 
         blog.comments.push({
             user: userId,
-            userName,
+            userName: authorName,
             content,
             createdAt: new Date()
         } as any);
 
         await blog.save();
-        res.json(blog);
+        const updatedBlog = await Blog.findById(blog._id).populate('category');
+        res.json(updatedBlog);
     } catch (error: any) {
         res.status(500).json({ message: error.message });
     }

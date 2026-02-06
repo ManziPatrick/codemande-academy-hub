@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ViewCourseDialog, EditCourseDialog, DeleteConfirmDialog } from "@/components/portal/dialogs";
 import { QuestionManagerDialog } from "@/components/portal/QuestionManagerDialog";
+import { FileUpload } from "@/components/FileUpload";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_COURSES, GET_STATS, GET_USERS } from "@/lib/graphql/queries";
@@ -261,6 +262,29 @@ export default function AdminCourses() {
                       value={newCourse.description}
                       onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
                     />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Thumbnail</label>
+                    {newCourse.thumbnail && newCourse.thumbnail.includes('unsplash') === false ? (
+                      <div className="relative aspect-video rounded-lg overflow-hidden border">
+                        <img src={newCourse.thumbnail} alt="" className="w-full h-full object-cover" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-8 w-8"
+                          onClick={() => setNewCourse({ ...newCourse, thumbnail: "" })}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <FileUpload
+                        folder="courses"
+                        label="Upload Course Thumbnail"
+                        onUploadComplete={(url) => setNewCourse({ ...newCourse, thumbnail: url })}
+                      />
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>

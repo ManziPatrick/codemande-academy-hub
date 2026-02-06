@@ -5,235 +5,45 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
-import { Code, Database, Wifi, Clock, Users, Award, CheckCircle, BookOpen, Target, Briefcase, Calendar, ArrowRight, Brain, Shield, Building2, Stethoscope, GraduationCap, Landmark, ShoppingBag, Factory } from "lucide-react";
+import { Code, Database, Wifi, Clock, Users, Award, CheckCircle, BookOpen, Target, Briefcase, Calendar, ArrowRight, Brain, Shield, Building2, Stethoscope, GraduationCap, Landmark, ShoppingBag, Factory, BarChart, ChevronRight } from "lucide-react";
 import heroImage from "@/assets/hero-training.jpg";
 import aboutImage from "@/assets/about-training.jpg";
+import { useEffect, useState } from "react";
+import { useQuery } from "@apollo/client/react";
+import { GET_COURSES } from "@/lib/graphql/queries";
 
-const programs = [
-  {
-    icon: Code,
-    title: "Software Development",
-    duration: "3-6 months",
-    level: "Beginner to Advanced",
-    format: "Online / Hybrid",
-    price: "Contact for pricing",
-    description: "Master web and mobile development with modern technologies used by leading tech companies.",
-    curriculum: [
-      "HTML5, CSS3 & Responsive Design",
-      "JavaScript ES6+ & TypeScript",
-      "React.js / Vue.js Frontend Frameworks",
-      "Node.js & Express Backend Development",
-      "Database Design: SQL & NoSQL",
-      "REST API & GraphQL Development",
-      "Git Version Control & Collaboration",
-      "Testing, Debugging & Deployment"
-    ],
-    outcomes: [
-      "Build production-ready web applications",
-      "Portfolio with 3-5 real projects",
-      "Industry-recognized certification",
-      "Job placement assistance"
-    ]
-  },
-  {
-    icon: Database,
-    title: "Data Science & AI",
-    duration: "4-6 months",
-    level: "Intermediate to Advanced",
-    format: "Online",
-    price: "Contact for pricing",
-    description: "Learn to extract insights from data and build intelligent systems using machine learning and AI.",
-    curriculum: [
-      "Python Programming for Data Science",
-      "Statistical Analysis & Probability",
-      "Data Visualization: Matplotlib, Seaborn, Tableau",
-      "Machine Learning with Scikit-learn",
-      "Deep Learning with TensorFlow/PyTorch",
-      "Natural Language Processing (NLP)",
-      "Big Data Tools: Spark & Hadoop",
-      "MLOps & Model Deployment"
-    ],
-    outcomes: [
-      "Analyze complex datasets effectively",
-      "Build predictive ML models",
-      "Data Science project portfolio",
-      "Preparation for industry certifications"
-    ]
-  },
-  {
-    icon: Wifi,
-    title: "Internet of Things (IoT)",
-    duration: "3-4 months",
-    level: "Beginner to Intermediate",
-    format: "Online / In-person",
-    price: "Contact for pricing",
-    description: "Design and build smart connected systems with sensors, microcontrollers, and cloud platforms.",
-    curriculum: [
-      "Electronics Fundamentals & Circuits",
-      "Arduino & Raspberry Pi Programming",
-      "Sensor Integration & Data Collection",
-      "Wireless Communication Protocols",
-      "MQTT & IoT Data Protocols",
-      "Cloud IoT Platforms (AWS IoT, Azure IoT)",
-      "IoT Security Best Practices",
-      "Capstone: Smart Agriculture/Home Project"
-    ],
-    outcomes: [
-      "Build functional IoT prototypes",
-      "Understand sensor-to-cloud architecture",
-      "Hands-on project experience",
-      "Ready for IoT developer roles"
-    ]
-  },
-];
+interface AICourse {
+  _id: string;
+  title: string;
+  department: string;
+  duration: string;
+  level: string;
+  description: string;
+  thumbnail: string;
+  price: number;
+  instructor?: {
+    username: string;
+  };
+  keyModules: string[];
+  additionalModulesCount: number;
+  slug: string;
+  featured: boolean;
+  enrollmentLink?: string;
+}
 
-// AI Courses by Department
-const aiCourses = [
-  {
-    icon: Brain,
-    department: "General / All Departments",
-    title: "AI Fundamentals & Practical Applications",
-    duration: "2-4 weeks",
-    level: "Beginner",
-    description: "A comprehensive introduction to AI for professionals across all sectors. Learn how to leverage AI tools to boost productivity and understand the basics of responsible AI use.",
-    modules: [
-      "Introduction to AI, Machine Learning & Deep Learning",
-      "Using ChatGPT, Claude & Gemini Effectively",
-      "AI for Content Creation & Communication",
-      "Prompt Engineering Best Practices",
-      "AI-Powered Productivity Tools",
-      "Understanding AI Limitations & Biases",
-      "Data Privacy & AI Ethics Fundamentals",
-      "Recognizing & Preventing AI Misuse"
-    ]
-  },
-  {
-    icon: Stethoscope,
-    department: "Healthcare",
-    title: "AI in Healthcare: Applications & Safety",
-    duration: "3-4 weeks",
-    level: "Intermediate",
-    description: "Explore how AI is transforming healthcare delivery, from diagnostics to patient care, while learning to mitigate risks and ensure patient safety.",
-    modules: [
-      "AI-Powered Diagnostic Tools & Imaging",
-      "Predictive Analytics for Patient Outcomes",
-      "Natural Language Processing for Medical Records",
-      "AI Chatbots for Patient Engagement",
-      "Drug Discovery & Research Applications",
-      "HIPAA Compliance & Patient Data Protection",
-      "Preventing Algorithmic Bias in Healthcare AI",
-      "Clinical Validation & AI Safety Protocols"
-    ]
-  },
-  {
-    icon: Landmark,
-    department: "Finance & Banking",
-    title: "AI in Finance: Innovation & Risk Management",
-    duration: "3-4 weeks",
-    level: "Intermediate",
-    description: "Master AI applications in financial services including fraud detection, algorithmic trading, and customer service while understanding regulatory compliance.",
-    modules: [
-      "AI for Fraud Detection & Prevention",
-      "Credit Scoring & Risk Assessment Models",
-      "Algorithmic Trading & Market Analysis",
-      "AI-Powered Customer Service & Chatbots",
-      "Regulatory Compliance & AI Auditing",
-      "Preventing AI-Driven Financial Crimes",
-      "Explainable AI for Financial Decisions",
-      "Cybersecurity & AI Threat Detection"
-    ]
-  },
-  {
-    icon: GraduationCap,
-    department: "Education",
-    title: "AI in Education: Teaching & Learning Innovation",
-    duration: "2-3 weeks",
-    level: "Beginner to Intermediate",
-    description: "Discover how AI can enhance teaching effectiveness and student learning outcomes while maintaining academic integrity.",
-    modules: [
-      "AI-Powered Personalized Learning Platforms",
-      "Intelligent Tutoring Systems",
-      "Automated Grading & Feedback Tools",
-      "AI for Special Needs Education",
-      "Content Creation with AI Assistance",
-      "Detecting AI-Generated Student Work",
-      "Promoting Academic Integrity with AI",
-      "Ethical AI Use in Educational Settings"
-    ]
-  },
-  {
-    icon: ShoppingBag,
-    department: "Marketing & Sales",
-    title: "AI for Marketing: Customer Engagement & Analytics",
-    duration: "2-3 weeks",
-    level: "Beginner to Intermediate",
-    description: "Learn to leverage AI for customer insights, personalized marketing, and sales optimization while respecting consumer privacy.",
-    modules: [
-      "AI-Driven Customer Segmentation",
-      "Personalization Engines & Recommendation Systems",
-      "Predictive Analytics for Sales Forecasting",
-      "AI Content Generation for Marketing",
-      "Chatbots & Conversational Marketing",
-      "Social Media AI Tools & Automation",
-      "Consumer Privacy & Data Protection",
-      "Avoiding Manipulative AI Practices"
-    ]
-  },
-  {
-    icon: Factory,
-    department: "Manufacturing & Operations",
-    title: "AI in Industry 4.0: Smart Manufacturing",
-    duration: "3-4 weeks",
-    level: "Intermediate",
-    description: "Implement AI solutions for predictive maintenance, quality control, and supply chain optimization in manufacturing environments.",
-    modules: [
-      "Predictive Maintenance with AI",
-      "Computer Vision for Quality Control",
-      "AI-Optimized Supply Chain Management",
-      "Robotics & Automation Integration",
-      "Digital Twins & Simulation",
-      "Workforce Safety & AI Monitoring",
-      "Preventing AI System Failures",
-      "Industrial Cybersecurity Best Practices"
-    ]
-  },
-  {
-    icon: Building2,
-    department: "Human Resources",
-    title: "AI in HR: Talent Management & Ethics",
-    duration: "2-3 weeks",
-    level: "Beginner to Intermediate",
-    description: "Apply AI to streamline recruitment, employee development, and workforce planning while ensuring fair and unbiased practices.",
-    modules: [
-      "AI-Powered Resume Screening & Matching",
-      "Predictive Analytics for Employee Retention",
-      "AI Chatbots for Employee Support",
-      "Performance Analysis & Feedback Tools",
-      "Learning & Development Personalization",
-      "Preventing Hiring Bias in AI Systems",
-      "Privacy in Employee Monitoring",
-      "Legal Compliance & AI in HR"
-    ]
-  },
-  {
-    icon: Shield,
-    department: "Cybersecurity & IT",
-    title: "AI Security: Defense & Threat Prevention",
-    duration: "4-5 weeks",
-    level: "Advanced",
-    description: "Master AI-powered security tools and learn to defend against AI-enhanced cyber threats while building robust security systems.",
-    modules: [
-      "AI for Threat Detection & Response",
-      "Machine Learning in Malware Analysis",
-      "Behavioral Analytics & Anomaly Detection",
-      "AI-Powered Penetration Testing",
-      "Defending Against Adversarial AI Attacks",
-      "Deepfake Detection & Prevention",
-      "AI Model Security & Hardening",
-      "Incident Response with AI Assistance"
-    ]
-  },
-];
+const getDepartmentIcon = (dept: string) => {
+  switch (dept) {
+    case 'HEALTHCARE': return Stethoscope;
+    case 'FINANCE': return Landmark;
+    case 'EDUCATION': return GraduationCap;
+    case 'MARKETING': return ShoppingBag;
+    case 'MANUFACTURING': return Factory;
+    case 'HR': return Users;
+    case 'CYBERSECURITY': return Shield;
+    case 'GENERAL': return Brain;
+    default: return Brain;
+  }
+};
 
 const features = [
   { icon: Clock, title: "Flexible Schedules", description: "Evening and weekend classes available for working professionals" },
@@ -252,12 +62,39 @@ const faqs = [
   { q: "Are AI courses suitable for non-technical staff?", a: "Absolutely! Our department-specific AI courses are designed for professionals at all technical levels, focusing on practical applications rather than coding." },
 ];
 
-import { useQuery } from "@apollo/client/react";
-import { GET_COURSES } from "@/lib/graphql/queries";
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
 
 const Training = () => {
-  const { data, loading } = useQuery(GET_COURSES);
+  const { data, loading: apolloLoading } = useQuery(GET_COURSES);
   const courses = (data as any)?.courses || [];
+
+  const [aiCourses, setAICourses] = useState<AICourse[]>([]);
+  const [aiLoading, setAILoading] = useState(true);
+  const [filter, setFilter] = useState("ALL");
+
+  const departments = ["ALL", "GENERAL", "HEALTHCARE", "FINANCE", "EDUCATION", "MARKETING", "MANUFACTURING", "HR", "CYBERSECURITY"];
+
+  useEffect(() => {
+    const fetchAICourses = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/ai-courses`);
+        if (response.ok) {
+          const data = await response.json();
+          setAICourses(data);
+        }
+      } catch (error) {
+        console.error("Error fetching AI courses:", error);
+      } finally {
+        setAILoading(false);
+      }
+    };
+
+    fetchAICourses();
+  }, []);
+
+  const filteredAICourses = filter === "ALL"
+    ? aiCourses
+    : aiCourses.filter(course => course.department === filter);
 
   return (
     <div className="min-h-screen bg-background">
@@ -317,7 +154,7 @@ const Training = () => {
               </p>
             </motion.div>
 
-            {loading && (
+            {apolloLoading && (
               <div className="flex justify-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
               </div>
@@ -358,7 +195,7 @@ const Training = () => {
                     <div className="mt-auto pt-6 border-t border-border/30 flex items-center justify-between">
                       <div className="flex flex-col">
                         <span className="text-xs text-muted-foreground">Instructor</span>
-                        <span className="text-sm font-semibold">{course.instructor.username}</span>
+                        <span className="text-sm font-semibold">{course.instructor?.username || 'Expert'}</span>
                       </div>
                       <Link to={`/course/${course.id}`}>
                         <Button variant="gold" size="sm" className="rounded-full">
@@ -374,7 +211,7 @@ const Training = () => {
         </section>
 
         {/* AI Courses Section */}
-        <section className="py-16 lg:py-20 bg-secondary/30">
+        <section className="py-16 lg:py-20 bg-gradient-to-br from-background via-background to-accent/5">
           <div className="container mx-auto px-4 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -382,116 +219,143 @@ const Training = () => {
               viewport={{ once: true }}
               className="text-center mb-12"
             >
-              <span className="text-accent text-sm font-medium uppercase tracking-wider">AI for Every Department</span>
-              <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground mt-2 mb-4">
-                AI Courses: How to Use & How to Prevent Risks
+              <span className="text-accent text-sm font-medium uppercase tracking-wider">AI Specialization Programs</span>
+              <h2 className="font-heading text-2xl lg:text-4xl font-bold text-foreground mt-2 mb-4">
+                AI for Every Department
               </h2>
               <p className="text-muted-foreground max-w-3xl mx-auto">
-                Empower your teams with practical AI skills. Each course covers both productive AI applications
-                and essential safeguards to prevent misuse, bias, and security risks.
+                Master the tools and techniques that are reshaping the professional world.
+                Our programs cover both productive AI applications and essential safety safeguards.
               </p>
             </motion.div>
 
-            {/* AI Overview Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12"
-            >
-              <div className="bg-card p-6 rounded-xl text-center shadow-card border border-border/30">
-                <Brain className="w-8 h-8 text-accent mx-auto mb-2" />
-                <div className="text-2xl font-bold text-card-foreground">8</div>
-                <div className="text-sm text-card-foreground/70">Department Courses</div>
-              </div>
-              <div className="bg-card p-6 rounded-xl text-center shadow-card border border-border/30">
-                <Shield className="w-8 h-8 text-accent mx-auto mb-2" />
-                <div className="text-2xl font-bold text-card-foreground">100%</div>
-                <div className="text-sm text-card-foreground/70">Include Safety Training</div>
-              </div>
-              <div className="bg-card p-6 rounded-xl text-center shadow-card border border-border/30">
-                <Users className="w-8 h-8 text-accent mx-auto mb-2" />
-                <div className="text-2xl font-bold text-card-foreground">Any</div>
-                <div className="text-sm text-card-foreground/70">Technical Level</div>
-              </div>
-              <div className="bg-card p-6 rounded-xl text-center shadow-card border border-border/30">
-                <Award className="w-8 h-8 text-accent mx-auto mb-2" />
-                <div className="text-2xl font-bold text-card-foreground">Certified</div>
-                <div className="text-sm text-card-foreground/70">Upon Completion</div>
-              </div>
-            </motion.div>
-
-            {/* AI Courses Grid */}
-            <div className="grid md:grid-cols-2 gap-6">
-              {aiCourses.map((course, index) => (
-                <motion.div
-                  key={course.department}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-card rounded-xl overflow-hidden shadow-card border border-border/30 hover:shadow-card-hover transition-all group"
+            {/* Filter */}
+            <div className="flex flex-wrap justify-center gap-2 mb-12">
+              {departments.map((dept) => (
+                <button
+                  key={dept}
+                  onClick={() => setFilter(dept)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all duration-300 ${filter === dept
+                    ? "bg-accent text-white shadow-lg shadow-accent/40 scale-105"
+                    : "bg-card/50 text-muted-foreground border border-border/50 hover:border-accent/30 hover:bg-accent/5"
+                    }`}
                 >
-                  <div className="p-6">
-                    {/* Header */}
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 group-hover:bg-accent/30 transition-colors">
-                        <course.icon className="w-6 h-6 text-accent" strokeWidth={1.5} />
-                      </div>
-                      <div className="flex-1">
-                        <span className="text-accent text-xs font-medium uppercase tracking-wider">{course.department}</span>
-                        <h3 className="font-heading text-lg font-semibold text-card-foreground mt-1">
-                          {course.title}
-                        </h3>
-                      </div>
-                    </div>
-
-                    {/* Meta */}
-                    <div className="flex flex-wrap gap-3 mb-4 text-xs text-card-foreground/60">
-                      <span className="flex items-center gap-1 bg-background/50 px-2 py-1 rounded">
-                        <Clock className="w-3 h-3" /> {course.duration}
-                      </span>
-                      <span className="flex items-center gap-1 bg-background/50 px-2 py-1 rounded">
-                        <Target className="w-3 h-3" /> {course.level}
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-sm text-card-foreground/70 mb-4">{course.description}</p>
-
-                    {/* Modules Preview */}
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-semibold text-card-foreground/80 uppercase tracking-wider">Key Modules:</h4>
-                      <div className="grid grid-cols-2 gap-1">
-                        {course.modules.slice(0, 4).map((module, i) => (
-                          <div key={i} className="flex items-start gap-1 text-xs text-card-foreground/60">
-                            <CheckCircle className="w-3 h-3 text-accent flex-shrink-0 mt-0.5" />
-                            <span className="line-clamp-1">{module}</span>
-                          </div>
-                        ))}
-                      </div>
-                      {course.modules.length > 4 && (
-                        <p className="text-xs text-accent">+ {course.modules.length - 4} more modules</p>
-                      )}
-                    </div>
-
-                    {/* CTA */}
-                    <div className="mt-4 pt-4 border-t border-border/30">
-                      <AuthAwareLink variant="gold" size="sm" className="w-full" to={`/course`}>
-                        Enroll Now <ArrowRight className="w-4 h-4 ml-2" />
-                      </AuthAwareLink>
-                    </div>
-                  </div>
-                </motion.div>
+                  {dept === "GENERAL" ? "ALL DEPARTMENTS" : dept}
+                </button>
               ))}
             </div>
 
-            {/* Corporate Training CTA */}
+            {aiLoading ? (
+              <div className="text-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent mx-auto"></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredAICourses.map((course, index) => {
+                  const DeptIcon = getDepartmentIcon(course.department);
+                  return (
+                    <motion.div
+                      key={course._id}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.5, delay: index * 0.05 }}
+                      className="group h-full"
+                    >
+                      <div className="relative h-full">
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-accent via-purple-500/50 to-accent rounded-2xl opacity-0 group-hover:opacity-100 blur-sm transition-all duration-700" />
+                        <div className="relative h-full bg-card/90 backdrop-blur-xl rounded-2xl border border-border/30 group-hover:border-accent/50 transition-all duration-500 overflow-hidden flex flex-col">
+                          {/* Image Header */}
+                          <div className="h-32 relative overflow-hidden">
+                            <img
+                              src={course.thumbnail}
+                              alt={course.title}
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-60"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/40 to-transparent" />
+                            <div className="absolute top-4 left-4">
+                              <div className="p-2 rounded-xl bg-accent/20 backdrop-blur-md border border-accent/30">
+                                <DeptIcon size={18} className="text-accent" />
+                              </div>
+                            </div>
+                            <div className="absolute top-4 right-4">
+                              <Badge className="bg-background/80 text-foreground border-border/50 text-[10px] font-bold">
+                                {course.level}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="p-5 flex-1 flex flex-col">
+                            <div className="flex justify-between items-start mb-2">
+                              <span className="text-[10px] font-bold text-accent uppercase tracking-widest">
+                                {course.department === "GENERAL" ? "ALL DEPARTMENTS" : course.department}
+                              </span>
+                              <div className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+                                <Clock size={12} className="text-accent" />
+                                {course.duration}
+                              </div>
+                            </div>
+
+                            <h3 className="text-base font-heading font-bold mb-2 group-hover:text-accent transition-colors duration-300 line-clamp-2">
+                              {course.title}
+                            </h3>
+
+                            <p className="text-xs text-muted-foreground leading-relaxed mb-4 line-clamp-2">
+                              {course.description}
+                            </p>
+
+                            <div className="space-y-2 mb-6 flex-grow">
+                              <p className="text-[9px] font-bold text-foreground/50 uppercase tracking-widest flex items-center gap-2">
+                                <CheckCircle size={10} className="text-accent" />
+                                Outcomes
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {course.keyModules.slice(0, 3).map((module, i) => (
+                                  <span key={i} className="text-[9px] px-2 py-0.5 rounded-full bg-accent/5 border border-accent/10 text-muted-foreground">
+                                    {module}
+                                  </span>
+                                ))}
+                                {course.keyModules.length > 3 && (
+                                  <span className="text-[9px] text-accent/70 font-medium py-0.5">
+                                    +{course.keyModules.length - 3} more
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="mt-auto flex items-center justify-between gap-4">
+                              <div className="flex flex-col">
+                                <span className="text-[10px] text-muted-foreground uppercase font-medium">Investment</span>
+                                <span className="text-sm font-bold text-accent">
+                                  {course.price === 0 ? "Scholarship" : `RWF ${course.price.toLocaleString()}`}
+                                </span>
+                              </div>
+                              <Link
+                                to={`/courses/${course._id}`}
+                                className="flex items-center justify-center p-2.5 rounded-xl bg-accent text-white shadow-lg shadow-accent/20 hover:shadow-accent/40 active:scale-95 transition-all duration-300"
+                              >
+                                <ChevronRight size={18} />
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Corporate Training CTA */}
+        <section className="py-12 bg-background">
+          <div className="container mx-auto px-4 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="mt-12 bg-card rounded-xl p-8 text-center shadow-card border border-accent/30"
+              className="bg-card rounded-xl p-8 text-center shadow-card border border-accent/30"
             >
               <Brain className="w-12 h-12 text-accent mx-auto mb-4" />
               <h3 className="font-heading text-xl lg:text-2xl font-semibold text-card-foreground mb-2">

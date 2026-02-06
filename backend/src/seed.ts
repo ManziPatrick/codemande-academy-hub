@@ -35,7 +35,7 @@ const createLessons = (baseTitle: string, count: number) => {
   for (let i = 1; i <= count; i++) {
     const type = types[i % types.length];
     const unitTitle = `${baseTitle} - Unit ${i}`;
-    
+
     // Rich HTML Content
     const htmlContent = `
       <div class="space-y-6">
@@ -109,17 +109,17 @@ const seedData = async () => {
     const models = [
       User, Message, Conversation, Course, Project, Certificate, Internship, Booking, Question, Badge, Payment,
       StudentProfile, InternshipProgram, InternshipPayment, InternshipApplication, InternshipProject,
-      InternshipTeam, InternshipTeamMember, InternshipMilestone, InternshipSubmission, 
+      InternshipTeam, InternshipTeamMember, InternshipMilestone, InternshipSubmission,
       InternshipMentorFeedback, InternshipActivityLog, InternshipCertificate, InternshipInvoice
     ];
-    
+
     for (const model of models) {
       await (model as any).deleteMany({});
     }
 
     console.log('👤 Creating Users...');
     const hashedPassword = await bcrypt.hash('password123', 10);
-    
+
     const admin = await new User({
       username: 'admin',
       email: 'admin@codemande.com',
@@ -203,7 +203,7 @@ const seedData = async () => {
       price: 49.99,
       category: 'Data Science',
       level: 'Intermediate',
-      thumbnail: 'https://images.unsplash.com/photo-1551288049-nebda4ff7141?q=80&w=2070&auto=format&fit=crop',
+      thumbnail: 'https://images.unsplash.com/photo-1527477396000-e27163b481c2?q=80&w=2070&auto=format&fit=crop',
       modules: [
         {
           title: 'Python Basics',
@@ -213,6 +213,65 @@ const seedData = async () => {
       ],
       published: true,
       studentsEnrolled: [student2._id]
+    } as any).save();
+
+    const generativeAICourse = await new Course({
+      title: 'Generative AI for Creative Professionals',
+      description: 'Learn to use ChatGPT, Midjourney, and DALL-E to revolutionize your creative workflow. Scale your output with AI.',
+      instructor: trainer1._id,
+      price: 150000,
+      discountPrice: 85000,
+      category: 'Specialization',
+      level: 'Beginner',
+      thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=2000&auto=format&fit=crop',
+      modules: [
+        {
+          title: 'AI Tools Overview',
+          description: 'Exploring the generative AI landscape',
+          lessons: createLessons('Generative AI', 6)
+        }
+      ],
+      published: true,
+      studentsEnrolled: []
+    } as any).save();
+
+    const promptEngCourse = await new Course({
+      title: 'Prompt Engineering for Software Developers',
+      description: 'Master the art of prompt engineering to build smarter AI-integrated applications and leverage LLMs in your code.',
+      instructor: trainer1._id,
+      price: 0,
+      category: 'Development',
+      level: 'Intermediate',
+      thumbnail: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2000&auto=format&fit=crop',
+      modules: [
+        {
+          title: 'LLM Foundations',
+          description: 'Understanding how models process prompts',
+          lessons: createLessons('Prompt Engineering', 8)
+        }
+      ],
+      published: true,
+      studentsEnrolled: []
+    } as any).save();
+
+    const aiLeadershipCourse = await new Course({
+      title: 'AI Strategic Leadership',
+      description: 'Lead your organization through the AI revolution. Understand the strategic, ethical, and operational shifts required for AI success.',
+      instructor: admin._id,
+      price: 250000,
+      discountPrice: 195000,
+      category: 'Business',
+      level: 'Advanced',
+      thumbnail: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?q=80&w=2000&auto=format&fit=crop',
+      modules: [
+        {
+          title: 'AI Transformation',
+          description: 'Building an AI-first organization',
+          lessons: createLessons('AI Leadership', 5)
+        }
+      ],
+      published: true,
+      studentsEnrolled: []
     } as any).save();
 
     console.log('🎓 Creating Student Profiles...');
@@ -259,6 +318,7 @@ const seedData = async () => {
       currency: 'RWF',
       status: 'active',
       isActive: true,
+      image: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2000&auto=format&fit=crop',
       batches: [{ name: 'Batch 1', startDate: new Date(), endDate: new Date() }]
     } as any).save();
 
@@ -274,7 +334,8 @@ const seedData = async () => {
       price: 0, // Free
       currency: 'RWF',
       status: 'active',
-      isActive: true
+      isActive: true,
+      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=2000&auto=format&fit=crop'
     } as any).save();
 
     console.log('🏗️ Creating Internship Projects...');

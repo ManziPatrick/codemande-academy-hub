@@ -6,9 +6,10 @@ import { TextEditor } from "@/components/ui/text-editor";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, Lock } from "lucide-react";
+import { HelpCircle, Lock, Trash2 } from "lucide-react";
 import { ManageQuestionsDialog } from "./ManageQuestionsDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import { FileUpload } from "@/components/FileUpload";
 
 interface EditCourseDialogProps {
   open: boolean;
@@ -21,7 +22,7 @@ interface EditCourseDialogProps {
 export function EditCourseDialog({ open, onOpenChange, course, trainers = [], onSave }: EditCourseDialogProps) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
-  
+
   const [formData, setFormData] = useState<any>({
     title: "",
     description: "",
@@ -58,7 +59,7 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
 
   const handleSave = () => {
     if (!course) return;
-    
+
     const updatedCourse = {
       ...course,
       title: formData.title,
@@ -74,16 +75,16 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
         title: m.title,
         description: m.description || "",
         lessons: m.lessons.map((l: any) => ({
-            title: l.title,
-            duration: Number(l.duration) || 0,
-            videoUrl: l.videoUrl || "",
-            fileUrl: l.fileUrl || "",
-            type: l.type || "video",
-            content: l.content || ""
+          title: l.title,
+          duration: Number(l.duration) || 0,
+          videoUrl: l.videoUrl || "",
+          fileUrl: l.fileUrl || "",
+          type: l.type || "video",
+          content: l.content || ""
         }))
       }))
     };
-    
+
     onSave?.(updatedCourse);
     onOpenChange(false);
   };
@@ -101,7 +102,7 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium mb-2 block flex items-center gap-1.5">
-                  Price ($) 
+                  Price ($)
                   {!formData.isFree && isAdmin && <span className="text-[10px] text-accent font-normal">(Editable)</span>}
                   {!isAdmin && <Lock className="w-3 h-3 text-muted-foreground" />}
                 </label>
@@ -157,40 +158,39 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-muted/30 border border-border/50 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      formData.status === 'published' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 
+                    <div className={`w-3 h-3 rounded-full ${formData.status === 'published' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' :
                       formData.status === 'archived' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
-                      'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'
-                    }`} />
+                        'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'
+                      }`} />
                     <div>
                       <p className="font-semibold text-sm capitalize">{formData.status === 'published' ? 'Live' : formData.status}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {formData.status === 'published' ? 'Visible to all students' : 
-                         formData.status === 'archived' ? 'Hidden and locked' : 
-                         'Visible only to staff'}
+                        {formData.status === 'published' ? 'Visible to all students' :
+                          formData.status === 'archived' ? 'Hidden and locked' :
+                            'Visible only to staff'}
                       </p>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant={formData.status === 'draft' ? 'gold' : 'outline'} 
-                      size="sm" 
+                    <Button
+                      variant={formData.status === 'draft' ? 'gold' : 'outline'}
+                      size="sm"
                       className="h-7 text-[10px] px-2"
                       onClick={() => setFormData({ ...formData, status: 'draft' })}
                     >
                       Draft
                     </Button>
-                    <Button 
-                      variant={formData.status === 'published' ? 'gold' : 'outline'} 
-                      size="sm" 
+                    <Button
+                      variant={formData.status === 'published' ? 'gold' : 'outline'}
+                      size="sm"
                       className="h-7 text-[10px] px-2"
                       onClick={() => setFormData({ ...formData, status: 'published' })}
                     >
                       Live
                     </Button>
-                    <Button 
-                      variant={formData.status === 'archived' ? 'gold' : 'outline'} 
-                      size="sm" 
+                    <Button
+                      variant={formData.status === 'archived' ? 'gold' : 'outline'}
+                      size="sm"
                       className="h-7 text-[10px] px-2"
                       onClick={() => setFormData({ ...formData, status: 'archived' })}
                     >
@@ -243,31 +243,37 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
 
             <div>
               <label className="text-sm font-medium mb-2 block flex items-center gap-1.5">
-                Thumbnail URL
+                Thumbnail
                 {!isAdmin && <Lock className="w-3 h-3 text-muted-foreground" />}
               </label>
-              <div className="flex gap-4 items-start">
-                <div className="flex-1">
-                  <Input
-                    placeholder="https://images.unsplash.com/..."
-                    value={formData.thumbnail}
-                    onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
-                    disabled={!isAdmin}
-                    className={!isAdmin ? "opacity-50" : ""}
-                  />
-                  <p className="text-[10px] text-muted-foreground mt-1">Provide a direct link to the course cover image</p>
+
+              {formData.thumbnail && formData.thumbnail.includes('unsplash') === false ? (
+                <div className="relative aspect-video w-full max-w-sm rounded-lg overflow-hidden border">
+                  <img src={formData.thumbnail} alt="" className="w-full h-full object-cover" />
+                  {isAdmin && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-8 w-8"
+                      onClick={() => setFormData({ ...formData, thumbnail: "" })}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
-                {formData.thumbnail && (
-                  <div className={`w-20 h-20 rounded-lg border border-border overflow-hidden bg-muted flex-shrink-0 ${!isAdmin ? 'grayscale' : ''}`}>
-                    <img 
-                      src={formData.thumbnail} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                      onError={(e: any) => e.target.src = "https://placehold.co/200x200?text=Invalid+Link"}
-                    />
-                  </div>
-                )}
-              </div>
+              ) : (
+                <div className={!isAdmin ? "opacity-50 pointer-events-none" : ""}>
+                  <FileUpload
+                    folder="courses"
+                    label="Upload Course Thumbnail"
+                    onUploadComplete={(url) => setFormData({ ...formData, thumbnail: url })}
+                  />
+                  {formData.thumbnail && (
+                    <p className="text-xs text-muted-foreground mt-2">Current: {formData.thumbnail}</p>
+                  )}
+                </div>
+              )}
             </div>
             {isAdmin && (
               <div>
@@ -291,16 +297,16 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold">Curriculum</h3>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => setQuestionLesson({ id: "", title: "Course Wide" })}
                   >
                     Manage Course Questions
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => {
                       const newModules = [...(formData.modules || []), { title: "New Module", lessons: [] }];
                       setFormData({ ...formData, modules: newModules });
@@ -310,14 +316,14 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                   </Button>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 {formData.modules?.map((module: any, mIdx: number) => (
                   <div key={mIdx} className="p-4 bg-muted/30 rounded-lg border border-border/50">
                     <div className="flex flex-col gap-2 mb-3">
                       <div className="flex items-center gap-2">
-                        <Input 
-                          className="font-bold bg-background/50" 
+                        <Input
+                          className="font-bold bg-background/50"
                           placeholder="Module Title (e.g., Introduction)"
                           value={module.title}
                           onChange={(e) => {
@@ -326,9 +332,9 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                             setFormData({ ...formData, modules: newModules });
                           }}
                         />
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="text-destructive hover:text-destructive bg-destructive/5"
                           onClick={() => {
                             const newModules = formData.modules.filter((_: any, i: number) => i !== mIdx);
@@ -338,7 +344,7 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                           Remove Module
                         </Button>
                       </div>
-                      <Input 
+                      <Input
                         className="text-xs h-8"
                         placeholder="Module Description (optional)"
                         value={module.description || ""}
@@ -349,7 +355,7 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                         }}
                       />
                     </div>
-                    
+
                     <div className="space-y-3 ml-4">
                       {module.lessons?.map((lesson: any, lIdx: number) => (
                         <div key={lIdx} className="p-3 bg-background/40 rounded-lg border border-border/30 space-y-2">
@@ -357,8 +363,8 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                             <Badge variant="outline" className="text-[10px] uppercase font-bold text-accent border-accent/30">
                               L{lIdx + 1}
                             </Badge>
-                            <Input 
-                              placeholder="Lesson Title" 
+                            <Input
+                              placeholder="Lesson Title"
                               className="h-8 text-sm flex-1 font-medium"
                               value={lesson.title}
                               onChange={(e) => {
@@ -387,9 +393,9 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                               <option value="article">Article</option>
                               <option value="quiz">Quiz</option>
                             </select>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               className="h-8 w-8 p-0 text-destructive"
                               onClick={() => {
                                 const newModules = [...formData.modules];
@@ -404,9 +410,9 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
 
                           {/* Lesson Content Editor Toggle */}
                           <div className="px-1">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               className="w-full h-7 text-[10px] justify-start font-bold text-muted-foreground hover:text-accent"
                               onClick={() => {
                                 const newModules = [...formData.modules];
@@ -420,7 +426,7 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                             </Button>
                             {lesson._showEditor && (
                               <div className="mt-2">
-                                <TextEditor 
+                                <TextEditor
                                   value={lesson.content || ""}
                                   onChange={(content) => {
                                     const newModules = [...formData.modules];
@@ -434,10 +440,10 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="grid grid-cols-2 gap-2">
-                            <Input 
-                              placeholder="Video URL (YouTube/Vimeo)" 
+                            <Input
+                              placeholder="Video URL (YouTube/Vimeo)"
                               className="h-7 text-[10px]"
                               value={lesson.videoUrl || ""}
                               onChange={(e) => {
@@ -448,8 +454,8 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                                 setFormData({ ...formData, modules: newModules });
                               }}
                             />
-                            <Input 
-                              placeholder="File URL (PDF/PPT/Link)" 
+                            <Input
+                              placeholder="File URL (PDF/PPT/Link)"
                               className="h-7 text-[10px]"
                               value={lesson.fileUrl || ""}
                               onChange={(e) => {
@@ -465,7 +471,7 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] text-muted-foreground">Duration (min):</span>
-                              <input 
+                              <input
                                 type="number"
                                 className="w-12 h-6 px-1 rounded border border-input bg-background text-[10px]"
                                 value={lesson.duration || 0}
@@ -478,9 +484,9 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                                 }}
                               />
                             </div>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               className="h-7 text-[10px] text-accent hover:text-accent"
                               onClick={() => {
                                 const lessonId = lesson.id || `${mIdx}-${lIdx}`;
@@ -493,9 +499,9 @@ export function EditCourseDialog({ open, onOpenChange, course, trainers = [], on
                           </div>
                         </div>
                       ))}
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="text-xs h-8 w-full border border-dashed border-border hover:bg-accent/5 hover:border-accent/30"
                         onClick={() => {
                           const newModules = [...formData.modules];

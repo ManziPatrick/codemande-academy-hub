@@ -37,9 +37,10 @@ import {
   Cog,
   Bell,
   HelpCircle,
-  GraduationCap,
   Table,
   FileText,
+  UserCog,
+  GraduationCap,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSocket } from "@/hooks/use-socket";
@@ -82,6 +83,7 @@ const adminNavItems: NavItem[] = [
   { label: "Courses", href: "/portal/admin/courses", icon: BookOpen },
   { label: "Internships", href: "/portal/admin/internships", icon: Briefcase },
   { label: "Projects", href: "/portal/admin/projects", icon: FolderOpen },
+  { label: "Team", href: "/portal/admin/team", icon: UserCog },
   { label: "Payments", href: "/portal/admin/payments", icon: CreditCard },
   { label: "Badges", href: "/portal/admin/badges", icon: Award },
   { label: "Blog", href: "/portal/admin/blogs", icon: FileText },

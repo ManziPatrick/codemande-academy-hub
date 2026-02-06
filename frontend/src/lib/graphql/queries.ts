@@ -83,6 +83,7 @@ export const GET_COURSES = gql`
       studentsEnrolled {
         id
       }
+      createdAt
       modules {
         id
         title
@@ -829,6 +830,7 @@ export const GET_INTERNSHIP_PROGRAMS = gql`
       status
       price
       currency
+      image
       eligibility
       rules
     }

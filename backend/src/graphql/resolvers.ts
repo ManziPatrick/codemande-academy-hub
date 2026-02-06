@@ -3,6 +3,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { Message } from '../models/Message';
 import { Conversation } from '../models/Conversation';
 import { Course } from '../models/Course';
+import AICourse from '../models/AICourse';
 import { Question } from '../models/Question';
 import { PubSub, withFilter } from 'graphql-subscriptions';
 
@@ -101,14 +102,22 @@ export const resolvers = {
 
     course: async (_: any, { id }: { id: string }, context: any) => {
       const targetId = typeof id === 'object' ? ((id as any).id || (id as any)._id) : id;
-      const course = await Course.findById(targetId).populate('instructor').populate('studentsEnrolled');
+
+      // Try regular Course first
+      let course = await Course.findById(targetId).populate('instructor').populate('studentsEnrolled');
+
+      // If not found, try AICourse
+      if (!course) {
+        course = await AICourse.findById(targetId).populate('instructor').populate('studentsEnrolled') as any;
+      }
+
       if (!course) throw new Error(`Course not found for ID: ${targetId}`);
 
       // Check enrollment
       let isEnrolled = false;
       if (context.user) {
         // Check if user is enrolled
-        isEnrolled = course.studentsEnrolled.some((s: any) => s._id.toString() === context.user.id || s.id === context.user.id);
+        isEnrolled = (course.studentsEnrolled as any).some((s: any) => s._id.toString() === context.user.id || s.id === context.user.id);
 
         // Grant access to instructor, admin, super_admin
         if ((course.instructor as any)._id.toString() === context.user.id ||
@@ -117,7 +126,7 @@ export const resolvers = {
         }
       }
 
-      const courseObj = course.toObject({ virtuals: true });
+      const courseObj = (course as any).toObject({ virtuals: true });
 
       // If NOT enrolled: Apply Free Trial Logic (First 2 lessons visible)
       if (!isEnrolled) {
@@ -760,11 +769,21 @@ export const resolvers = {
       if (!context.user) throw new Error('Not authenticated');
 
       const targetId = typeof courseId === 'object' ? ((courseId as any).id || (courseId as any)._id) : courseId;
-      const course = await Course.findById(targetId);
+
+      // Try regular Course first
+      let course = await Course.findById(targetId);
+      let isAICourse = false;
+
+      // If not found, try AICourse
+      if (!course) {
+        course = await AICourse.findById(targetId) as any;
+        isAICourse = true;
+      }
+
       if (!course) throw new Error(`Course not found for ID: ${targetId}`);
 
-      // Check Enrollment Limits
-      if (course.maxStudents && course.studentsEnrolled.length >= course.maxStudents) {
+      // Check Enrollment Limits (only for regular courses for now, or add to AICourse model if needed)
+      if ((course as any).maxStudents && (course as any).studentsEnrolled.length >= (course as any).maxStudents) {
         throw new Error('Course is full.');
       }
 
@@ -772,9 +791,9 @@ export const resolvers = {
       if (!user) throw new Error('User not found');
 
       // Check if already enrolled in Course
-      const isEnrolledInCourse = course.studentsEnrolled.some((s: any) => s.toString() === user.id);
+      const isEnrolledInCourse = (course as any).studentsEnrolled.some((s: any) => s.toString() === user.id);
       if (!isEnrolledInCourse) {
-        course.studentsEnrolled.push(user.id as any);
+        (course as any).studentsEnrolled.push(user.id as any);
         await course.save();
       }
 
@@ -784,11 +803,11 @@ export const resolvers = {
         (user as any).enrolledCourses.push(targetId as any);
 
         // If course has a price, record a payment
-        if (course.price && course.price > 0) {
+        if ((course as any).price && (course as any).price > 0) {
           await new Payment({
             userId: user.id,
             courseId: course.id,
-            amount: course.price,
+            amount: (course as any).price,
             currency: 'RWF',
             status: 'completed',
             paymentMethod: 'Pre-enrolled',
@@ -1561,8 +1580,8 @@ export const resolvers = {
     createInternship: async (_: any, { mentorIds, ...args }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
 
-      // If not admin, check if the student is creating an internship for themselves
-      if (context.user.role !== 'super_admin' && context.user.role !== 'admin') {
+      // If not admin/trainer, check if the student is creating an internship for themselves
+      if (!['super_admin', 'admin', 'trainer'].includes(context.user.role)) {
         if (args.userId !== context.user.id) {
           throw new Error('Not authorized to create internship for another user');
         }
@@ -2117,6 +2136,36 @@ export const resolvers = {
       if (rejectionReason) application.rejectionReason = rejectionReason;
       await application.save();
 
+      // Automatically create Internship record on approval
+      if (status === 'approved') {
+        const program = application.internshipProgramId as any;
+        const existingInternship = await Internship.findOne({
+          userId: application.userId,
+          title: program?.title,
+          isDeleted: false
+        });
+
+        if (!existingInternship) {
+          const newInternship = new Internship({
+            userId: application.userId,
+            title: program?.title || 'Internship Program',
+            duration: program?.duration || '3 Months',
+            type: 'Online', // Default
+            status: 'enrolled',
+            mentorId: context.user.id,
+            mentors: [context.user.id],
+            progress: 0,
+            payment: {
+              amount: program?.price || 0,
+              currency: program?.currency || 'RWF',
+              status: program?.price === 0 ? 'paid' : 'pending'
+            }
+          });
+          await newInternship.save();
+          await logActivity(context.user.id, 'CREATE', 'Internship', newInternship.id, `Automatically created internship record upon application approval`);
+        }
+      }
+
       await logActivity(context.user.id, 'REVIEW', 'InternshipApplication', id, `Reviewed application status to: ${status}`);
 
       // Notify via Socket
@@ -2148,7 +2197,7 @@ export const resolvers = {
     },
 
     createInternshipProject: async (_: any, args: any, context: any) => {
-      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
       const { minTeamSize, maxTeamSize, ...rest } = args;
       const project = new InternshipProject({
         ...rest,
@@ -2160,7 +2209,7 @@ export const resolvers = {
     },
 
     updateInternshipProject: async (_: any, { id, minTeamSize, maxTeamSize, ...args }: any, context: any) => {
-      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
       const updateData: any = { ...args };
       if (minTeamSize !== undefined || maxTeamSize !== undefined) {
         updateData.teamSizeRange = {
@@ -2187,7 +2236,7 @@ export const resolvers = {
     // --- Internship Module Mutations (Group 2: Teams, Milestones) ---
 
     createInternshipTeam: async (_: any, args: any, context: any) => {
-      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
       const team = new InternshipTeam(args);
       await team.save();
       await logActivity(context.user.id, 'CREATE', 'InternshipTeam', team.id, `Created team: ${team.name}`);

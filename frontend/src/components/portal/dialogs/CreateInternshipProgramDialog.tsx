@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { FileUpload } from '@/components/FileUpload';
 
 interface CreateInternshipProgramDialogProps {
   open: boolean;
@@ -23,7 +24,8 @@ export function CreateInternshipProgramDialog({ open, onOpenChange }: CreateInte
     endDate: '',
     applicationDeadline: '',
     price: 0,
-    currency: 'RWF'
+    currency: 'RWF',
+    image: ''
   });
 
   const [createProgram, { loading }] = useMutation(CREATE_INTERNSHIP_PROGRAM, {
@@ -39,7 +41,8 @@ export function CreateInternshipProgramDialog({ open, onOpenChange }: CreateInte
         endDate: '',
         applicationDeadline: '',
         price: 0,
-        currency: 'RWF'
+        currency: 'RWF',
+        image: ''
       });
     },
     onError: (err) => toast.error(err.message)
@@ -57,11 +60,35 @@ export function CreateInternshipProgramDialog({ open, onOpenChange }: CreateInte
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Internship Program</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Program Image</Label>
+            {formData.image ? (
+              <div className="relative aspect-video rounded-lg overflow-hidden border">
+                <img src={formData.image} alt="" className="w-full h-full object-cover" />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2 h-7 px-2"
+                  onClick={() => setFormData({ ...formData, image: '' })}
+                >
+                  Remove
+                </Button>
+              </div>
+            ) : (
+              <FileUpload
+                folder="internships"
+                label="Upload Program Image"
+                onUploadComplete={(url) => setFormData({ ...formData, image: url })}
+              />
+            )}
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="title">Program Title</Label>
             <Input

@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 const footerLinks = {
   company: [
     { name: "About Us", href: "/about" },
+    { name: "Our Team", href: "/team" },
     { name: "Our Services", href: "/services" },
     { name: "Our Projects", href: "/projects" },
     { name: "Partners & Clients", href: "/partners" },
@@ -61,7 +62,7 @@ export function Footer() {
 
     try {
       const { data } = await subscribe({ variables: { email } });
-      if (data.subscribeToNewsletter) {
+      if ((data as any)?.subscribeToNewsletter) {
         toast.success("Thank you for subscribing to our newsletter!");
         setEmail("");
       } else {

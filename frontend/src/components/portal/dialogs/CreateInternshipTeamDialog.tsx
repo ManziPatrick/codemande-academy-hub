@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CreateInternshipTeamDialogProps {
   open: boolean;
@@ -15,11 +16,12 @@ interface CreateInternshipTeamDialogProps {
 }
 
 export function CreateInternshipTeamDialog({ open, onOpenChange }: CreateInternshipTeamDialogProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     internshipProjectId: '',
     internshipProgramId: '',
-    mentorId: ''
+    mentorId: user?.role === 'trainer' ? user.id : ''
   });
 
   const { data: programsData } = useQuery(GET_INTERNSHIP_PROGRAMS);
@@ -76,11 +78,11 @@ export function CreateInternshipTeamDialog({ open, onOpenChange }: CreateInterns
               required
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label>Internship Program</Label>
-            <Select 
-              value={formData.internshipProgramId} 
+            <Select
+              value={formData.internshipProgramId}
               onValueChange={(val) => setFormData({ ...formData, internshipProgramId: val, internshipProjectId: '' })}
             >
               <SelectTrigger>
@@ -96,8 +98,8 @@ export function CreateInternshipTeamDialog({ open, onOpenChange }: CreateInterns
 
           <div className="space-y-2">
             <Label>Assigned Project</Label>
-            <Select 
-              value={formData.internshipProjectId} 
+            <Select
+              value={formData.internshipProjectId}
               disabled={!formData.internshipProgramId}
               onValueChange={(val) => setFormData({ ...formData, internshipProjectId: val })}
             >
@@ -114,8 +116,8 @@ export function CreateInternshipTeamDialog({ open, onOpenChange }: CreateInterns
 
           <div className="space-y-2">
             <Label>Mentor (Optional)</Label>
-            <Select 
-              value={formData.mentorId} 
+            <Select
+              value={formData.mentorId}
               onValueChange={(val) => setFormData({ ...formData, mentorId: val })}
             >
               <SelectTrigger>

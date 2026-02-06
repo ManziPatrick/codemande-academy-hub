@@ -13,6 +13,7 @@ import Projects from "@/pages/Projects";
 import Partners from "@/pages/Partners";
 import Blog from "@/pages/Blog";
 import BlogDetail from "@/pages/BlogDetail";
+import Team from "@/pages/Team";
 import Contact from "@/pages/Contact";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
@@ -38,6 +39,7 @@ import TrainerCourses from "@/pages/portal/trainer/TrainerCourses";
 import TrainerAssignments from "@/pages/portal/trainer/TrainerAssignments";
 import TrainerSchedule from "@/pages/portal/trainer/TrainerSchedule";
 import TrainerMentorship from "@/pages/portal/trainer/TrainerMentorship";
+import TrainerInternships from "@/pages/portal/trainer/TrainerInternships";
 
 // Admin Portal
 import AdminDashboard from "@/pages/portal/admin/AdminDashboard";
@@ -51,6 +53,7 @@ import AdminAnalytics from "@/pages/portal/admin/AdminAnalytics";
 import AdminBranding from "@/pages/portal/admin/AdminBranding";
 import AdminTools from "@/pages/portal/admin/AdminTools";
 import AdminBlogManager from "@/pages/portal/admin/AdminBlogManager";
+import AdminTeamManager from "@/pages/portal/admin/AdminTeamManager";
 
 // Super Admin Portal
 import SuperAdminDashboard from "@/pages/portal/super-admin/SuperAdminDashboard";
@@ -79,6 +82,7 @@ export function AnimatedRoutes() {
         <Route path="/internships" element={<PageTransition><Internships /></PageTransition>} />
         <Route path="/projects" element={<PageTransition><Projects /></PageTransition>} />
         <Route path="/partners" element={<PageTransition><Partners /></PageTransition>} />
+        <Route path="/team" element={<PageTransition><Team /></PageTransition>} />
         <Route path="/blog" element={<PageTransition><Blog /></PageTransition>} />
         <Route path="/blog/:slug" element={<PageTransition><BlogDetail /></PageTransition>} />
         <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
@@ -104,7 +108,7 @@ export function AnimatedRoutes() {
         <Route path="/portal/trainer/assignments" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerAssignments /></ProtectedRoute>} />
         <Route path="/portal/trainer/schedule" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerSchedule /></ProtectedRoute>} />
         <Route path="/portal/trainer/mentorship" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerMentorship /></ProtectedRoute>} />
-        <Route path="/portal/trainer/internships" element={<ProtectedRoute allowedRoles={["trainer"]}><AdminInternships /></ProtectedRoute>} />
+        <Route path="/portal/trainer/internships" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerInternships /></ProtectedRoute>} />
 
         {/* Admin Portal */}
         <Route path="/portal/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
@@ -117,6 +121,7 @@ export function AnimatedRoutes() {
         <Route path="/portal/admin/analytics" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnalytics /></ProtectedRoute>} />
         <Route path="/portal/admin/branding" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><AdminBranding /></ProtectedRoute>} />
         <Route path="/portal/admin/blogs" element={<ProtectedRoute allowedRoles={["admin"]}><AdminBlogManager /></ProtectedRoute>} />
+        <Route path="/portal/admin/team" element={<ProtectedRoute allowedRoles={["admin"]}><AdminTeamManager /></ProtectedRoute>} />
         <Route path="/portal/admin/tools" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><AdminTools /></ProtectedRoute>} />
 
         {/* Super Admin Portal */}
@@ -131,7 +136,7 @@ export function AnimatedRoutes() {
         <Route path="/portal/help" element={<ProtectedRoute allowedRoles={["student", "trainer", "admin", "super_admin"]}><PortalHelp /></ProtectedRoute>} />
 
         {/* Experimental/Testing */}
-        <Route path="/course/:id" element={<PageTransition><CoursePage /></PageTransition>} />
+        <Route path="/courses/:id" element={<PageTransition><CoursePage /></PageTransition>} />
         <Route path="/chat" element={<PageTransition><Chat /></PageTransition>} />
 
         {/* Catch-all */}

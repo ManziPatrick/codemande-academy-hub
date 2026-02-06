@@ -668,20 +668,22 @@ export const SEND_MESSAGE_TO_PROJECT = gql`
 // --- New Internship Module Mutations ---
 
 export const CREATE_INTERNSHIP_PROGRAM = gql`
-  mutation CreateInternshipProgram($title: String!, $description: String!, $duration: String!, $startDate: String!, $endDate: String!, $applicationDeadline: String!, $eligibility: [String], $rules: String) {
-    createInternshipProgram(title: $title, description: $description, duration: $duration, startDate: $startDate, endDate: $endDate, applicationDeadline: $applicationDeadline, eligibility: $eligibility, rules: $rules) {
+  mutation CreateInternshipProgram($title: String!, $description: String!, $duration: String!, $startDate: String!, $endDate: String!, $applicationDeadline: String!, $eligibility: [String], $rules: String, $price: Float, $currency: String, $image: String) {
+    createInternshipProgram(title: $title, description: $description, duration: $duration, startDate: $startDate, endDate: $endDate, applicationDeadline: $applicationDeadline, eligibility: $eligibility, rules: $rules, price: $price, currency: $currency, image: $image) {
       id
       title
+      image
     }
   }
 `;
 
 export const UPDATE_INTERNSHIP_PROGRAM_NEW = gql`
-  mutation UpdateInternshipProgram($id: ID!, $title: String, $description: String, $duration: String, $startDate: String, $endDate: String, $applicationDeadline: String, $status: String, $eligibility: [String], $rules: String, $price: Float, $currency: String) {
-    updateInternshipProgram(id: $id, title: $title, description: $description, duration: $duration, startDate: $startDate, endDate: $endDate, applicationDeadline: $applicationDeadline, status: $status, eligibility: $eligibility, rules: $rules, price: $price, currency: $currency) {
+  mutation UpdateInternshipProgram($id: ID!, $title: String, $description: String, $duration: String, $startDate: String, $endDate: String, $applicationDeadline: String, $status: String, $eligibility: [String], $rules: String, $price: Float, $currency: String, $image: String) {
+    updateInternshipProgram(id: $id, title: $title, description: $description, duration: $duration, startDate: $startDate, endDate: $endDate, applicationDeadline: $applicationDeadline, status: $status, eligibility: $eligibility, rules: $rules, price: $price, currency: $currency, image: $image) {
       id
       title
       status
+      image
     }
   }
 `;

@@ -62,7 +62,7 @@ const BlogDetail = () => {
     }, [slug]);
 
     useEffect(() => {
-        if (blog && user) {
+        if (blog && user && blog.likes) {
             setLiked(blog.likes.includes(user.id || (user as any)._id));
         }
     }, [blog, user]);
@@ -73,7 +73,7 @@ const BlogDetail = () => {
             const response = await fetch(`${API_BASE_URL}/api/blogs/${slug}`);
             if (!response.ok) throw new Error("Blog not found");
             const data = await response.json();
-            setBlog(data);
+            setBlog(data || null);
         } catch (error) {
             console.error("Error fetching blog:", error);
         } finally {
@@ -82,41 +82,43 @@ const BlogDetail = () => {
     };
 
     const handleLike = async () => {
-        if (!user) return alert("Please login to like this post");
         if (!blog) return;
 
-        // Optimistic UI Update
-        const userId = user.id || (user as any)._id;
-        const isCurrentlyLiked = blog.likes.includes(userId);
-        const newLikes = isCurrentlyLiked
-            ? blog.likes.filter(id => id !== userId)
-            : [...blog.likes, userId];
+        const userId = user?.id || (user as any)?._id;
 
-        setLiked(!isCurrentlyLiked);
-        setBlog({ ...blog, likes: newLikes });
+        // Optimistic UI Update 
+        if (userId) {
+            const currentLikes = blog.likes || [];
+            const isCurrentlyLiked = currentLikes.includes(userId);
+            const newLikes = isCurrentlyLiked
+                ? currentLikes.filter(id => id !== userId)
+                : [...currentLikes, userId];
+
+            setLiked(!isCurrentlyLiked);
+            setBlog({ ...blog, likes: newLikes });
+        } else {
+            // For anonymous users, just toggle the local "liked" state
+            setLiked(!liked);
+        }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/blogs/${blog._id}/like`, {
+            await fetch(`${API_BASE_URL}/api/blogs/${blog._id}/like`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    ...(localStorage.getItem('codemande_token') ? { 'Authorization': `Bearer ${localStorage.getItem('codemande_token')}` } : {})
                 },
                 body: JSON.stringify({ userId })
             });
-            const updatedBlog = await response.json();
-            setBlog(updatedBlog);
+            // Refetch to stay in sync if logged in
+            if (userId) fetchBlog();
         } catch (error) {
             console.error("Error liking blog:", error);
-            // Revert on error
-            setLiked(isCurrentlyLiked);
-            setBlog(blog);
         }
     };
 
     const handleComment = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user) return alert("Please login to comment");
         if (!comment.trim() || !blog) return;
 
         setSubmittingComment(true);
@@ -125,12 +127,12 @@ const BlogDetail = () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    ...(localStorage.getItem('codemande_token') ? { 'Authorization': `Bearer ${localStorage.getItem('codemande_token')}` } : {})
                 },
                 body: JSON.stringify({
                     content: comment,
-                    userName: user.username || user.name || "Anonymous",
-                    userId: user.id || (user as any)._id
+                    userName: user?.username || user?.fullName || "Guest User",
+                    userId: user?.id || (user as any)?._id || null
                 })
             });
             const updatedBlog = await response.json();
@@ -165,8 +167,8 @@ const BlogDetail = () => {
     return (
         <div className="min-h-screen bg-background text-foreground">
             <Helmet>
-                <title>{blog.title} | CODEMANDE Blog</title>
-                <meta name="description" content={blog?.content?.substring(0, 160) || ""} />
+                <title>{blog?.title ? `${blog.title} | CODEMANDE` : "Blog | CODEMANDE"}</title>
+                <meta name="description" content={blog?.content?.substring(0, 160) || "Read the latest tech insights."} />
             </Helmet>
             <div className="fixed top-0 left-0 w-full h-1 z-50 pointer-events-none">
                 <motion.div
@@ -192,7 +194,7 @@ const BlogDetail = () => {
                                     {blog.category?.name || "Uncategorized"}
                                 </span>
                                 <span className="text-muted-foreground text-xs">
-                                    {Math.ceil(blog.content.length / 500)} min read
+                                    {Math.ceil((blog?.content?.length || 0) / 500)} min read
                                 </span>
                             </div>
 
@@ -217,12 +219,13 @@ const BlogDetail = () => {
                                 <img src={blog.image} alt={blog.title} className="w-full h-full object-cover" />
                             </div>
 
-                            <div className="prose prose-lg dark:prose-invert max-w-none pt-8 text-foreground/80 leading-relaxed whitespace-pre-wrap font-sans text-lg lg:text-xl">
-                                {blog?.content || "No content available."}
-                            </div>
+                            <div
+                                className="prose prose-lg dark:prose-invert max-w-none pt-8 text-foreground/80 leading-relaxed font-sans text-lg lg:text-xl ql-editor"
+                                dangerouslySetInnerHTML={{ __html: blog?.content || "No content available." }}
+                            />
 
                             <div className="flex flex-wrap gap-2 pt-10">
-                                {blog.tags.map(tag => (
+                                {(blog.tags || []).map(tag => (
                                     <span key={tag} className="px-3 py-1 bg-muted rounded-full text-xs hover:bg-accent/10 hover:text-accent transition-colors cursor-pointer">
                                         #{tag}
                                     </span>
@@ -238,55 +241,47 @@ const BlogDetail = () => {
                                         }`}
                                 >
                                     <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
-                                    <span>{blog.likes.length} Likes</span>
+                                    <span>{(blog.likes || []).length} Likes</span>
                                 </motion.button>
                                 <div className="flex items-center gap-2 text-muted-foreground px-4">
                                     <MessageSquare className="w-5 h-5" />
-                                    <span className="font-bold">{blog.comments.length} Comments</span>
+                                    <span className="font-bold">{(blog.comments || []).length} Comments</span>
                                 </div>
                             </div>
 
-                            {/* Comments Section */}
                             <section className="space-y-10 pt-10">
-                                <h3 className="font-heading text-2xl font-bold">Comments ({blog.comments.length})</h3>
+                                <h3 className="font-heading text-2xl font-bold">Comments ({(blog.comments || []).length})</h3>
 
-                                {user ? (
-                                    <form onSubmit={handleComment} className="space-y-4 bg-card p-6 rounded-xl border border-border/50">
-                                        <p className="text-sm font-medium">Leave a comment as <span className="text-accent">{user.username || user.name}</span></p>
-                                        <Textarea
-                                            placeholder="Share your thoughts..."
-                                            value={comment}
-                                            onChange={(e) => setComment(e.target.value)}
-                                            className="min-h-[120px] bg-background border-border focus:ring-accent"
-                                        />
-                                        <Button
-                                            type="submit"
-                                            variant="gold"
-                                            disabled={submittingComment || !comment.trim()}
-                                            className="w-full sm:w-auto"
-                                        >
-                                            {submittingComment ? (
-                                                <>
-                                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Posting...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Send className="w-4 h-4 mr-2" /> Post Comment
-                                                </>
-                                            )}
-                                        </Button>
-                                    </form>
-                                ) : (
-                                    <div className="bg-muted p-6 rounded-xl text-center border border-dashed border-border">
-                                        <p className="text-muted-foreground mb-4">You must be logged in to join the conversation.</p>
-                                        <Link to="/auth">
-                                            <Button variant="outline">Log In to Comment</Button>
-                                        </Link>
-                                    </div>
-                                )}
+                                <form onSubmit={handleComment} className="space-y-4 bg-card p-6 rounded-xl border border-border/50">
+                                    <p className="text-sm font-medium">
+                                        Post as <span className="text-accent">{user?.username || user?.fullName || "Guest User"}</span>
+                                    </p>
+                                    <Textarea
+                                        placeholder="Share your thoughts..."
+                                        value={comment}
+                                        onChange={(e) => setComment(e.target.value)}
+                                        className="min-h-[120px] bg-background border-border focus:ring-accent"
+                                    />
+                                    <Button
+                                        type="submit"
+                                        variant="gold"
+                                        disabled={submittingComment || !comment.trim()}
+                                        className="w-full sm:w-auto"
+                                    >
+                                        {submittingComment ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Posting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send className="w-4 h-4 mr-2" /> Post Comment
+                                            </>
+                                        )}
+                                    </Button>
+                                </form>
 
                                 <div className="space-y-6">
-                                    {blog.comments.map((comment, idx) => (
+                                    {(blog.comments || []).map((comment, idx) => (
                                         <motion.div
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
@@ -309,7 +304,7 @@ const BlogDetail = () => {
                                             </div>
                                         </motion.div>
                                     ))}
-                                    {blog.comments.length === 0 && (
+                                    {(blog.comments || []).length === 0 && (
                                         <p className="text-center text-muted-foreground py-10">No comments yet. Be the first to share your thoughts!</p>
                                     )}
                                 </div>

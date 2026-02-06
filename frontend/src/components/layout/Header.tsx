@@ -10,9 +10,10 @@ const navLinks = [
   { name: "Home", href: "/" },
   { name: "About", href: "/about" },
   { name: "Services", href: "/services" },
-  { name: "Training", href: "/training" },
+  { name: "Training", href: "http://localhost:8080/training" },
   { name: "Internships", href: "/internships" },
   { name: "Projects", href: "/projects" },
+  { name: "Team", href: "/team" },
   { name: "Blog", href: "/blog" },
   { name: "Contact", href: "/contact" },
 ];
@@ -46,11 +47,10 @@ export function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? "bg-card/95 backdrop-blur-sm shadow-card"
-          : "bg-card"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+        ? "bg-card/95 backdrop-blur-sm shadow-card"
+        : "bg-card"
+        }`}
     >
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between h-16 lg:h-20">
@@ -76,11 +76,10 @@ export function Header() {
               <Link
                 key={link.name}
                 to={link.href}
-                className={`text-sm font-medium transition-colors duration-300 gold-underline ${
-                  location.pathname === link.href
-                    ? "text-accent"
-                    : "text-foreground/80 hover:text-accent"
-                }`}
+                className={`text-sm font-medium transition-colors duration-300 gold-underline ${location.pathname === link.href
+                  ? "text-accent"
+                  : "text-foreground/80 hover:text-accent"
+                  }`}
               >
                 {link.name}
               </Link>
@@ -98,9 +97,9 @@ export function Header() {
                     Student Portal
                   </Button>
                 </Link>
-                <Button 
-                  variant="heroOutline" 
-                  size="default" 
+                <Button
+                  variant="heroOutline"
+                  size="default"
                   onClick={handleLogout}
                   className="gap-2"
                 >
@@ -149,11 +148,10 @@ export function Header() {
               <Link
                 key={link.name}
                 to={link.href}
-                className={`py-2 text-base font-medium transition-colors duration-300 ${
-                  location.pathname === link.href
-                    ? "text-accent"
-                    : "text-card-foreground/80 hover:text-accent"
-                }`}
+                className={`py-2 text-base font-medium transition-colors duration-300 ${location.pathname === link.href
+                  ? "text-accent"
+                  : "text-card-foreground/80 hover:text-accent"
+                  }`}
               >
                 {link.name}
               </Link>
@@ -166,9 +164,9 @@ export function Header() {
                     Student Portal
                   </Button>
                 </Link>
-                <Button 
-                  variant="heroOutline" 
-                  size="lg" 
+                <Button
+                  variant="heroOutline"
+                  size="lg"
                   className="mt-2 w-full gap-2"
                   onClick={handleLogout}
                 >
