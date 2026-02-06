@@ -45,6 +45,17 @@ const BlogDetail = () => {
     const [comment, setComment] = useState("");
     const [submittingComment, setSubmittingComment] = useState(false);
     const [liked, setLiked] = useState(false);
+    const [scrollProgress, setScrollProgress] = useState(0);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (window.scrollY / totalHeight) * 100;
+            setScrollProgress(progress);
+        };
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
 
     useEffect(() => {
         fetchBlog();
@@ -74,6 +85,16 @@ const BlogDetail = () => {
         if (!user) return alert("Please login to like this post");
         if (!blog) return;
 
+        // Optimistic UI Update
+        const userId = user.id || (user as any)._id;
+        const isCurrentlyLiked = blog.likes.includes(userId);
+        const newLikes = isCurrentlyLiked
+            ? blog.likes.filter(id => id !== userId)
+            : [...blog.likes, userId];
+
+        setLiked(!isCurrentlyLiked);
+        setBlog({ ...blog, likes: newLikes });
+
         try {
             const response = await fetch(`${API_BASE_URL}/api/blogs/${blog._id}/like`, {
                 method: 'POST',
@@ -81,12 +102,15 @@ const BlogDetail = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 },
-                body: JSON.stringify({ userId: user.id || (user as any)._id })
+                body: JSON.stringify({ userId })
             });
             const updatedBlog = await response.json();
             setBlog(updatedBlog);
         } catch (error) {
             console.error("Error liking blog:", error);
+            // Revert on error
+            setLiked(isCurrentlyLiked);
+            setBlog(blog);
         }
     };
 
@@ -142,8 +166,14 @@ const BlogDetail = () => {
         <div className="min-h-screen bg-background text-foreground">
             <Helmet>
                 <title>{blog.title} | CODEMANDE Blog</title>
-                <meta name="description" content={blog.content.substring(0, 160)} />
+                <meta name="description" content={blog?.content?.substring(0, 160) || ""} />
             </Helmet>
+            <div className="fixed top-0 left-0 w-full h-1 z-50 pointer-events-none">
+                <motion.div
+                    className="h-full bg-accent origin-left"
+                    style={{ scaleX: scrollProgress / 100 }}
+                />
+            </div>
             <Header />
             <main className="pt-28 pb-20">
                 <div className="container mx-auto px-4 lg:px-8">
@@ -187,7 +217,7 @@ const BlogDetail = () => {
                                 <img src={blog.image} alt={blog.title} className="w-full h-full object-cover" />
                             </div>
 
-                            <div className="prose prose-lg dark:prose-invert max-w-none pt-8 text-muted-foreground leading-relaxed whitespace-pre-wrap font-sans">
+                            <div className="prose prose-lg dark:prose-invert max-w-none pt-8 text-foreground/80 leading-relaxed whitespace-pre-wrap font-sans text-lg lg:text-xl">
                                 {blog?.content || "No content available."}
                             </div>
 
@@ -201,17 +231,18 @@ const BlogDetail = () => {
 
                             {/* Interaction Section */}
                             <div className="flex items-center gap-6 py-10 border-t border-border/50">
-                                <button
+                                <motion.button
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={handleLike}
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${liked ? "bg-accent/10 border-accent text-accent" : "border-border hover:bg-muted"
+                                    className={`flex items-center gap-2 px-6 py-3 rounded-full border transition-all duration-300 font-bold ${liked ? "bg-accent text-accent-foreground border-accent shadow-premium" : "border-border hover:border-accent hover:text-accent"
                                         }`}
                                 >
                                     <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
-                                    <span className="font-bold">{blog.likes.length}</span>
-                                </button>
-                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <span>{blog.likes.length} Likes</span>
+                                </motion.button>
+                                <div className="flex items-center gap-2 text-muted-foreground px-4">
                                     <MessageSquare className="w-5 h-5" />
-                                    <span className="font-bold">{blog.comments.length}</span>
+                                    <span className="font-bold">{blog.comments.length} Comments</span>
                                 </div>
                             </div>
 

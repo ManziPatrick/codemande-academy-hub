@@ -80,23 +80,21 @@ const Blog = () => {
       <Header />
       <main className="pt-20">
         {/* Hero */}
-        <section className="py-16 lg:py-24 bg-card relative overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <img src={heroImage} alt="" className="w-full h-full object-cover" />
+        <section className="py-20 lg:py-32 bg-card relative overflow-hidden border-b border-border/30">
+          <div className="absolute inset-0 opacity-5">
+            <img src={heroImage} alt="" className="w-full h-full object-cover grayscale" />
           </div>
-          <div className="container mx-auto px-4 lg:px-8 relative z-10 text-center">
+          <div className="container mx-auto px-4 lg:px-8 relative z-10">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
+              className="max-w-4xl mx-auto text-center"
             >
-              <span className="inline-block px-4 py-1 bg-accent/20 text-accent text-sm font-medium rounded-full mb-4 uppercase tracking-wider">
-                Insights & Innovation
-              </span>
-              <h1 className="font-heading text-3xl lg:text-6xl font-medium mb-6">
-                The CODEMANDE Blog
+              <h1 className="font-heading text-4xl lg:text-7xl font-bold mb-8 leading-tight tracking-tighter">
+                Architecture of the <span className="text-accent">African Digital Future</span>
               </h1>
-              <p className="text-card-foreground/80 max-w-2xl mx-auto text-lg">
-                Exploring the intersection of practical technology, AI, and business growth across Rwanda and Africa.
+              <p className="text-lg lg:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-sans font-medium">
+                Professional insights into software engineering, emerging tech, and digital business transformation across the Rwandan ecosystem.
               </p>
             </motion.div>
           </div>
@@ -114,41 +112,48 @@ const Blog = () => {
                 <div className="container mx-auto px-4 lg:px-8">
                   <Link to={`/blog/${featuredPost.slug}`}>
                     <motion.article
-                      initial={{ opacity: 0, y: 20 }}
+                      initial={{ opacity: 0, y: 30 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
-                      className="bg-card rounded-xl overflow-hidden shadow-card border border-border/30 group hover:shadow-card-hover transition-all cursor-pointer max-w-5xl mx-auto"
+                      className="bg-card rounded-2xl overflow-hidden shadow-premium border border-accent/20 group hover:shadow-gold transition-all duration-700 cursor-pointer max-w-6xl mx-auto"
                     >
-                      <div className="grid lg:grid-cols-2 gap-0">
-                        <div className="h-64 lg:h-auto bg-muted overflow-hidden">
+                      <div className="grid lg:grid-cols-2 gap-0 relative">
+                        <div className="h-80 lg:h-[500px] overflow-hidden">
                           <img
                             src={featuredPost.image}
                             alt={featuredPost.title}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                           />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent lg:hidden" />
                         </div>
-                        <div className="p-6 lg:p-10 flex flex-col justify-center">
-                          <div className="flex gap-2 mb-4">
-                            <span className="px-3 py-1 bg-accent/20 text-accent text-xs font-bold rounded-full">
-                              Featured
+                        <div className="p-8 lg:p-16 flex flex-col justify-center relative lg:bg-[#FDFCFB]">
+                          <div className="flex items-center gap-3 mb-6">
+                            <span className="px-4 py-1.5 bg-accent text-accent-foreground text-[10px] font-bold rounded-full uppercase tracking-widest shadow-sm">
+                              Featured Analysis
                             </span>
-                            <span className="px-3 py-1 bg-muted text-muted-foreground text-xs font-bold rounded-full">
+                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                               {featuredPost.category?.name || "Uncategorized"}
                             </span>
                           </div>
-                          <h2 className="font-heading text-2xl lg:text-4xl font-semibold mb-4 group-hover:text-accent transition-colors">
+                          <h2 className="font-heading text-3xl lg:text-5xl font-bold mb-6 group-hover:text-accent transition-colors leading-tight">
                             {featuredPost.title}
                           </h2>
-                          <p className="text-muted-foreground mb-6 line-clamp-3 leading-relaxed">
-                            {featuredPost.content.substring(0, 200)}...
+                          <p className="text-muted-foreground lg:text-lg mb-10 line-clamp-3 leading-relaxed font-sans">
+                            {featuredPost.content.substring(0, 250)}...
                           </p>
-                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Calendar className="w-3 h-3" /> {new Date(featuredPost.createdAt).toLocaleDateString()}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" /> {featuredPost.authorName}
-                            </span>
+                          <div className="flex items-center justify-between pt-8 border-t border-border/40">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center border border-accent/30">
+                                <User className="w-6 h-6 text-accent" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold text-foreground">{featuredPost.authorName}</p>
+                                <p className="text-xs text-muted-foreground">{new Date(featuredPost.createdAt).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                            <div className="hidden sm:flex items-center gap-2 text-accent font-bold text-sm tracking-tight group-hover:gap-3 transition-all">
+                              Read Analysis <ArrowRight className="w-4 h-4" />
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -222,39 +227,42 @@ const Blog = () => {
                   <div className="lg:col-span-3">
                     <div className="grid md:grid-cols-2 gap-8">
                       {filteredBlogs.map((post, index) => (
-                        <Link to={`/blog/${post.slug}`} key={post._id}>
+                        <Link to={`/blog/${post.slug}`} key={post._id} className="group">
                           <motion.article
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.05 }}
-                            className="bg-card rounded-2xl overflow-hidden border border-border/50 group hover:shadow-xl transition-all h-full flex flex-col"
+                            className="bg-card rounded-xl overflow-hidden border border-border/40 hover:border-accent/40 shadow-sm hover:shadow-premium transition-all duration-500 h-full flex flex-col"
                           >
-                            <div className="aspect-video overflow-hidden">
+                            <div className="aspect-[16/10] overflow-hidden">
                               <img
                                 src={post.image}
                                 alt={post.title}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                               />
                             </div>
-                            <div className="p-6 flex flex-col flex-grow">
-                              <div className="flex items-center gap-2 mb-3">
-                                <span className="text-xs font-bold text-accent bg-accent/10 px-2.5 py-1 rounded-full uppercase tracking-tighter">
+                            <div className="p-6 lg:p-8 flex flex-col flex-grow">
+                              <div className="flex items-center gap-3 mb-4">
+                                <span className="text-[10px] font-bold text-accent bg-accent/10 px-3 py-1 rounded-full uppercase tracking-widest border border-accent/20">
                                   {post.category?.name || "Uncategorized"}
                                 </span>
+                                <span className="text-[10px] font-medium text-muted-foreground flex items-center gap-1 group-hover:text-foreground transition-colors">
+                                  <Clock className="w-3 h-3" /> {Math.ceil(post.content.length / 500)} min read
+                                </span>
                               </div>
-                              <h3 className="font-heading text-xl font-bold mb-3 group-hover:text-accent transition-colors line-clamp-2">
+                              <h3 className="font-heading text-xl lg:text-2xl font-bold mb-4 group-hover:text-accent transition-colors line-clamp-2 leading-snug">
                                 {post.title}
                               </h3>
-                              <p className="text-muted-foreground text-sm mb-6 line-clamp-3">
-                                {post.content.substring(0, 120)}...
+                              <p className="text-muted-foreground text-sm lg:text-base mb-6 line-clamp-3 leading-relaxed">
+                                {post.content.substring(0, 140)}...
                               </p>
-                              <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/30 text-xs text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3 h-3 text-accent" /> {new Date(post.createdAt).toLocaleDateString()}
-                                </span>
-                                <span className="flex items-center gap-1">
+                              <div className="mt-auto pt-6 flex items-center justify-between border-t border-border/20 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                                <span className="flex items-center gap-1.5 grayscale opacity-70 group-hover:grayscale-0 group-hover:opacity-100 transition-all">
                                   <User className="w-3 h-3 text-accent" /> {post.authorName}
+                                </span>
+                                <span className="flex items-center gap-1.5 opacity-70 group-hover:opacity-100 transition-all">
+                                  <Calendar className="w-3 h-3 text-accent" /> {new Date(post.createdAt).toLocaleDateString()}
                                 </span>
                               </div>
                             </div>

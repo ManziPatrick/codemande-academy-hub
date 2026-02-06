@@ -7,21 +7,27 @@
 @layer base {
   :root {
     /* CLEAN LIGHT MODE - Optimized Reading */
-    --background: 52 40% 98%; /* Light Parchment #FDFCFB */
-    --foreground: 240 2% 17%; /* Charcoal Black #2B2B2D text */
+    --background: 52 40% 98%;
+    /* Light Parchment #FDFCFB */
+    --foreground: 240 2% 17%;
+    /* Charcoal Black #2B2B2D text */
 
-    --card: 0 0% 100%; /* Pure White */
-    --card-foreground: 240 2% 17%; /* Charcoal text on cards */
+    --card: 0 0% 100%;
+    /* Pure White */
+    --card-foreground: 240 2% 17%;
+    /* Charcoal text on cards */
 
     --popover: 0 0% 100%;
     --popover-foreground: 240 2% 17%;
 
     /* Gold Brand Accent #C9A24D */
-    --primary: 41 53% 54%; 
-    --primary-hover: 41 53% 45%; 
-    --primary-foreground: 240 2% 17%; /* Dark text on Gold */
+    --primary: 41 53% 54%;
+    --primary-hover: 41 53% 45%;
+    --primary-foreground: 240 2% 17%;
+    /* Dark text on Gold */
 
-    --secondary: 212 72% 59%; /* Tech Blue #4A90E2 */
+    --secondary: 212 72% 59%;
+    /* Tech Blue #4A90E2 */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 240 5% 94%;
@@ -39,12 +45,12 @@
 
     --radius: 0.75rem;
     --gold-gradient: linear-gradient(135deg, #E6B94D 0%, #C9A24D 100%);
-    
+
     --font-heading: 'Playfair Display', Georgia, serif;
     --font-body: 'Inter', system-ui, sans-serif;
 
     /* Sidebar stays charcoal even in light mode for professional contrast */
-    --sidebar-background: 240 2% 17%; 
+    --sidebar-background: 240 2% 17%;
     --sidebar-foreground: 52 26% 92%;
     --sidebar-primary: 41 53% 54%;
     --sidebar-primary-foreground: 240 2% 17%;
@@ -52,19 +58,26 @@
 
   .dark {
     /* TRADITIONAL DARK MODE - REVERTED */
-    --background: 240 2% 17%; /* Charcoal Black #2B2B2D */
-    --foreground: 52 26% 92%; /* Soft Off-White text */
+    --background: 240 2% 17%;
+    /* Charcoal Black #2B2B2D */
+    --foreground: 52 26% 92%;
+    /* Soft Off-White text */
 
-    --card: 240 2% 21%; /* Slightly lighter charcoal for cards */
-    --card-foreground: 52 26% 92%; /* Off-White text on dark cards */
+    --card: 240 2% 21%;
+    /* Slightly lighter charcoal for cards */
+    --card-foreground: 52 26% 92%;
+    /* Off-White text on dark cards */
 
     --popover: 240 2% 21%;
     --popover-foreground: 52 26% 92%;
 
-    --primary: 41 53% 54%; /* Gold #C9A24D */
-    --primary-foreground: 240 2% 17%; /* Dark text on Gold */
+    --primary: 41 53% 54%;
+    /* Gold #C9A24D */
+    --primary-foreground: 240 2% 17%;
+    /* Dark text on Gold */
 
-    --secondary: 212 72% 59%; /* Tech Blue */
+    --secondary: 212 72% 59%;
+    /* Tech Blue */
     --secondary-foreground: 0 0% 100%;
 
     --muted: 240 2% 25%;
@@ -112,13 +125,19 @@
     font-family: var(--font-body);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-heading);
-    @apply font-medium tracking-tight;
+    @apply font-semibold tracking-tight text-foreground/90;
   }
 }
 
 @layer components {
+
   /* Premium Glass Card */
   .glass-card {
     @apply bg-white/20 dark:bg-black/20 backdrop-blur-md border border-white/30 dark:border-white/10 shadow-xl;
@@ -130,7 +149,7 @@
     height: 1px;
     opacity: 0.5;
   }
-  
+
   .circuit-dot {
     @apply w-1.5 h-1.5 rounded-full bg-accent;
     box-shadow: 0 0 10px hsl(var(--accent));
@@ -140,17 +159,17 @@
   .section-divider {
     @apply relative flex items-center justify-center py-8;
   }
-  
+
   .section-divider::before,
   .section-divider::after {
     content: '';
     @apply flex-1 h-px bg-gradient-to-r;
   }
-  
+
   .section-divider::before {
     background: linear-gradient(90deg, transparent 0%, hsl(var(--accent) / 0.3) 100%);
   }
-  
+
   .section-divider::after {
     background: linear-gradient(90deg, hsl(var(--accent) / 0.3) 0%, transparent 100%);
   }
@@ -159,18 +178,19 @@
   .premium-underline {
     @apply relative inline-block;
   }
-  
+
   .premium-underline::after {
     content: '';
     @apply absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-accent to-transparent transform scale-x-0 origin-center transition-transform duration-500 ease-out;
   }
-  
+
   .premium-underline:hover::after {
     @apply scale-x-100;
   }
 }
 
 @layer utilities {
+
   /* Rich Text Gradients */
   .text-gradient-gold {
     @apply bg-gradient-to-br from-[#E6B94D] via-[#BC9229] to-[#8C6D1C] bg-clip-text text-transparent;
@@ -194,10 +214,21 @@
     animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-1 {
+    animation-delay: 0.1s;
+  }
+
+  .stagger-2 {
+    animation-delay: 0.2s;
+  }
+
+  .stagger-3 {
+    animation-delay: 0.3s;
+  }
+
+  .stagger-4 {
+    animation-delay: 0.4s;
+  }
 }
 
 @keyframes reveal {
@@ -205,6 +236,7 @@
     opacity: 0;
     transform: translateY(30px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -252,4 +284,36 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: hsl(var(--accent) / 0.6);
+}
+
+/* Premium Typography for Blog Content */
+.prose {
+  @apply text-foreground/80 leading-relaxed;
+}
+
+.prose h1,
+.prose h2,
+.prose h3 {
+  @apply text-foreground mb-6 mt-12 first:mt-0;
+}
+
+.prose p {
+  @apply mb-6;
+}
+
+.prose strong {
+  @apply text-foreground font-bold;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-accent pl-6 italic my-10 text-xl text-foreground font-heading;
+}
+
+.prose ul,
+.prose ol {
+  @apply mb-8 pl-6 space-y-3;
+}
+
+.prose li {
+  @apply list-disc;
 }
