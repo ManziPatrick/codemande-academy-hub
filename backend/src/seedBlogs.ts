@@ -20,16 +20,16 @@ const categoriesData = [
 const generatePosts = (categories: any[], adminId: string) => {
     const posts = [];
     const images = [
-        "https://images.unsplash.com/photo-1542382257-80dee8233360",
+        "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b",
         "https://images.unsplash.com/photo-1516116216624-53e697fedbea",
-        "https://images.unsplash.com/photo-1677442136019-21780ecad995",
+        "https://images.unsplash.com/photo-1485827404703-89b55fcc595e",
         "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e",
         "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4",
         "https://images.unsplash.com/photo-1635070041078-e363dbe005cb",
-        "https://images.unsplash.com/photo-1618401471353-b98aadebc248",
+        "https://images.unsplash.com/photo-1504384308090-c894fdcc538d",
         "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e",
         "https://images.unsplash.com/photo-1529156069898-49953e39b3ac",
-        "https://images.unsplash.com/photo-1551288049-bebda4e38f71"
+        "https://images.unsplash.com/photo-1594913366159-1832ffefc334"
     ];
 
     for (let i = 1; i <= 35; i++) {
