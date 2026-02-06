@@ -21,6 +21,7 @@ import { initKronos } from './jobs/cron';
 import { initNotificationService } from './services/notification.service';
 import blogRoutes from './routes/BlogRoutes';
 import blogCategoryRoutes from './routes/BlogCategoryRoutes';
+import { authMiddleware } from './middleware/auth';
 
 dotenv.config();
 
@@ -101,21 +102,18 @@ const startServer = async () => {
         credentials: true
     }));
 
+    // Global Body Parser
+    app.use(bodyParser.json({ limit: '50mb' }));
+    app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+
+    // Auth Middleware for all routes
+    app.use(authMiddleware);
+
     app.use(
         '/graphql',
-        bodyParser.json({ limit: '50mb' }),
         expressMiddleware(server, {
             context: async ({ req }: any) => {
-                const token = req.headers.authorization || '';
-                let user = null;
-                if (token) {
-                    try {
-                        user = jwt.verify(token.replace('Bearer ', ''), process.env.JWT_SECRET || 'secret');
-                    } catch (e) {
-                        // Invalid token
-                    }
-                }
-                return { user, io }; // Pass IO instance
+                return { user: req.user, io }; // Use user from middleware
             },
         }) as unknown as express.RequestHandler,
     );

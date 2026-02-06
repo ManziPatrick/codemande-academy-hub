@@ -8,6 +8,7 @@ import {
     likeBlog,
     addComment
 } from '../controllers/BlogController';
+import { requireAuth } from '../middleware/auth';
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ router.get('/:slug', getBlogBySlug);
 router.post('/', createBlog);
 router.put('/:id', updateBlog);
 router.delete('/:id', deleteBlog);
-router.post('/:id/like', likeBlog);
-router.post('/:id/comment', addComment);
+router.post('/:id/like', requireAuth, likeBlog);
+router.post('/:id/comment', requireAuth, addComment);
 
 export default router;

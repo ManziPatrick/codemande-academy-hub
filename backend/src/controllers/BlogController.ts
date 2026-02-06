@@ -102,10 +102,15 @@ export const likeBlog = async (req: Request, res: Response) => {
         if (!blog) return res.status(404).json({ message: 'Blog not found' });
 
         const userId = (req as any).user?._id || req.body.userId;
-        const likeIndex = blog.likes.indexOf(userId);
+        if (!userId) {
+            return res.status(401).json({ message: 'Authentication required to like' });
+        }
+
+        const userIdStr = userId.toString();
+        const likeIndex = blog.likes.findIndex(id => id.toString() === userIdStr);
 
         if (likeIndex === -1) {
-            blog.likes.push(userId);
+            blog.likes.push(userId as any);
         } else {
             blog.likes.splice(likeIndex, 1);
         }
