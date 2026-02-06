@@ -7,13 +7,18 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 
+interface ICategory {
+  _id: string;
+  name: string;
+}
+
 interface IBlog {
   _id: string;
   title: string;
   slug: string;
   content: string;
   authorName: string;
-  category: string;
+  category: ICategory;
   image: string;
   createdAt: string;
   tags: string[];
@@ -23,33 +28,33 @@ const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'h
 
 const Blog = () => {
   const [blogs, setBlogs] = useState<IBlog[]>([]);
+  const [categories, setCategories] = useState<ICategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [category, setCategory] = useState("All");
   const [search, setSearch] = useState("");
 
-  const categories = [
-    { name: "All", count: blogs.length },
-    { name: "Rwanda Tech", count: blogs.filter(b => b.category === "Rwanda Tech").length },
-    { name: "Future Tech", count: blogs.filter(b => b.category === "Future Tech").length },
-    { name: "Business", count: blogs.filter(b => b.category === "Business").length },
-  ];
-
   useEffect(() => {
-    fetchBlogs();
+    fetchData();
   }, [category]);
 
-  const fetchBlogs = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
+      // Fetch categories
+      const catRes = await fetch(`${API_BASE_URL}/api/blog-categories`);
+      const catData = await catRes.json();
+      setCategories(catData);
+
+      // Fetch blogs
       let url = `${API_BASE_URL}/api/blogs`;
       if (category !== "All") {
         url += `?category=${encodeURIComponent(category)}`;
       }
-      const response = await fetch(url);
-      const data = await response.json();
-      setBlogs(data);
+      const blogRes = await fetch(url);
+      const blogData = await blogRes.json();
+      setBlogs(blogData);
     } catch (error) {
-      console.error("Error fetching blogs:", error);
+      console.error("Error fetching data:", error);
     } finally {
       setLoading(false);
     }
@@ -124,7 +129,7 @@ const Blog = () => {
                               Featured
                             </span>
                             <span className="px-3 py-1 bg-muted text-muted-foreground text-xs font-bold rounded-full">
-                              {featuredPost.category}
+                              {featuredPost.category?.name || "Uncategorized"}
                             </span>
                           </div>
                           <h2 className="font-heading text-2xl lg:text-4xl font-semibold mb-4 group-hover:text-accent transition-colors">
@@ -171,19 +176,31 @@ const Blog = () => {
                     <div className="bg-card p-6 rounded-xl border border-border/50">
                       <h3 className="font-heading font-bold text-lg mb-4">Categories</h3>
                       <ul className="space-y-2">
+                        <li>
+                          <button
+                            onClick={() => setCategory("All")}
+                            className={`w-full flex items-center justify-between text-sm py-2 px-3 rounded-lg transition-all ${category === "All"
+                              ? "bg-accent text-accent-foreground font-bold"
+                              : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                              }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <Tag className="w-3 h-3" /> All Posts
+                            </span>
+                          </button>
+                        </li>
                         {categories.map((cat) => (
-                          <li key={cat.name}>
+                          <li key={cat._id}>
                             <button
-                              onClick={() => setCategory(cat.name)}
-                              className={`w-full flex items-center justify-between text-sm py-2 px-3 rounded-lg transition-all ${category === cat.name
-                                  ? "bg-accent text-accent-foreground font-bold"
-                                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                              onClick={() => setCategory(cat._id)}
+                              className={`w-full flex items-center justify-between text-sm py-2 px-3 rounded-lg transition-all ${category === cat._id
+                                ? "bg-accent text-accent-foreground font-bold"
+                                : "hover:bg-muted text-muted-foreground hover:text-foreground"
                                 }`}
                             >
                               <span className="flex items-center gap-2">
                                 <Tag className="w-3 h-3" /> {cat.name}
                               </span>
-                              <span className="text-xs bg-black/10 px-2 py-0.5 rounded">{cat.count}</span>
                             </button>
                           </li>
                         ))}
@@ -213,7 +230,7 @@ const Blog = () => {
                             <div className="p-6 flex flex-col flex-grow">
                               <div className="flex items-center gap-2 mb-3">
                                 <span className="text-xs font-bold text-accent bg-accent/10 px-2.5 py-1 rounded-full uppercase tracking-tighter">
-                                  {post.category}
+                                  {post.category?.name || "Uncategorized"}
                                 </span>
                               </div>
                               <h3 className="font-heading text-xl font-bold mb-3 group-hover:text-accent transition-colors line-clamp-2">

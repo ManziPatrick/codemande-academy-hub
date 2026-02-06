@@ -23,13 +23,18 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
+interface ICategory {
+    _id: string;
+    name: string;
+}
+
 interface IBlog {
     _id: string;
     title: string;
     slug: string;
     content: string;
     authorName: string;
-    category: string;
+    category: ICategory | string;
     image: string;
     tags: string[];
     createdAt: string;
@@ -40,6 +45,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'h
 const AdminBlogManager = () => {
     const { user } = useAuth();
     const [blogs, setBlogs] = useState<IBlog[]>([]);
+    const [categories, setCategories] = useState<ICategory[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -48,7 +54,18 @@ const AdminBlogManager = () => {
 
     useEffect(() => {
         fetchBlogs();
+        fetchCategories();
     }, []);
+
+    const fetchCategories = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/blog-categories`);
+            const data = await response.json();
+            setCategories(data);
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+        }
+    };
 
     const fetchBlogs = async () => {
         setLoading(true);
@@ -126,7 +143,7 @@ const AdminBlogManager = () => {
 
     const filteredBlogs = blogs.filter(b =>
         b.title.toLowerCase().includes(search.toLowerCase()) ||
-        b.category.toLowerCase().includes(search.toLowerCase())
+        (typeof b.category === 'object' ? b.category.name.toLowerCase() : b.category.toLowerCase()).includes(search.toLowerCase())
     );
 
     return (
@@ -161,12 +178,14 @@ const AdminBlogManager = () => {
                                     <label className="text-sm font-medium">Category</label>
                                     <select
                                         className="w-full px-3 py-2 rounded-md bg-background border border-input text-sm"
-                                        value={currentBlog?.category || "Rwanda Tech"}
+                                        value={typeof currentBlog?.category === 'object' ? currentBlog.category._id : currentBlog?.category || ""}
                                         onChange={e => setCurrentBlog({ ...currentBlog, category: e.target.value })}
+                                        required
                                     >
-                                        <option value="Rwanda Tech">Rwanda Tech</option>
-                                        <option value="Future Tech">Future Tech</option>
-                                        <option value="Business">Business</option>
+                                        <option value="" disabled>Select a category</option>
+                                        {categories.map(cat => (
+                                            <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div className="space-y-2">
@@ -256,7 +275,7 @@ const AdminBlogManager = () => {
                                     </TableCell>
                                     <TableCell>
                                         <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-medium">
-                                            {blog.category}
+                                            {typeof blog.category === 'object' ? blog.category.name : blog.category}
                                         </span>
                                     </TableCell>
                                     <TableCell className="text-sm">

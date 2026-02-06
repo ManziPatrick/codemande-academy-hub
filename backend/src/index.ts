@@ -20,6 +20,7 @@ import { socketHandler } from './socket';
 import { initKronos } from './jobs/cron';
 import { initNotificationService } from './services/notification.service';
 import blogRoutes from './routes/BlogRoutes';
+import blogCategoryRoutes from './routes/BlogCategoryRoutes';
 
 dotenv.config();
 
@@ -110,6 +111,7 @@ const startServer = async () => {
 
     // REST API Routes
     app.use('/api/blogs', blogRoutes);
+    app.use('/api/blog-categories', blogCategoryRoutes);
 
     const PORT = process.env.PORT || 4000;
 

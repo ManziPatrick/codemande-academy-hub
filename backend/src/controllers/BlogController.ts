@@ -12,7 +12,7 @@ export const getBlogs = async (req: Request, res: Response) => {
             query.$text = { $search: search as string };
         }
 
-        const blogs = await Blog.find(query).sort({ createdAt: -1 });
+        const blogs = await Blog.find(query).populate('category').sort({ createdAt: -1 });
         res.json(blogs);
     } catch (error: any) {
         res.status(500).json({ message: error.message });
@@ -21,7 +21,7 @@ export const getBlogs = async (req: Request, res: Response) => {
 
 export const getBlogBySlug = async (req: Request, res: Response) => {
     try {
-        const blog = await Blog.findOne({ slug: req.params.slug });
+        const blog = await Blog.findOne({ slug: req.params.slug }).populate('category');
         if (!blog) return res.status(404).json({ message: 'Blog not found' });
         res.json(blog);
     } catch (error: any) {

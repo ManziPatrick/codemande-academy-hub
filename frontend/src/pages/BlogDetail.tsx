@@ -16,13 +16,18 @@ interface IComment {
     createdAt: string;
 }
 
+interface ICategory {
+    _id: string;
+    name: string;
+}
+
 interface IBlog {
     _id: string;
     title: string;
     slug: string;
     content: string;
     authorName: string;
-    category: string;
+    category: ICategory;
     image: string;
     tags: string[];
     likes: string[];
@@ -154,7 +159,7 @@ const BlogDetail = () => {
                         >
                             <div className="flex items-center gap-2">
                                 <span className="px-3 py-1 bg-accent/20 text-accent text-xs font-bold rounded-full uppercase">
-                                    {blog.category}
+                                    {blog.category?.name || "Uncategorized"}
                                 </span>
                                 <span className="text-muted-foreground text-xs">
                                     {Math.ceil(blog.content.length / 500)} min read

@@ -35,11 +35,7 @@ const BlogSchema: Schema = new Schema({
     content: { type: String, required: true },
     author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     authorName: { type: String, required: true },
-    category: {
-        type: String,
-        enum: ['Rwanda Tech', 'Future Tech', 'Business'],
-        default: 'Rwanda Tech'
-    },
+    category: { type: Schema.Types.ObjectId, ref: 'BlogCategory', required: true },
     tags: [{ type: String }],
     image: { type: String },
     likes: [{ type: Schema.Types.ObjectId, ref: 'User' }],
