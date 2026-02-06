@@ -12,6 +12,7 @@ import Internships from "@/pages/Internships";
 import Projects from "@/pages/Projects";
 import Partners from "@/pages/Partners";
 import Blog from "@/pages/Blog";
+import BlogDetail from "@/pages/BlogDetail";
 import Contact from "@/pages/Contact";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
@@ -49,6 +50,7 @@ import AdminBadges from "@/pages/portal/admin/AdminBadges";
 import AdminAnalytics from "@/pages/portal/admin/AdminAnalytics";
 import AdminBranding from "@/pages/portal/admin/AdminBranding";
 import AdminTools from "@/pages/portal/admin/AdminTools";
+import AdminBlogManager from "@/pages/portal/admin/AdminBlogManager";
 
 // Super Admin Portal
 import SuperAdminDashboard from "@/pages/portal/super-admin/SuperAdminDashboard";
@@ -78,6 +80,7 @@ export function AnimatedRoutes() {
         <Route path="/projects" element={<PageTransition><Projects /></PageTransition>} />
         <Route path="/partners" element={<PageTransition><Partners /></PageTransition>} />
         <Route path="/blog" element={<PageTransition><Blog /></PageTransition>} />
+        <Route path="/blog/:slug" element={<PageTransition><BlogDetail /></PageTransition>} />
         <Route path="/contact" element={<PageTransition><Contact /></PageTransition>} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
@@ -113,6 +116,7 @@ export function AnimatedRoutes() {
         <Route path="/portal/admin/badges" element={<ProtectedRoute allowedRoles={["admin"]}><AdminBadges /></ProtectedRoute>} />
         <Route path="/portal/admin/analytics" element={<ProtectedRoute allowedRoles={["admin"]}><AdminAnalytics /></ProtectedRoute>} />
         <Route path="/portal/admin/branding" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><AdminBranding /></ProtectedRoute>} />
+        <Route path="/portal/admin/blogs" element={<ProtectedRoute allowedRoles={["admin"]}><AdminBlogManager /></ProtectedRoute>} />
         <Route path="/portal/admin/tools" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><AdminTools /></ProtectedRoute>} />
 
         {/* Super Admin Portal */}

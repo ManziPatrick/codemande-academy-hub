@@ -39,6 +39,7 @@ import {
   HelpCircle,
   GraduationCap,
   Table,
+  FileText,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useSocket } from "@/hooks/use-socket";
@@ -83,6 +84,7 @@ const adminNavItems: NavItem[] = [
   { label: "Projects", href: "/portal/admin/projects", icon: FolderOpen },
   { label: "Payments", href: "/portal/admin/payments", icon: CreditCard },
   { label: "Badges", href: "/portal/admin/badges", icon: Award },
+  { label: "Blog", href: "/portal/admin/blogs", icon: FileText },
   { label: "Analytics", href: "/portal/admin/analytics", icon: BarChart3 },
   { label: "Toolbox", href: "/portal/admin/tools", icon: Table },
   { label: "Branding", href: "/portal/admin/branding", icon: Palette },
@@ -94,6 +96,7 @@ const superAdminNavItems: NavItem[] = [
   { label: "Admins", href: "/portal/super-admin/admins", icon: Shield },
   { label: "All Users", href: "/portal/super-admin/users", icon: Users },
   { label: "Configuration", href: "/portal/super-admin/config", icon: Cog },
+  { label: "Blog", href: "/portal/admin/blogs", icon: FileText },
   { label: "Branding", href: "/portal/admin/branding", icon: Palette },
   { label: "Analytics", href: "/portal/super-admin/analytics", icon: BarChart3 },
   { label: "Messages", href: "/chat", icon: MessageSquare },

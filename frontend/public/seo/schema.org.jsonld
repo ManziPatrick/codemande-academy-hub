@@ -1,0 +1,28 @@
+{
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "CODEMANDE",
+    "url": "https://codemande.com",
+    "logo": "https://codemande.com/logo.png",
+    "founder": [
+        {
+            "@type": "Person",
+            "name": "Manzi Alain Patrick Munyeshuri"
+        },
+        {
+            "@type": "Person",
+            "name": "Bizimana Eric"
+        }
+    ],
+    "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Kigali",
+        "addressCountry": "Rwanda"
+    },
+    "sameAs": [
+        "https://twitter.com/codemande",
+        "https://linkedin.com/company/codemande",
+        "https://github.com/ManziPatrick"
+    ],
+    "description": "A leading technology academy and software development firm in Rwanda."
+}

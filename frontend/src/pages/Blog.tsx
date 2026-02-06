@@ -1,81 +1,73 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
-import { Calendar, ArrowRight, Clock, User, Tag } from "lucide-react";
+import { Calendar, ArrowRight, Clock, User, Tag, Search, Loader2 } from "lucide-react";
 import heroImage from "@/assets/hero-training.jpg";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 
-const featuredPost = {
-  title: "The Future of Tech Education in Africa: Trends and Opportunities",
-  excerpt: "As Africa's digital economy grows at an unprecedented rate, the demand for skilled tech professionals has never been higher. We explore the key trends shaping tech education and the opportunities they present for individuals and organizations.",
-  date: "Jan 25, 2026",
-  author: "Dr. Jean Baptiste",
-  category: "Education",
-  readTime: "8 min read",
-};
+interface IBlog {
+  _id: string;
+  title: string;
+  slug: string;
+  content: string;
+  authorName: string;
+  category: string;
+  image: string;
+  createdAt: string;
+  tags: string[];
+}
 
-const posts = [
-  {
-    title: "Getting Started with Machine Learning: A Beginner's Roadmap",
-    excerpt: "A comprehensive guide to understanding AI and machine learning fundamentals, with practical tips on how to begin your journey in data science.",
-    date: "Jan 20, 2026",
-    author: "Marie Claire N.",
-    category: "AI/ML",
-    readTime: "6 min read",
-  },
-  {
-    title: "Building IoT Solutions for African Agriculture",
-    excerpt: "How smart farming technologies are revolutionizing African agriculture, from soil sensors to automated irrigation systems.",
-    date: "Jan 15, 2026",
-    author: "Emmanuel K.",
-    category: "IoT",
-    readTime: "5 min read",
-  },
-  {
-    title: "Career Paths in Software Development: Finding Your Niche",
-    excerpt: "Exploring the diverse roles and opportunities in the tech industry, from frontend development to DevOps engineering.",
-    date: "Jan 10, 2026",
-    author: "Sarah M.",
-    category: "Careers",
-    readTime: "7 min read",
-  },
-  {
-    title: "Why Soft Skills Matter in Tech Careers",
-    excerpt: "Technical skills get you the interview, but soft skills get you the job. Learn why communication, teamwork, and adaptability are essential.",
-    date: "Jan 5, 2026",
-    author: "Dr. Jean Baptiste",
-    category: "Careers",
-    readTime: "4 min read",
-  },
-  {
-    title: "Remote Work Best Practices for Developers",
-    excerpt: "Tips and strategies for staying productive, maintaining work-life balance, and advancing your career while working remotely.",
-    date: "Dec 28, 2025",
-    author: "Sarah M.",
-    category: "Productivity",
-    readTime: "5 min read",
-  },
-  {
-    title: "Introduction to Cloud Computing: AWS, Azure, and GCP",
-    excerpt: "A beginner's overview of the three major cloud platforms and how to choose the right one for your projects.",
-    date: "Dec 20, 2025",
-    author: "Emmanuel K.",
-    category: "Cloud",
-    readTime: "8 min read",
-  },
-];
-
-const categories = [
-  { name: "All", count: 12 },
-  { name: "Education", count: 4 },
-  { name: "AI/ML", count: 3 },
-  { name: "IoT", count: 2 },
-  { name: "Careers", count: 5 },
-  { name: "Cloud", count: 2 },
-];
+const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
 
 const Blog = () => {
+  const [blogs, setBlogs] = useState<IBlog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState("All");
+  const [search, setSearch] = useState("");
+
+  const categories = [
+    { name: "All", count: blogs.length },
+    { name: "Rwanda Tech", count: blogs.filter(b => b.category === "Rwanda Tech").length },
+    { name: "Future Tech", count: blogs.filter(b => b.category === "Future Tech").length },
+    { name: "Business", count: blogs.filter(b => b.category === "Business").length },
+  ];
+
+  useEffect(() => {
+    fetchBlogs();
+  }, [category]);
+
+  const fetchBlogs = async () => {
+    setLoading(true);
+    try {
+      let url = `${API_BASE_URL}/api/blogs`;
+      if (category !== "All") {
+        url += `?category=${encodeURIComponent(category)}`;
+      }
+      const response = await fetch(url);
+      const data = await response.json();
+      setBlogs(data);
+    } catch (error) {
+      console.error("Error fetching blogs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredBlogs = blogs.filter(blog =>
+    blog.title.toLowerCase().includes(search.toLowerCase()) ||
+    blog.content.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const featuredPost = blogs[0];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Blog | CODEMANDE - Rwanda Tech Insights</title>
+        <meta name="description" content="Stay updated with the latest in Rwanda Tech, Future Technologies, and Business strategies from the experts at CODEMANDE." />
+      </Helmet>
       <Header />
       <main className="pt-20">
         {/* Hero */}
@@ -88,157 +80,174 @@ const Blog = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <span className="inline-block px-4 py-1 bg-accent/20 text-accent text-sm font-medium rounded-full mb-4">
-                Blog & Insights
+              <span className="inline-block px-4 py-1 bg-accent/20 text-accent text-sm font-medium rounded-full mb-4 uppercase tracking-wider">
+                Insights & Innovation
               </span>
-              <h1 className="font-heading text-3xl lg:text-5xl font-medium text-card-foreground mb-6">
-                Knowledge & Thought Leadership
+              <h1 className="font-heading text-3xl lg:text-6xl font-medium mb-6">
+                The CODEMANDE Blog
               </h1>
               <p className="text-card-foreground/80 max-w-2xl mx-auto text-lg">
-                Insights, tutorials, and industry perspectives on technology, innovation, 
-                and building successful careers in Africa's growing digital economy.
+                Exploring the intersection of practical technology, AI, and business growth across Rwanda and Africa.
               </p>
             </motion.div>
           </div>
         </section>
 
-        {/* Featured Post */}
-        <section className="py-12 bg-background">
-          <div className="container mx-auto px-4 lg:px-8">
-            <motion.article
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="bg-card rounded-xl overflow-hidden shadow-card border border-border/30 group hover:shadow-card-hover transition-all cursor-pointer max-w-4xl mx-auto"
-            >
-              <div className="grid lg:grid-cols-2 gap-0">
-                <div className="h-64 lg:h-auto bg-gradient-to-br from-accent/20 to-card overflow-hidden">
-                  <img 
-                    src={heroImage} 
-                    alt={featuredPost.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                <div className="p-6 lg:p-8 flex flex-col justify-center">
-                  <span className="inline-block px-3 py-1 bg-accent/20 text-accent text-xs font-medium rounded-full w-fit mb-3">
-                    Featured
-                  </span>
-                  <h2 className="font-heading text-xl lg:text-2xl font-semibold text-card-foreground mb-3 group-hover:text-accent transition-colors">
-                    {featuredPost.title}
-                  </h2>
-                  <p className="text-sm text-card-foreground/70 mb-4 line-clamp-3">{featuredPost.excerpt}</p>
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-card-foreground/60 mb-4">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" /> {featuredPost.date}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <User className="w-3 h-3" /> {featuredPost.author}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {featuredPost.readTime}
-                    </span>
-                  </div>
-                  <span className="flex items-center gap-1 text-accent text-sm font-medium group-hover:gap-2 transition-all">
-                    Read Article <ArrowRight className="w-4 h-4" />
-                  </span>
-                </div>
-              </div>
-            </motion.article>
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="w-10 h-10 animate-spin text-accent" />
           </div>
-        </section>
-
-        {/* Blog Grid with Sidebar */}
-        <section className="py-16 lg:py-20 bg-background">
-          <div className="container mx-auto px-4 lg:px-8">
-            <div className="grid lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-              {/* Sidebar */}
-              <motion.aside
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                className="lg:col-span-1"
-              >
-                <div className="bg-card p-6 rounded-xl shadow-card border border-border/30 sticky top-24">
-                  <h3 className="font-heading font-semibold text-card-foreground mb-4">Categories</h3>
-                  <ul className="space-y-2">
-                    {categories.map((cat) => (
-                      <li key={cat.name}>
-                        <button className="w-full flex items-center justify-between text-sm text-card-foreground/70 hover:text-accent transition-colors py-1">
-                          <span className="flex items-center gap-2">
-                            <Tag className="w-3 h-3" /> {cat.name}
-                          </span>
-                          <span className="text-xs bg-background px-2 py-0.5 rounded">{cat.count}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                  
-                  <hr className="my-6 border-border/30" />
-                  
-                  <h3 className="font-heading font-semibold text-card-foreground mb-4">Newsletter</h3>
-                  <p className="text-sm text-card-foreground/70 mb-3">
-                    Get the latest articles delivered to your inbox.
-                  </p>
-                  <input
-                    type="email"
-                    placeholder="Your email"
-                    className="w-full px-3 py-2 rounded-md bg-background border border-border text-sm mb-2"
-                  />
-                  <button className="w-full px-3 py-2 bg-accent text-accent-foreground rounded-md text-sm font-medium hover:bg-accent/90 transition-colors">
-                    Subscribe
-                  </button>
-                </div>
-              </motion.aside>
-
-              {/* Posts Grid */}
-              <div className="lg:col-span-3">
-                <div className="grid md:grid-cols-2 gap-6">
-                  {posts.map((post, index) => (
+        ) : (
+          <>
+            {/* Featured Post */}
+            {featuredPost && category === "All" && (
+              <section className="py-12 bg-background">
+                <div className="container mx-auto px-4 lg:px-8">
+                  <Link to={`/blog/${featuredPost.slug}`}>
                     <motion.article
-                      key={post.title}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
-                      transition={{ delay: index * 0.1 }}
-                      className="bg-card rounded-xl p-6 shadow-card border border-border/30 group hover:shadow-card-hover transition-all cursor-pointer"
+                      className="bg-card rounded-xl overflow-hidden shadow-card border border-border/30 group hover:shadow-card-hover transition-all cursor-pointer max-w-5xl mx-auto"
                     >
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xs text-accent font-medium bg-accent/10 px-2 py-0.5 rounded">
-                          {post.category}
-                        </span>
-                        <span className="text-xs text-card-foreground/50">{post.readTime}</span>
-                      </div>
-                      <h3 className="font-heading text-lg font-semibold text-card-foreground mb-2 group-hover:text-accent transition-colors line-clamp-2">
-                        {post.title}
-                      </h3>
-                      <p className="text-sm text-card-foreground/70 mb-4 line-clamp-2">{post.excerpt}</p>
-                      <div className="flex items-center justify-between text-xs text-card-foreground/60">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> {post.date}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" /> {post.author}
-                        </span>
-                      </div>
-                      <div className="mt-4 pt-4 border-t border-border/30">
-                        <span className="flex items-center gap-1 text-accent text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                          Read more <ArrowRight className="w-4 h-4" />
-                        </span>
+                      <div className="grid lg:grid-cols-2 gap-0">
+                        <div className="h-64 lg:h-auto bg-muted overflow-hidden">
+                          <img
+                            src={featuredPost.image}
+                            alt={featuredPost.title}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          />
+                        </div>
+                        <div className="p-6 lg:p-10 flex flex-col justify-center">
+                          <div className="flex gap-2 mb-4">
+                            <span className="px-3 py-1 bg-accent/20 text-accent text-xs font-bold rounded-full">
+                              Featured
+                            </span>
+                            <span className="px-3 py-1 bg-muted text-muted-foreground text-xs font-bold rounded-full">
+                              {featuredPost.category}
+                            </span>
+                          </div>
+                          <h2 className="font-heading text-2xl lg:text-4xl font-semibold mb-4 group-hover:text-accent transition-colors">
+                            {featuredPost.title}
+                          </h2>
+                          <p className="text-muted-foreground mb-6 line-clamp-3 leading-relaxed">
+                            {featuredPost.content.substring(0, 200)}...
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3 h-3" /> {new Date(featuredPost.createdAt).toLocaleDateString()}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <User className="w-3 h-3" /> {featuredPost.authorName}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </motion.article>
-                  ))}
+                  </Link>
                 </div>
-                
-                {/* Load More */}
-                <div className="text-center mt-10">
-                  <button className="px-6 py-3 border border-accent text-accent rounded-md text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors">
-                    Load More Articles
-                  </button>
+              </section>
+            )}
+
+            {/* Blog Grid with Sidebar */}
+            <section className="py-16 bg-background">
+              <div className="container mx-auto px-4 lg:px-8">
+                <div className="grid lg:grid-cols-4 gap-12">
+                  {/* Sidebar */}
+                  <aside className="lg:col-span-1 space-y-10">
+                    <div className="bg-card p-6 rounded-xl border border-border/50">
+                      <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2">
+                        <Search className="w-4 h-4 text-accent" /> Search
+                      </h3>
+                      <input
+                        type="text"
+                        placeholder="Search posts..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg bg-background border border-border focus:ring-2 focus:ring-accent outline-none"
+                      />
+                    </div>
+
+                    <div className="bg-card p-6 rounded-xl border border-border/50">
+                      <h3 className="font-heading font-bold text-lg mb-4">Categories</h3>
+                      <ul className="space-y-2">
+                        {categories.map((cat) => (
+                          <li key={cat.name}>
+                            <button
+                              onClick={() => setCategory(cat.name)}
+                              className={`w-full flex items-center justify-between text-sm py-2 px-3 rounded-lg transition-all ${category === cat.name
+                                  ? "bg-accent text-accent-foreground font-bold"
+                                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                              <span className="flex items-center gap-2">
+                                <Tag className="w-3 h-3" /> {cat.name}
+                              </span>
+                              <span className="text-xs bg-black/10 px-2 py-0.5 rounded">{cat.count}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </aside>
+
+                  {/* Posts Grid */}
+                  <div className="lg:col-span-3">
+                    <div className="grid md:grid-cols-2 gap-8">
+                      {filteredBlogs.map((post, index) => (
+                        <Link to={`/blog/${post.slug}`} key={post._id}>
+                          <motion.article
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            whileInView={{ opacity: 1, scale: 1 }}
+                            viewport={{ once: true }}
+                            transition={{ delay: index * 0.05 }}
+                            className="bg-card rounded-2xl overflow-hidden border border-border/50 group hover:shadow-xl transition-all h-full flex flex-col"
+                          >
+                            <div className="aspect-video overflow-hidden">
+                              <img
+                                src={post.image}
+                                alt={post.title}
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                              />
+                            </div>
+                            <div className="p-6 flex flex-col flex-grow">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="text-xs font-bold text-accent bg-accent/10 px-2.5 py-1 rounded-full uppercase tracking-tighter">
+                                  {post.category}
+                                </span>
+                              </div>
+                              <h3 className="font-heading text-xl font-bold mb-3 group-hover:text-accent transition-colors line-clamp-2">
+                                {post.title}
+                              </h3>
+                              <p className="text-muted-foreground text-sm mb-6 line-clamp-3">
+                                {post.content.substring(0, 120)}...
+                              </p>
+                              <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/30 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3 text-accent" /> {new Date(post.createdAt).toLocaleDateString()}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <User className="w-3 h-3 text-accent" /> {post.authorName}
+                                </span>
+                              </div>
+                            </div>
+                          </motion.article>
+                        </Link>
+                      ))}
+                    </div>
+
+                    {filteredBlogs.length === 0 && (
+                      <div className="text-center py-20 text-muted-foreground">
+                        <h3 className="text-xl">No articles found matching your criteria.</h3>
+                        <p className="mt-2">Try searching for something else or changing categories.</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
+            </section>
+          </>
+        )}
       </main>
       <Footer />
     </div>

@@ -1,0 +1,20 @@
+{
+    "title": "About CODEMANDE | Tech Academy & Software House Rwanda",
+    "description": "Learn about CODEMANDE's mission to empower Africa through tech education. Founded by Manzi Alain Patrick and Bizimana Eric.",
+    "keywords": [
+        "CODEMANDE",
+        "Rwanda Tech",
+        "Software Development Kigali",
+        "AI Training Africa",
+        "Manzi Alain Patrick",
+        "Bizimana Eric",
+        "Tech Careers Rwanda"
+    ],
+    "author": "CODEMANDE",
+    "og": {
+        "type": "website",
+        "url": "https://codemande.com/about",
+        "title": "About CODEMANDE - Building the Future of African Tech",
+        "image": "https://codemande.com/og-about.jpg"
+    }
+}

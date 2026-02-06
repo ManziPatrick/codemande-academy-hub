@@ -12,27 +12,31 @@ import { BrandingProvider } from "@/components/BrandingProvider";
 import { ChatBot } from "@/components/chatbot/ChatBot";
 import { GoogleOneTap } from "@/components/auth/GoogleOneTap";
 
+import { HelmetProvider } from "react-helmet-async";
+
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <GoogleOneTap />
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-        <BrandingProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <ScrollToTop />
-              <AnimatedRoutes />
-              <ChatBot />
-            </BrowserRouter>
-          </TooltipProvider>
-        </BrandingProvider>
-      </ThemeProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <GoogleOneTap />
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+          <BrandingProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <ScrollToTop />
+                <AnimatedRoutes />
+                <ChatBot />
+              </BrowserRouter>
+            </TooltipProvider>
+          </BrandingProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;

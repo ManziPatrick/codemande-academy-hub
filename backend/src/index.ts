@@ -19,6 +19,7 @@ import { resolvers } from './graphql/resolvers';
 import { socketHandler } from './socket';
 import { initKronos } from './jobs/cron';
 import { initNotificationService } from './services/notification.service';
+import blogRoutes from './routes/BlogRoutes';
 
 dotenv.config();
 
@@ -106,6 +107,9 @@ const startServer = async () => {
             },
         }) as unknown as express.RequestHandler,
     );
+
+    // REST API Routes
+    app.use('/api/blogs', blogRoutes);
 
     const PORT = process.env.PORT || 4000;
 

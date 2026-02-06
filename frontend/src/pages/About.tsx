@@ -3,9 +3,10 @@ import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Target, Lightbulb, Shield, Award, Users, Heart, CheckCircle, Globe, BookOpen, Zap } from "lucide-react";
+import { Target, Lightbulb, Shield, Award, Users, Heart, CheckCircle, Globe, BookOpen, Zap, Briefcase, GraduationCap, Laptop, Cpu, TrendingUp } from "lucide-react";
 import aboutImage from "@/assets/about-training.jpg";
 import heroImage from "@/assets/hero-training.jpg";
+import { Helmet } from "react-helmet-async";
 
 const values = [
   { icon: Shield, title: "Excellence", description: "We deliver the highest quality in all our training programs and technology solutions" },
@@ -17,22 +18,82 @@ const values = [
 ];
 
 const achievements = [
-  { number: "1,200+", label: "Graduates Trained" },
-  { number: "50+", label: "Partner Organizations" },
-  { number: "95%", label: "Employment Rate" },
-  { number: "4", label: "Countries Reached" },
+  { number: "250+", label: "Successful Interns" },
+  { number: "15+", label: "Real-world Projects" },
+  { number: "10+", label: "AI Solutions Built" },
+  { number: "100%", label: "Practical Focus" },
 ];
 
 const team = [
-  { name: "Dr. Jean Baptiste", role: "Founder & CEO", bio: "PhD in Computer Science with 15+ years in tech education" },
-  { name: "Marie Claire N.", role: "Head of Training", bio: "Former Google engineer, passionate about African tech talent" },
-  { name: "Emmanuel K.", role: "Director of Partnerships", bio: "10+ years building strategic alliances in East Africa" },
-  { name: "Sarah M.", role: "Lead Instructor - Software", bio: "Full-stack developer with expertise in modern frameworks" },
+  {
+    name: "Manzi Alain Patrick Munyeshuri",
+    role: "Founder & Lead Strategist",
+    bio: "Rwandan technologist and innovator driven by closing the gap between education and employability."
+  },
+  {
+    name: "Bizimana Eric",
+    role: "Co-Founder & Operations Lead",
+    bio: "Brings operational and technical leadership to scale training programs and software delivery."
+  }
+];
+
+const services = [
+  {
+    icon: GraduationCap,
+    title: "Training & Courses",
+    description: "Practical, market-driven courses in Software Development, AI, Data Science, and Digital Skills.",
+  },
+  {
+    icon: Briefcase,
+    title: "Structured Internships",
+    description: "Simulated workplace environments working on real projects with professional mentorship.",
+  },
+  {
+    icon: Laptop,
+    title: "Software & AI Development",
+    description: "Custom web, mobile, and AI-powered solutions for startups and enterprise systems.",
+  },
+  {
+    icon: Cpu,
+    title: "Innovation Platform",
+    description: "Open ecosystem for trainers, professionals, and companies to collaborate and innovate.",
+  }
 ];
 
 const About = () => {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "CODEMANDE",
+    "url": "https://codemande.com",
+    "logo": "https://codemande.com/logo.png",
+    "founder": [
+      {
+        "@type": "Person",
+        "name": "Manzi Alain Patrick Munyeshuri"
+      },
+      {
+        "@type": "Person",
+        "name": "Bizimana Eric"
+      }
+    ],
+    "description": "CODEMANDE is a Rwanda-based technology, training, internship, and software development company focused on building practical digital skills and intelligent AI solutions.",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Kigali",
+      "addressCountry": "RW"
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>About Us | CODEMANDE - Rwanda Tech & AI Leaders</title>
+        <meta name="description" content="CODEMANDE is a Rwanda-based technology training and software development company specializing in AI, coding internships, and intelligent solutions." />
+        <script type="application/ld+json">
+          {JSON.stringify(jsonLd)}
+        </script>
+      </Helmet>
       <Header />
       <main className="pt-20">
         {/* Hero Section */}
@@ -47,22 +108,21 @@ const About = () => {
               transition={{ duration: 0.6 }}
               className="max-w-3xl mx-auto text-center"
             >
-              <span className="inline-block px-4 py-1 bg-accent/20 text-accent text-sm font-medium rounded-full mb-4">
-                About CODEMANDE
+              <span className="inline-block px-4 py-1 bg-accent/20 text-accent text-sm font-medium rounded-full mb-4 uppercase tracking-wider">
+                Who We Are
               </span>
               <h1 className="font-heading text-3xl lg:text-5xl font-medium text-card-foreground mb-6">
-                Building Africa's Digital Future, One Developer at a Time
+                Empowering Africa through Practical Technology & AI
               </h1>
               <p className="text-card-foreground/80 text-lg leading-relaxed">
-                CODEMANDE is a premier technology training and innovation company dedicated to 
-                equipping individuals and institutions with industry-ready digital skills. 
-                Based in Kigali, Rwanda, we are shaping the next generation of African tech professionals.
+                CODEMANDE is a Rwanda-based technology, training, internship, and software development company
+                building practical digital skills and intelligent solutions across Kigali and Africa.
               </p>
             </motion.div>
           </div>
         </section>
 
-        {/* Story Section with Image */}
+        {/* Vision & Mission Section */}
         <section className="py-16 lg:py-20 bg-background">
           <div className="container mx-auto px-4 lg:px-8">
             <div className="grid lg:grid-cols-2 gap-12 items-center max-w-6xl mx-auto">
@@ -72,35 +132,25 @@ const About = () => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
               >
-                <span className="text-accent text-sm font-medium uppercase tracking-wider">Our Story</span>
-                <h2 className="font-heading text-2xl lg:text-4xl font-medium text-foreground mt-2 mb-6">
-                  From Vision to Impact
+                <h2 className="font-heading text-2xl lg:text-4xl font-medium text-foreground mb-6">
+                  Removing the Barrier of Location
                 </h2>
-                <div className="space-y-4 text-muted-foreground leading-relaxed">
+                <div className="space-y-4 text-muted-foreground leading-relaxed text-lg">
                   <p>
-                    Founded in 2019, CODEMANDE was born from a simple yet powerful observation: 
-                    Africa has immense untapped talent, but access to quality, practical tech education 
-                    remains limited. We set out to bridge this gap.
+                    We believe opportunity should not depend on location. CODEMANDE uses online and
+                    in-person delivery, remote collaboration, and affordable internet access to serve
+                    learners beyond major cities.
                   </p>
-                  <p>
-                    Starting with just 15 students in a small classroom in Kigali, we have grown into 
-                    a recognized center of excellence, training over 1,200 individuals in software development, 
-                    data science, artificial intelligence, and IoT technologies.
-                  </p>
-                  <p>
-                    Our approach combines rigorous theoretical foundations with hands-on project work, 
-                    ensuring our graduates don't just learn—they can do. We partner with leading tech 
-                    companies to align our curriculum with industry needs, giving our students a 
-                    competitive edge in the job market.
-                  </p>
-                </div>
-                <div className="mt-6 flex flex-wrap gap-4">
-                  <Link to="/training">
-                    <Button variant="gold">Explore Programs</Button>
-                  </Link>
-                  <Link to="/contact">
-                    <Button variant="outline">Partner With Us</Button>
-                  </Link>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                    <div className="p-6 bg-card rounded-xl border border-border/50">
+                      <h3 className="font-heading font-bold text-accent mb-2">Our Vision</h3>
+                      <p className="text-sm">To become Africa’s leading practical technology and AI learning platform, starting from Rwanda and expanding globally.</p>
+                    </div>
+                    <div className="p-6 bg-card rounded-xl border border-border/50">
+                      <h3 className="font-heading font-bold text-accent mb-2">Our Mission</h3>
+                      <p className="text-sm">To empower individuals and organizations with real skills, real experience, and intelligent digital solutions.</p>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
 
@@ -119,139 +169,55 @@ const About = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-card/60 to-transparent" />
                 </div>
-                {/* Floating stat card */}
-                <div className="absolute -bottom-6 -left-6 bg-card p-4 rounded-lg shadow-card-hover border border-border/30">
-                  <p className="text-3xl font-heading font-bold text-accent">95%</p>
-                  <p className="text-sm text-card-foreground/70">Graduate Employment Rate</p>
+                <div className="absolute -bottom-6 -left-6 bg-card p-6 rounded-lg shadow-card-hover border border-border/30">
+                  <p className="text-3xl font-heading font-bold text-accent">Real</p>
+                  <p className="text-sm text-card-foreground/70">Projects, Not Theory</p>
                 </div>
               </motion.div>
             </div>
           </div>
         </section>
 
-        {/* Mission & Vision */}
-        <section className="py-16 lg:py-20 bg-card">
+        {/* Our Story Section */}
+        <section className="py-16 lg:py-24 bg-card">
           <div className="container mx-auto px-4 lg:px-8">
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="bg-background p-8 rounded-xl shadow-card border border-border/30 group hover:shadow-card-hover transition-all"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center group-hover:bg-accent/30 transition-colors">
-                    <Target className="w-6 h-6 text-accent" strokeWidth={1.5} />
-                  </div>
-                  <h2 className="font-heading text-2xl font-semibold text-foreground">Our Mission</h2>
-                </div>
-                <p className="text-muted-foreground leading-relaxed mb-4">
-                  To empower individuals and institutions with practical, industry-ready 
-                  technology skills that create real opportunities and lasting impact across Africa.
-                </p>
-                <ul className="space-y-2">
-                  {["Deliver world-class tech training", "Bridge the skills gap", "Create employment opportunities", "Foster innovation ecosystem"].map((item, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CheckCircle className="w-4 h-4 text-accent" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-                className="bg-background p-8 rounded-xl shadow-card border border-border/30 group hover:shadow-card-hover transition-all"
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center group-hover:bg-accent/30 transition-colors">
-                    <Lightbulb className="w-6 h-6 text-accent" strokeWidth={1.5} />
-                  </div>
-                  <h2 className="font-heading text-2xl font-semibold text-foreground">Our Vision</h2>
-                </div>
-                <p className="text-muted-foreground leading-relaxed mb-4">
-                  To become the leading center of excellence in technology training and 
-                  innovation across Africa, shaping the future of digital skills and entrepreneurship.
-                </p>
-                <ul className="space-y-2">
-                  {["Pan-African tech education leader", "Hub for innovation & startups", "Trusted industry partner", "Catalyst for digital transformation"].map((item, i) => (
-                    <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Zap className="w-4 h-4 text-accent" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
+            <div className="max-w-4xl mx-auto text-center mb-16">
+              <h2 className="font-heading text-2xl lg:text-4xl font-medium text-card-foreground mb-6">Our Story</h2>
+              <p className="text-card-foreground/80 text-lg leading-relaxed">
+                CODEMANDE was founded by <strong>Manzi Alain Patrick Munyeshuri</strong>, a Rwandan technologist driven
+                by the need to close the gap between education and employability. He envisioned a platform where
+                learning is directly connected to real projects and mentorship.
+              </p>
+              <p className="text-card-foreground/80 text-lg leading-relaxed mt-4">
+                He was later joined by <strong>Bizimana Eric</strong>, Co-Founder, who brought operational and technical
+                leadership to help scale training programs, internships, and software delivery.
+              </p>
             </div>
           </div>
         </section>
 
-        {/* Achievements */}
-        <section className="py-16 lg:py-20 bg-background">
+        {/* What We Do */}
+        <section className="py-16 lg:py-24 bg-background">
           <div className="container mx-auto px-4 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <span className="text-accent text-sm font-medium uppercase tracking-wider">Our Impact</span>
-              <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground mt-2">
-                Numbers That Tell Our Story
-              </h2>
-            </motion.div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
-              {achievements.map((stat, index) => (
+            <div className="text-center mb-16">
+              <span className="text-accent text-sm font-medium uppercase tracking-wider">What We Do</span>
+              <h2 className="font-heading text-2xl lg:text-4xl font-medium text-foreground mt-2">Core Services</h2>
+            </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {services.map((service, index) => (
                 <motion.div
-                  key={stat.label}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-card p-6 rounded-xl text-center shadow-card border border-border/30 group hover:shadow-card-hover hover:border-accent/30 transition-all"
-                >
-                  <p className="text-3xl lg:text-4xl font-heading font-bold text-accent mb-2">
-                    {stat.number}
-                  </p>
-                  <p className="text-sm text-card-foreground/70">{stat.label}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Values */}
-        <section className="py-16 lg:py-20 bg-card">
-          <div className="container mx-auto px-4 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <span className="text-accent text-sm font-medium uppercase tracking-wider">What Drives Us</span>
-              <h2 className="font-heading text-2xl lg:text-3xl font-medium text-card-foreground mt-2">
-                Our Core Values
-              </h2>
-            </motion.div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {values.map((value, index) => (
-                <motion.div
-                  key={value.title}
+                  key={service.title}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-background p-6 rounded-xl shadow-card border border-border/30 group hover:shadow-card-hover transition-all"
+                  className="p-8 bg-card rounded-xl border border-border/50 hover:shadow-card-hover transition-all group"
                 >
-                  <div className="w-12 h-12 mb-4 rounded-full bg-card flex items-center justify-center group-hover:bg-accent/20 transition-colors">
-                    <value.icon className="w-6 h-6 text-accent" strokeWidth={1.5} />
+                  <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-6 group-hover:bg-accent/20 transition-colors">
+                    <service.icon className="w-6 h-6 text-accent" />
                   </div>
-                  <h3 className="font-heading font-semibold text-foreground mb-2">{value.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{value.description}</p>
+                  <h3 className="font-heading font-bold text-card-foreground mb-3">{service.title}</h3>
+                  <p className="text-card-foreground/70 text-sm leading-relaxed">{service.description}</p>
                 </motion.div>
               ))}
             </div>
@@ -259,68 +225,45 @@ const About = () => {
         </section>
 
         {/* Team Section */}
-        <section className="py-16 lg:py-20 bg-background">
+        <section className="py-16 lg:py-24 bg-card">
           <div className="container mx-auto px-4 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <span className="text-accent text-sm font-medium uppercase tracking-wider">Our People</span>
-              <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground mt-2">
-                Meet the Leadership Team
-              </h2>
-              <p className="text-muted-foreground mt-3 max-w-2xl mx-auto">
-                Industry experts and educators passionate about transforming tech education in Africa.
-              </p>
-            </motion.div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
+            <div className="text-center mb-16">
+              <span className="text-accent text-sm font-medium uppercase tracking-wider">Leadership</span>
+              <h2 className="font-heading text-2xl lg:text-4xl font-medium text-card-foreground mt-2">Meet the Founders</h2>
+            </div>
+            <div className="grid md:grid-cols-2 gap-12 max-w-4xl mx-auto">
               {team.map((member, index) => (
                 <motion.div
                   key={member.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-card p-6 rounded-xl text-center shadow-card border border-border/30 group hover:shadow-card-hover transition-all"
+                  className="bg-background p-8 rounded-2xl shadow-card border border-border/30 text-center"
                 >
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-accent/30 to-accent/10 flex items-center justify-center">
-                    <BookOpen className="w-8 h-8 text-accent" strokeWidth={1.5} />
+                  <div className="w-24 h-24 bg-accent/20 rounded-full mx-auto mb-6 flex items-center justify-center">
+                    <Users className="w-10 h-10 text-accent" />
                   </div>
-                  <h3 className="font-heading font-semibold text-card-foreground">{member.name}</h3>
-                  <p className="text-sm text-accent mb-2">{member.role}</p>
-                  <p className="text-xs text-card-foreground/60 leading-relaxed">{member.bio}</p>
+                  <h3 className="font-heading text-xl font-bold text-foreground">{member.name}</h3>
+                  <p className="text-accent text-sm font-medium mb-4">{member.role}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{member.bio}</p>
                 </motion.div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section className="py-16 lg:py-20 bg-card">
-          <div className="container mx-auto px-4 lg:px-8 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="font-heading text-2xl lg:text-3xl font-medium text-card-foreground mb-4">
-                Ready to Start Your Tech Journey?
-              </h2>
-              <p className="text-card-foreground/80 mb-6 max-w-xl mx-auto">
-                Join thousands of African professionals who have transformed their careers through 
-                our industry-focused training programs.
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Link to="/training">
-                  <Button variant="gold" size="lg">Explore Programs</Button>
-                </Link>
-                <Link to="/contact">
-                  <Button variant="outline" size="lg">Contact Us</Button>
-                </Link>
-              </div>
-            </motion.div>
+        {/* CTA */}
+        <section className="py-20 bg-background text-center">
+          <div className="container mx-auto px-4">
+            <h2 className="font-heading text-3xl lg:text-4xl font-bold mb-8">Ready to Build the Future?</h2>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link to="/training">
+                <Button variant="gold" size="lg" className="px-8 h-12">Start Training</Button>
+              </Link>
+              <Link to="/contact">
+                <Button variant="outline" size="lg" className="px-8 h-12">Talk to Us</Button>
+              </Link>
+            </div>
           </div>
         </section>
       </main>
