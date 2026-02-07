@@ -86,51 +86,55 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Theme Toggle & Auth Buttons */}
-          <div className="hidden lg:flex items-center gap-3">
+          {/* Actions: Theme Toggle, Auth Buttons, Mobile Menu */}
+          <div className="flex items-center gap-3">
             <ThemeToggle />
-            {isAuthenticated ? (
-              <>
-                <Link to="/portal/student">
-                  <Button variant="gold" size="default" className="gap-2">
-                    <User size={16} />
-                    Student Portal
-                  </Button>
-                </Link>
-                <Button
-                  variant="heroOutline"
-                  size="default"
-                  onClick={handleLogout}
-                  className="gap-2"
-                >
-                  <LogOut size={16} />
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link to="/auth">
-                  <Button variant="heroOutline" size="default">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/auth">
-                  <Button variant="gold" size="default">
-                    Get Started
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden text-card-foreground p-2"
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+            {/* Auth Buttons - Desktop Only */}
+            <div className="hidden lg:flex items-center gap-3">
+              {isAuthenticated ? (
+                <>
+                  <Link to="/portal/student">
+                    <Button variant="gold" size="default" className="gap-2">
+                      <User size={16} />
+                      Student Portal
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="heroOutline"
+                    size="default"
+                    onClick={handleLogout}
+                    className="gap-2"
+                  >
+                    <LogOut size={16} />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/auth">
+                    <Button variant="heroOutline" size="default">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link to="/auth">
+                    <Button variant="gold" size="default">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden text-card-foreground p-2 ml-1"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
       </div>
 
