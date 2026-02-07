@@ -27,6 +27,7 @@ import {
   MoreVertical,
   TrendingUp,
   HelpCircle,
+  ExternalLink,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -506,7 +507,10 @@ export default function AdminCourses() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => setViewCourse(course)}>
-                                <Eye className="w-4 h-4 mr-2" /> View
+                                <Eye className="w-4 h-4 mr-2" /> Quick View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => window.open(`/course/${course.id}`, '_blank')}>
+                                <ExternalLink className="w-4 h-4 mr-2" /> Public Preview
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditClick(course)}>
                                 <Edit className="w-4 h-4 mr-2" /> Edit Content

@@ -24,7 +24,7 @@ import {
   Paperclip,
   PlayCircle
 } from "lucide-react";
-import { ManageQuestionsDialog } from "./ManageQuestionsDialog";
+import { ManageQuestionsDialog, ResourceBankDialog } from "./index";
 import { useAuth } from "@/contexts/AuthContext";
 import { FileUpload } from "@/components/FileUpload";
 
@@ -65,6 +65,8 @@ export function EditCourseDialog({
   const [hasInitialized, setHasInitialized] = useState(false);
   const [questionLesson, setQuestionLesson] = useState<{ id: string, title: string } | null>(null);
   const [expandedModules, setExpandedModules] = useState<Record<number, boolean>>({ 0: true });
+  const [showResourceBank, setShowResourceBank] = useState(false);
+  const [resourceBankTarget, setResourceBankTarget] = useState<{ mIdx: number, lIdx: number } | null>(null);
 
   // Reset initialization when dialog closes or the course ID changes
   useEffect(() => {
@@ -754,6 +756,13 @@ export function EditCourseDialog({
             Discard Changes
           </Button>
           <Button
+            variant="outline"
+            className="flex-1 font-bold h-11 rounded-xl shadow-sm gap-2"
+            onClick={() => window.open(`/course/${formData.id || course?.id}`, '_blank')}
+          >
+            <ExternalLink className="w-4 h-4" /> Preview Public Page
+          </Button>
+          <Button
             variant="gold"
             className="flex-1 font-bold h-11 rounded-xl shadow-lg shadow-gold/20 gap-2"
             onClick={handleSave}
@@ -770,6 +779,29 @@ export function EditCourseDialog({
         courseId={course?.id}
         lessonId={questionLesson?.id}
         lessonTitle={questionLesson?.title}
+      />
+      <ResourceBankDialog
+        open={showResourceBank}
+        onOpenChange={setShowResourceBank}
+        onSelect={(resource) => {
+          if (resourceBankTarget) {
+            const { mIdx, lIdx } = resourceBankTarget;
+            const newModules = [...formData.modules];
+            const newLessons = [...newModules[mIdx].lessons];
+
+            // Map bank resource to lesson resource
+            if (resource.type === 'video') {
+              newLessons[lIdx] = { ...newLessons[lIdx], videoUrl: resource.url };
+            } else {
+              newLessons[lIdx] = { ...newLessons[lIdx], fileUrl: resource.url };
+            }
+
+            newModules[mIdx] = { ...newModules[mIdx], lessons: newLessons };
+            setFormData({ ...formData, modules: newModules });
+            setShowResourceBank(false);
+            setResourceBankTarget(null);
+          }
+        }}
       />
     </Dialog>
   );

@@ -37,3 +37,4 @@ export { CreateInternshipTeamDialog } from "./CreateInternshipTeamDialog";
 export { CreateAgileProjectDialog } from "./CreateAgileProjectDialog";
 export { AddResourceDialog } from "./AddResourceDialog";
 export { SubmitWorkDialog } from "./SubmitWorkDialog";
+export { ResourceBankDialog } from "./ResourceBankDialog";

@@ -23,6 +23,7 @@ import {
   Layers,
   FileBox,
   LayoutDashboard,
+  ExternalLink,
 } from "lucide-react";
 import { EditCourseDialog, ViewCourseDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
@@ -209,7 +210,10 @@ export default function TrainerCourses() {
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" className="h-9 hover:bg-accent hover:text-white" onClick={() => setViewCourse(selectedCourse)}>
-                          <Eye className="w-4 h-4 mr-1.5" /> Preview
+                          <Eye className="w-4 h-4 mr-1.5" /> Quick View
+                        </Button>
+                        <Button variant="outline" size="sm" className="h-9" onClick={() => window.open(`/course/${selectedCourse.id}`, '_blank')}>
+                          <ExternalLink className="w-4 h-4 mr-1.5" /> Public Preview
                         </Button>
                         <Button
                           variant="gold"
@@ -249,8 +253,8 @@ export default function TrainerCourses() {
                                       <div key={lIdx} className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-border/30 hover:border-accent/30 transition-all group">
                                         <div className="flex items-center gap-4">
                                           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${lesson.type === 'video' ? 'bg-red-500/10 text-red-500' :
-                                              lesson.type === 'pdf' ? 'bg-emerald-500/10 text-emerald-500' :
-                                                'bg-blue-500/10 text-blue-500'
+                                            lesson.type === 'pdf' ? 'bg-emerald-500/10 text-emerald-500' :
+                                              'bg-blue-500/10 text-blue-500'
                                             }`}>
                                             {lesson.type === 'video' ? <Video className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
                                           </div>
