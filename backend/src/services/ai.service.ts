@@ -12,8 +12,17 @@ export const chatWithAIService = async (userMessage: string, contextUser: any) =
     const now = new Date();
     const dateTimeStr = now.toLocaleString();
 
-    let userContext = `You are the "CODEMANDE Brain", a highly intelligent and helpful AI assistant for the CODEMANDE Academy Hub. 
-  Your goal is to assist students, interns, and guests with everything related to the platform.
+    let userContext = `You are the "CODEMANDE Brain", a highly intelligent and specialized AI mentor for the CODEMANDE Academy Hub.
+  
+  Your personality:
+  - Human-centric, encouraging, and clear.
+  - You explain complex engineering/design concepts using relatable analogies.
+  - You are proactive: if a student asks about a task, you don't just explain it; you suggest a first step.
+  
+  Departmental Specialization:
+  - If the context relates to Graphics/Design: Focus on aesthetics, UX, and color theory.
+  - If the context relates to Software Engineering: Focus on clean code, scalability, and error handling.
+  - If the context relates to Marketing: Focus on growth hacking, storytelling, and conversion.
   
   Current Date & Time: ${dateTimeStr}
 
@@ -84,51 +93,107 @@ export const chatWithAIService = async (userMessage: string, contextUser: any) =
         );
 
         let aiContent = response.data.choices[0].message.content;
-        let action = null;
-        let actionData = null;
+        return parseAIResponse(aiContent, contextUser);
+    } catch (error: any) {
+        return handleAIError(error);
+    }
+};
 
-        // Simple Action Parsing
-        const actionMatch = aiContent.match(/\[ACTION:([^\]]+)\]({.*})/);
-        if (actionMatch) {
-            action = actionMatch[1];
-            actionData = actionMatch[2];
-            // Remove the action tag from the display content
-            aiContent = aiContent.replace(actionMatch[0], '').trim();
+export const explainTaskService = async (taskTitle: string, description: string) => {
+    const prompt = `You are a helpful AI assistant at CODEMANDE Academy. 
+    Please explain the following task in very simple, "non-techy" words so a beginner can understand exactly what to do.
+    Avoid jargon. If you must use a technical term, explain it.
+    
+    Task: ${taskTitle}
+    Details: ${description}
+    
+    Goal: Make the user feel confident and clear on how to start.`;
 
-            // Execute the action if it's CREATE_BOOKING
-            if (action === 'CREATE_BOOKING' && contextUser) {
-                try {
-                    const data = JSON.parse(actionData);
-                    const newBooking = new Booking({
-                        userId: contextUser.id,
-                        mentorId: data.mentorId,
-                        type: 'Mentorship Session',
-                        date: data.date,
-                        time: data.time,
-                        topic: data.topic,
-                        status: 'pending'
-                    });
-                    await newBooking.save();
-                    aiContent += "\n\n(System Message: I have successfully created your booking request for " + data.date + " at " + data.time + ". You can view it in your schedule.)";
-                } catch (err) {
-                    console.error("Action Execution Error:", err);
-                }
+    try {
+        const response = await axios.post(
+            'https://router.huggingface.co/v1/chat/completions',
+            {
+                model: "Qwen/Qwen3-Coder-Next:novita",
+                messages: [{ role: 'user', content: prompt }],
+                stream: false
+            },
+            { headers: { 'Authorization': `Bearer ${HF_TOKEN}`, 'Content-Type': 'application/json' } }
+        );
+        return { content: response.data.choices[0].message.content, role: 'assistant' };
+    } catch (error: any) {
+        return handleAIError(error);
+    }
+};
+
+export const reviewSubmissionService = async (taskTitle: string, submissionContent: string) => {
+    const prompt = `You are an expert mentor at CODEMANDE Academy. 
+    Review the following task submission. Be encouraging but honest.
+    Identify 2 things done well and 2 areas for improvement.
+    Use simple language.
+    
+    Task: ${taskTitle}
+    Submission: ${submissionContent}
+    
+    Format:
+    🌟 What's Great: ...
+    💡 Suggestions: ...`;
+
+    try {
+        const response = await axios.post(
+            'https://router.huggingface.co/v1/chat/completions',
+            {
+                model: "Qwen/Qwen3-Coder-Next:novita",
+                messages: [{ role: 'user', content: prompt }],
+                stream: false
+            },
+            { headers: { 'Authorization': `Bearer ${HF_TOKEN}`, 'Content-Type': 'application/json' } }
+        );
+        return { content: response.data.choices[0].message.content, role: 'assistant' };
+    } catch (error: any) {
+        return handleAIError(error);
+    }
+};
+
+const parseAIResponse = async (aiContent: string, contextUser: any) => {
+    let action = null;
+    let actionData = null;
+    let finalContent = aiContent;
+
+    const actionMatch = aiContent.match(/\[ACTION:([^\]]+)\]({.*})/);
+    if (actionMatch) {
+        action = actionMatch[1];
+        actionData = actionMatch[2];
+        finalContent = aiContent.replace(actionMatch[0], '').trim();
+
+        if (action === 'CREATE_BOOKING' && contextUser) {
+            try {
+                const data = JSON.parse(actionData);
+                const newBooking = new Booking({
+                    userId: contextUser.id,
+                    mentorId: data.mentorId,
+                    type: 'Mentorship Session',
+                    date: data.date,
+                    time: data.time,
+                    topic: data.topic,
+                    status: 'pending'
+                });
+                await newBooking.save();
+                finalContent += "\n\n(System Message: I have successfully created your booking request for " + data.date + " at " + data.time + ". You can view it in your schedule.)";
+            } catch (err) {
+                console.error("Action Execution Error:", err);
             }
         }
-
-        return {
-            content: aiContent,
-            role: 'assistant',
-            action,
-            actionData
-        };
-    } catch (error: any) {
-        console.error('AI Service Error:', error?.response?.data || error.message);
-        return {
-            content: "I'm having a bit of a brain fog right now. I couldn't reach the Qwen core at Hugging Face. Please try again!",
-            role: 'assistant',
-            action: null,
-            actionData: null
-        };
     }
+
+    return { content: finalContent, role: 'assistant', action, actionData };
+};
+
+const handleAIError = (error: any) => {
+    console.error('AI Service Error:', error?.response?.data || error.message);
+    return {
+        content: "I'm having a bit of a brain fog right now. I couldn't reach the Qwen core at Hugging Face. Please try again!",
+        role: 'assistant',
+        action: null,
+        actionData: null
+    };
 };

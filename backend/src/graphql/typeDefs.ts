@@ -79,7 +79,20 @@ export const typeDefs = `#graphql
     streak: Int
     themePreference: ThemePreference
     fullName: String
+    bio: String
+    avatar: String
+    phone: String
+    location: String
+    title: String
     studentProfile: StudentProfile
+    status: String
+    isDeleted: Boolean
+    lastActive: String
+    isOnline: Boolean
+    totalTimeSpent: Int
+    lastPath: String
+    createdAt: String
+    updatedAt: String
   }
 
   type Message {
@@ -105,9 +118,16 @@ export const typeDefs = `#graphql
   }
 
   type Resource {
+    id: ID!
     title: String!
-    url: String!
     type: String!
+    source: String!
+    url: String!
+    linkedTo: ID
+    onModel: String
+    visibility: String
+    createdBy: User
+    createdAt: String
   }
 
   type Lesson {
@@ -152,6 +172,30 @@ export const typeDefs = `#graphql
     studentsEnrolled: [User!]!
     createdAt: String!
     updatedAt: String!
+  }
+
+  type Resource {
+    id: ID!
+    title: String!
+    type: String!
+    source: String!
+    url: String!
+    linkedTo: ID
+    onModel: String
+    visibility: String
+    createdBy: User
+    createdAt: String
+    updatedAt: String
+  }
+
+  input ResourceInput {
+    title: String!
+    type: String!
+    source: String!
+    url: String!
+    linkedTo: ID
+    onModel: String
+    visibility: String
   }
 
   type Stats {
@@ -234,6 +278,26 @@ export const typeDefs = `#graphql
     inPersonNotes: String
   }
 
+  type MilestoneSubmission {
+    url: String
+    submittedAt: String
+    message: String
+    feedback: String
+    status: String
+    aiReview: String
+  }
+
+  type MilestoneDetailed {
+    title: String!
+    description: String
+    dueDate: String
+    completed: Boolean
+    deliverables: [String]
+    submissions: [MilestoneSubmission]
+    feedback: String
+    aiAnalysis: String
+  }
+
   type Project {
     id: ID!
     userId: ID!
@@ -249,14 +313,22 @@ export const typeDefs = `#graphql
     feedback: String
     team: [TeamMember]
     tasks: [Task]
+    milestones: [MilestoneDetailed]
     documentation: Documentation
     description: String!
     submissionUrl: String
     mentors: [User]
     conversationId: ID
     conversation: Conversation
+    milestoneVideos: [MilestoneVideo]
     createdAt: String!
     updatedAt: String!
+  }
+
+  type MilestoneVideo {
+    title: String!
+    videoUrl: String!
+    milestoneIndex: Int!
   }
 
   type Requirement {
@@ -288,6 +360,15 @@ export const typeDefs = `#graphql
     status: String!
     paidAt: String
     discount: Int
+    isPaidProgram: Boolean
+    installmentsAllowed: Boolean
+  }
+
+  type ApplicationDetails {
+    background: String
+    currentLevel: String
+    goal: String
+    locationPreference: String
   }
 
   type Milestone {
@@ -336,6 +417,7 @@ export const typeDefs = `#graphql
     phoneNumber: String
     portfolioUrl: String
     payment: Payment!
+    applicationDetails: ApplicationDetails
     progress: Int!
     milestones: [Milestone]
     tasks: [InternshipTask]
@@ -413,6 +495,9 @@ export const typeDefs = `#graphql
   }
 
   type Query {
+    # Resources
+    getResources(linkedTo: ID, onModel: String): [Resource!]!
+    getResource(id: ID!): Resource!
     hello: String
     users: [User]
     conversations: [Conversation]
@@ -453,19 +538,45 @@ export const typeDefs = `#graphql
     myInternship: Internship
     myMentees: [Internship]
     internship(id: ID!): Internship
-    internshipStages: [ProgramStage]
+    allInternshipStages: [ProgramStage]
+    
+    dailyDashboard: DailyDashboard
 
     getCourseQuestions(courseId: ID!): [Question!]!
     getUploadSignature(folder: String): UploadSignature!
+  }
+
+  type DailyDashboard {
+    tasks: [DashboardTask]
+    meetings: [Meeting]
+    unreadMessages: Int
+    aiSuggestion: String
+    motivationalQuote: String
+    resources: [Resource!]
+  }
+
+  type DashboardTask {
+    id: ID!
+    title: String!
+    deadline: String
+    priority: String
+    type: String # 'Project Milestone' or 'Internship Task'
+    sourceId: ID # Project ID or Internship ID
+    status: String
   }
 
   input ResourceInput {
     title: String!
     url: String!
     type: String!
+    source: String
+    linkedTo: ID
+    onModel: String
+    visibility: String
   }
 
   input LessonInput {
+    id: ID
     title: String!
     content: String
     videoUrl: String
@@ -476,6 +587,7 @@ export const typeDefs = `#graphql
   }
 
   input ModuleInput {
+    id: ID
     title: String!
     description: String
     lessons: [LessonInput!]!
@@ -557,6 +669,10 @@ export const typeDefs = `#graphql
   }
 
   type Mutation {
+    # Resources
+    createResource(input: ResourceInput!): Resource!
+    updateResource(id: ID!, input: ResourceInput!): Resource!
+    deleteResource(id: ID!): Boolean!
     updateBranding(
       primaryColor: String
       secondaryColor: String
@@ -567,6 +683,8 @@ export const typeDefs = `#graphql
     ): BrandingConfig
 
     chatWithAI(message: String!): ChatResponse
+    explainTask(taskTitle: String!, description: String!): ChatResponse
+    reviewSubmission(taskTitle: String!, submissionContent: String!): ChatResponse
 
     # Uploads
     getUploadSignature(folder: String): UploadSignature!
@@ -628,8 +746,8 @@ export const typeDefs = `#graphql
       modules: [ModuleInput!]
     ): Course
     deleteCourse(id: ID!): Boolean
-    createUser(username: String!, email: String!, password: String!, role: String, permissions: [String]): User
-    updateUser(id: ID!, username: String, email: String, role: String, permissions: [String]): User
+    createUser(username: String!, email: String!, password: String!, role: String, permissions: [String], fullName: String, bio: String, avatar: String, phone: String, location: String, title: String): User
+    updateUser(id: ID!, username: String, email: String, role: String, permissions: [String], fullName: String, bio: String, avatar: String, phone: String, location: String, title: String): User
     deleteUser(id: ID!): Boolean
     
     # Progress Tracking

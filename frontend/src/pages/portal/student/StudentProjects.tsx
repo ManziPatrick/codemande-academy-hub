@@ -22,6 +22,8 @@ import { SubmitProjectDialog, TeamChatDialog, ViewGuidelinesDialog } from "@/com
 import { toast } from "sonner";
 import { useQuery } from "@apollo/client/react";
 import { GET_MY_PROJECTS } from "@/lib/graphql/queries";
+import { AIHelper } from "@/components/portal/AIHelper";
+import { Sparkles } from "lucide-react";
 
 interface TeamMember {
   name: string;
@@ -304,6 +306,11 @@ export default function StudentProjects() {
                                   >
                                     {task.title}
                                   </span>
+                                  <AIHelper
+                                    type={task.completed ? "review" : "explain"}
+                                    taskTitle={task.title}
+                                    description={`Project: ${project.title}`}
+                                  />
                                 </div>
                               ))}
                             </div>

@@ -3,18 +3,19 @@ import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Briefcase, 
-  Users, 
-  FileText, 
-  Activity, 
-  Plus, 
+import {
+  Briefcase,
+  Users,
+  FileText,
+  Activity,
+  Plus,
   Search,
   Filter,
   CheckCircle,
   XCircle,
   Clock,
-  LayoutGrid
+  LayoutGrid,
+  BarChart3
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ import ProgramList from "@/components/portal/admin/internship/ProgramList";
 import ApplicationReview from "@/components/portal/admin/internship/ApplicationReview";
 import TeamManagement from "@/components/portal/admin/internship/TeamManagement";
 import InternshipActivityLogs from "@/components/portal/admin/internship/InternshipActivityLogs";
+import EngagementDashboard from "@/components/portal/admin/internship/EngagementDashboard";
 
 export default function AdminInternships() {
   const [activeTab, setActiveTab] = useState("programs");
@@ -65,6 +67,10 @@ export default function AdminInternships() {
               <Activity className="w-4 h-4" />
               Audit Logs
             </TabsTrigger>
+            <TabsTrigger value="engagement" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Engagement
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="programs">
@@ -81,6 +87,10 @@ export default function AdminInternships() {
 
           <TabsContent value="logs">
             <InternshipActivityLogs />
+          </TabsContent>
+
+          <TabsContent value="engagement">
+            <EngagementDashboard />
           </TabsContent>
         </Tabs>
       </div>

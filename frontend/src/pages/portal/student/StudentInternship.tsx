@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -18,21 +19,33 @@ import {
   Star,
   ArrowRight,
   AlertCircle,
+  Stars,
   Lock,
   Layers,
   FileCode,
   Award,
   Loader2,
+  Activity,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TimeTracking } from "./components/TimeTracking";
 import { ApplyInternshipDialog, BookCallDialog, TeamChatDialog, ProjectDetailsDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_MY_INTERNSHIP } from "@/lib/graphql/queries";
 import { UPDATE_INTERNSHIP_PAYMENT } from "@/lib/graphql/mutations";
+import { AIHelper } from "@/components/portal/AIHelper";
+import { GraduationDialog } from "@/components/portal/dialogs/GraduationDialog";
+import { useEffect } from "react";
+
+import { DailyInternshipDashboard } from "@/components/portal/student/DailyInternshipDashboard";
 
 export default function StudentInternship() {
   const { data, loading, error, refetch } = useQuery(GET_MY_INTERNSHIP);
   const internship = (data as any)?.myInternship;
+
+
+
 
   const [updatePayment, { loading: isPaying }] = useMutation(UPDATE_INTERNSHIP_PAYMENT, {
     onCompleted: () => {
@@ -60,6 +73,13 @@ export default function StudentInternship() {
   const [chatOpen, setChatOpen] = useState(false);
   const [activeProject, setActiveProject] = useState<any>(null);
   const [projectDetailsOpen, setProjectDetailsOpen] = useState(false);
+  const [graduationOpen, setGraduationOpen] = useState(false);
+
+  useEffect(() => {
+    if (internship?.stage === "Graduated" || internship?.status === "graduated") {
+      setGraduationOpen(true);
+    }
+  }, [internship]);
 
   if (loading) return (
     <PortalLayout>
@@ -90,6 +110,7 @@ export default function StudentInternship() {
   return (
     <PortalLayout>
       <div className="space-y-6 pb-12">
+        {internship && <DailyInternshipDashboard username={internship.user?.username || "Scholar"} />}
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -140,285 +161,385 @@ export default function StudentInternship() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid lg:grid-cols-3 gap-6">
-            {/* Left Column: Progression & Projects */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Payment Alert for Eligible Status */}
-              {(internship.status === 'eligible' || internship.payment?.status === 'pending') && (
-                <Card className="border-accent/40 bg-accent/5 overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex flex-col md:flex-row items-center gap-6">
-                      <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-                        <CreditCard className="w-8 h-8 text-accent" />
-                      </div>
-                      <div className="flex-1 text-center md:text-left">
-                        <h3 className="text-lg font-bold mb-1">Activation Required</h3>
-                        <p className="text-sm text-muted-foreground mb-4 md:mb-0">
-                          Your application is registered! Please pay the one-time application fee of 20,000 RWF to activate your internship and start Stage 1.
-                        </p>
-                      </div>
-                      <Button
-                        variant="gold"
-                        size="lg"
-                        className="shrink-0 shadow-lg shadow-gold/20"
-                        onClick={handlePay}
-                        disabled={isPaying}
-                      >
-                        {isPaying ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          <>
-                            Pay Now <ArrowRight className="w-4 h-4 ml-2" />
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="bg-muted/50 p-1 border border-border/50">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-background data-[state=active]:text-accent data-[state=active]:shadow-sm">
+                <Layers className="w-4 h-4 mr-2" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="time" className="data-[state=active]:bg-background data-[state=active]:text-accent data-[state=active]:shadow-sm">
+                <Clock className="w-4 h-4 mr-2" />
+                Time Tracking
+              </TabsTrigger>
+              <TabsTrigger value="activity" className="data-[state=active]:bg-background data-[state=active]:text-accent data-[state=active]:shadow-sm">
+                <Activity className="w-4 h-4 mr-2" />
+                My Activity
+              </TabsTrigger>
+            </TabsList>
 
-              {/* Stages Visualizer */}
-              <Card className="border-border/50">
-                <CardContent className="p-6">
-                  <h3 className="font-bold mb-6 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-accent" />
-                    Progression Roadmap
-                  </h3>
-                  <div className="relative pt-2">
-                    <div className="flex justify-between items-start">
-                      {stages.map((st, idx) => (
-                        <div key={st} className="flex flex-col items-center gap-3 relative z-10 flex-1">
-                          <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${idx <= currentStageIndex
-                              ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
-                              : "bg-muted border-border text-muted-foreground"
-                            }`}>
-                            {idx < currentStageIndex ? <CheckCircle className="w-5 h-5" /> : idx === currentStageIndex ? <Star className="w-5 h-5 animate-pulse" /> : <Lock className="w-4 h-4" />}
+            <TabsContent value="overview">
+              <div className="grid lg:grid-cols-3 gap-6">
+                {/* Left Column: Progression & Projects */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Payment Alert for Eligible Status */}
+                  {(internship.status === 'eligible' || internship.payment?.status === 'pending') && (
+                    <Card className="border-accent/40 bg-accent/5 overflow-hidden">
+                      <CardContent className="p-6">
+                        <div className="flex flex-col md:flex-row items-center gap-6">
+                          <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+                            <CreditCard className="w-8 h-8 text-accent" />
                           </div>
-                          <span className={`text-[10px] text-center font-bold uppercase transition-colors ${idx === currentStageIndex ? "text-accent" : "text-muted-foreground"
-                            }`}>
-                            {st.split(": ")[1] || st}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    {/* Line behind */}
-                    <div className="absolute top-7 left-[10%] right-[10%] h-0.5 bg-muted -z-0" />
-                    <div
-                      className="absolute top-7 left-[10%] h-0.5 bg-accent transition-all duration-1000 -z-0"
-                      style={{ width: `${(currentStageIndex / (stages.length - 1)) * 80}%` }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Assigned Projects */}
-              <div className="space-y-4">
-                <h3 className="font-bold flex items-center gap-2 px-2">
-                  <FileCode className="w-4 h-4 text-accent" />
-                  Assigned Stage Projects
-                </h3>
-                {internship.projects?.length > 0 ? (
-                  internship.projects.map((proj: any) => (
-                    <Card key={proj.id} className="border-border/50 hover:border-accent/40 transition-colors group">
-                      <CardContent className="p-5 flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <FileText className="w-6 h-6 text-accent" />
+                          <div className="flex-1 text-center md:text-left">
+                            <h3 className="text-lg font-bold mb-1">Activation Required</h3>
+                            <p className="text-sm text-muted-foreground mb-4 md:mb-0">
+                              Your application is registered! Please pay the one-time application fee of 20,000 RWF to activate your internship and start Stage 1.
+                            </p>
                           </div>
-                          <div>
-                            <h4 className="font-bold text-lg">{proj.title}</h4>
-                            <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter">
-                                {proj.status}
-                              </Badge>
-                              {proj.grade && (
-                                <Badge className="bg-green-500/20 text-green-400 border-none text-[10px]">
-                                  Grade: {proj.grade}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                           <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => { setActiveProject(proj); setChatOpen(true); }}
-                            className="bg-accent/5 hover:bg-accent/10 border-accent/20"
+                            variant="gold"
+                            size="lg"
+                            className="shrink-0 shadow-lg shadow-gold/20"
+                            onClick={handlePay}
+                            disabled={isPaying}
                           >
-                            <MessageSquare className="w-4 h-4 mr-2 text-accent" />
-                            Team Chat
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => { setActiveProject(proj); setProjectDetailsOpen(true); }}
-                          >
-                            Full Info & Progress
+                            {isPaying ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Processing...
+                              </>
+                            ) : (
+                              <>
+                                Pay Now <ArrowRight className="w-4 h-4 ml-2" />
+                              </>
+                            )}
                           </Button>
                         </div>
                       </CardContent>
                     </Card>
-                  ))
-                ) : (
-                  <Card className="border-border/50 border-dashed bg-muted/5">
-                    <CardContent className="p-10 text-center">
-                      <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <Layers size={32} className="text-accent/40" />
-                      </div>
-                      <h4 className="font-bold text-lg mb-2">Awaiting Project Assignment</h4>
-                      <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
-                        Your professional track is active! We are currently matching you with a live academy project that fits your department specialization.
-                      </p>
+                  )}
 
-                      <div className="flex justify-center items-center gap-8 max-w-md mx-auto">
-                        <div className="flex flex-col items-center gap-1">
-                          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-white">1</div>
-                          <span className="text-[10px] font-bold uppercase">Review</span>
+                  {/* Stages Visualizer */}
+                  <Card className="border-border/50">
+                    <CardContent className="p-6">
+                      <h3 className="font-bold mb-6 flex items-center gap-2">
+                        <Target className="w-4 h-4 text-accent" />
+                        Progression Roadmap
+                      </h3>
+                      <div className="relative pt-2">
+                        <div className="flex justify-between items-start">
+                          {stages.map((st, idx) => (
+                            <div key={st} className="flex flex-col items-center gap-3 relative z-10 flex-1">
+                              <div className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all duration-500 ${idx <= currentStageIndex
+                                ? "bg-accent border-accent text-accent-foreground shadow-lg shadow-accent/20"
+                                : "bg-muted border-border text-muted-foreground"
+                                }`}>
+                                {idx < currentStageIndex ? <CheckCircle className="w-5 h-5" /> : idx === currentStageIndex ? <Star className="w-5 h-5 animate-pulse" /> : <Lock className="w-4 h-4" />}
+                              </div>
+                              <span className={`text-[10px] text-center font-bold uppercase transition-colors ${idx === currentStageIndex ? "text-accent" : "text-muted-foreground"
+                                }`}>
+                                {st.split(": ")[1] || st}
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                        <div className="h-[2px] w-8 bg-accent" />
-                        <div className="flex flex-col items-center gap-1">
-                          <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-white animate-pulse">2</div>
-                          <span className="text-[10px] font-bold uppercase text-accent">Selection</span>
+                        {/* Line behind */}
+                        <div className="absolute top-7 left-[10%] right-[10%] h-0.5 bg-muted -z-0" />
+                        <div
+                          className="absolute top-7 left-[10%] h-0.5 bg-accent transition-all duration-1000 -z-0"
+                          style={{ width: `${(currentStageIndex / (stages.length - 1)) * 80}%` }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Assigned Projects */}
+                  <div className="space-y-4">
+                    <h3 className="font-bold flex items-center gap-2 px-2">
+                      <FileCode className="w-4 h-4 text-accent" />
+                      Assigned Stage Projects
+                    </h3>
+                    {internship.projects?.length > 0 ? (
+                      internship.projects.map((proj: any) => (
+                        <Card key={proj.id} className="border-border/50 hover:border-accent/40 transition-colors group">
+                          <CardContent className="p-5 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FileText className="w-6 h-6 text-accent" />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-lg">{proj.title}</h4>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter">
+                                    {proj.status}
+                                  </Badge>
+                                  {proj.grade && (
+                                    <Badge className="bg-green-500/20 text-green-400 border-none text-[10px]">
+                                      Grade: {proj.grade}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => { setActiveProject(proj); setChatOpen(true); }}
+                                className="bg-accent/5 hover:bg-accent/10 border-accent/20"
+                              >
+                                <MessageSquare className="w-4 h-4 mr-2 text-accent" />
+                                Team Chat
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => { setActiveProject(proj); setProjectDetailsOpen(true); }}
+                              >
+                                Full Info & Progress
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                    ) : (
+                      <Card className="border-border/50 border-dashed bg-muted/5">
+                        <CardContent className="p-10 text-center">
+                          <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Layers size={32} className="text-accent/40" />
+                          </div>
+                          <h4 className="font-bold text-lg mb-2">Awaiting Project Assignment</h4>
+                          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
+                            Your professional track is active! We are currently matching you with a live academy project that fits your department specialization.
+                          </p>
+
+                          <div className="flex justify-center items-center gap-8 max-w-md mx-auto">
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-white">1</div>
+                              <span className="text-[10px] font-bold uppercase">Review</span>
+                            </div>
+                            <div className="h-[2px] w-8 bg-accent" />
+                            <div className="flex flex-col items-center gap-1">
+                              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-white animate-pulse">2</div>
+                              <span className="text-[10px] font-bold uppercase text-accent">Selection</span>
+                            </div>
+                            <div className="h-[2px] w-8 bg-border" />
+                            <div className="flex flex-col items-center gap-1 opacity-40">
+                              <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] font-bold">3</div>
+                              <span className="text-[10px] font-bold uppercase">Kickoff</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Column: Mentor & Tasks */}
+                <div className="space-y-6">
+                  <Card className="border-border/50 overflow-hidden">
+                    <div className="h-2 bg-accent" />
+                    <CardContent className="p-6">
+                      <h3 className="font-bold mb-4 flex items-center gap-2">
+                        <Users className="w-4 h-4 text-accent" />
+                        Your Mentor
+                      </h3>
+                      {internship.mentor ? (
+                        <>
+                          <div className="flex items-center gap-4 mb-6">
+                            <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center ring-4 ring-accent/5">
+                              <span className="text-xl font-bold text-accent">
+                                {internship.mentor.username?.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="font-bold text-foreground">{internship.mentor.username}</p>
+                              <p className="text-xs text-muted-foreground uppercase tracking-widest">Industry Expert</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <Button variant="gold" className="w-full shadow-lg shadow-gold/10" onClick={() => setChatOpen(true)}>
+                              <MessageSquare className="w-4 h-4 mr-2" />
+                              Community Chat
+                            </Button>
+                            <Button variant="outline" className="w-full" onClick={() => setBookCallOpen(true)}>
+                              <Calendar className="w-4 h-4 mr-2" />
+                              Book 1:1 Review
+                            </Button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-center py-6">
+                          <div className="w-14 h-14 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-3">
+                            <Users className="w-7 h-7 text-muted-foreground/50" />
+                          </div>
+                          <p className="text-sm font-medium text-muted-foreground mb-1">Mentor Assignment Pending</p>
+                          <p className="text-xs text-muted-foreground/70">
+                            An industry expert will be assigned to guide you soon
+                          </p>
                         </div>
-                        <div className="h-[2px] w-8 bg-border" />
-                        <div className="flex flex-col items-center gap-1 opacity-40">
-                          <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] font-bold">3</div>
-                          <span className="text-[10px] font-bold uppercase">Kickoff</span>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Milestone Badges */}
+                  <Card className="border-border/50 bg-gradient-to-br from-card to-accent/5 overflow-hidden group">
+                    <CardContent className="p-6">
+                      <h3 className="font-bold mb-4 flex items-center gap-2">
+                        <Stars className="w-4 h-4 text-accent" />
+                        Earned Badges
+                      </h3>
+                      <div className="flex flex-wrap gap-4">
+                        <div className="flex flex-col items-center gap-2 group/badge">
+                          <div className="w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center border border-gold/40 shadow-lg shadow-gold/10 group-hover/badge:scale-110 transition-transform">
+                            <Stars className="w-6 h-6 text-gold" />
+                          </div>
+                          <span className="text-[9px] font-bold uppercase tracking-tight text-gold">Early Bird</span>
+                        </div>
+                        {currentStageIndex >= 1 && (
+                          <div className="flex flex-col items-center gap-2 group/badge">
+                            <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center border border-accent/40 shadow-lg shadow-accent/10 group-hover/badge:scale-110 transition-transform">
+                              <Layers className="w-6 h-6 text-accent" />
+                            </div>
+                            <span className="text-[9px] font-bold uppercase tracking-tight text-accent">Stage 1 Master</span>
+                          </div>
+                        )}
+                        {currentStageIndex >= 2 && (
+                          <div className="flex flex-col items-center gap-2 group/badge">
+                            <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/40 shadow-lg shadow-green-500/10 group-hover/badge:scale-110 transition-transform">
+                              <Target className="w-6 h-6 text-green-500" />
+                            </div>
+                            <span className="text-[9px] font-bold uppercase tracking-tight text-green-500">Fast Mover</span>
+                          </div>
+                        )}
+                        {/* Locked Badge */}
+                        <div className="flex flex-col items-center gap-2 opacity-30 grayscale cursor-not-allowed">
+                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center border border-border">
+                            <Lock className="w-5 h-5" />
+                          </div>
+                          <span className="text-[9px] font-bold uppercase tracking-tight">Pro Coder</span>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
-                )}
-              </div>
-            </div>
 
-            {/* Right Column: Mentor & Tasks */}
-            <div className="space-y-6">
-              <Card className="border-border/50 overflow-hidden">
-                <div className="h-2 bg-accent" />
-                <CardContent className="p-6">
-                  <h3 className="font-bold mb-4 flex items-center gap-2">
-                    <Users className="w-4 h-4 text-accent" />
-                    Your Mentor
-                  </h3>
-                  {internship.mentor ? (
-                    <>
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center ring-4 ring-accent/5">
-                          <span className="text-xl font-bold text-accent">
-                            {internship.mentor.username?.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-bold text-foreground">{internship.mentor.username}</p>
-                          <p className="text-xs text-muted-foreground uppercase tracking-widest">Industry Expert</p>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Button variant="gold" className="w-full shadow-lg shadow-gold/10" onClick={() => setChatOpen(true)}>
-                          <MessageSquare className="w-4 h-4 mr-2" />
-                          Community Chat
-                        </Button>
-                        <Button variant="outline" className="w-full" onClick={() => setBookCallOpen(true)}>
-                          <Calendar className="w-4 h-4 mr-2" />
-                          Book 1:1 Review
-                        </Button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-6">
-                      <div className="w-14 h-14 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-3">
-                        <Users className="w-7 h-7 text-muted-foreground/50" />
-                      </div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Mentor Assignment Pending</p>
-                      <p className="text-xs text-muted-foreground/70">
-                        An industry expert will be assigned to guide you soon
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Tasks Card */}
-              <Card className="border-border/50">
-                <CardContent className="p-6">
-                  <h3 className="font-bold mb-4 flex items-center gap-2">
-                    <FileCode className="w-4 h-4 text-accent" />
-                    My Tasks
-                    <Badge variant="outline" className="ml-auto text-[10px]">
-                      {internship.tasks?.filter((t: any) => t.status === "completed").length || 0}/{internship.tasks?.length || 0}
-                    </Badge>
-                  </h3>
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                    {internship.tasks?.map((task: any) => (
-                      <div
-                        key={task.id}
-                        className="flex items-center gap-3 p-2 bg-muted/20 rounded border border-border/50"
-                      >
-                        <div
-                          className={`w-4 h-4 rounded border flex items-center justify-center ${task.status === "completed"
-                              ? "bg-green-500 border-green-500"
-                              : "border-muted-foreground/30"
-                            }`}
-                        >
-                          {task.status === "completed" && <CheckCircle className="w-3 h-3 text-white" />}
-                        </div>
-                        <span
-                          className={`text-sm flex-1 ${task.status === "completed"
-                              ? "line-through text-muted-foreground"
-                              : "text-foreground font-medium"
-                            }`}
-                        >
-                          {task.title}
-                        </span>
-                        <Badge variant="outline" className="text-[9px] uppercase opacity-50">
-                          {task.priority}
+                  {/* Tasks Card */}
+                  <Card className="border-border/50">
+                    <CardContent className="p-6">
+                      <h3 className="font-bold mb-4 flex items-center gap-2">
+                        <FileCode className="w-4 h-4 text-accent" />
+                        My Tasks
+                        <Badge variant="outline" className="ml-auto text-[10px]">
+                          {internship.tasks?.filter((t: any) => t.status === "completed").length || 0}/{internship.tasks?.length || 0}
                         </Badge>
+                      </h3>
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
+                        {internship.tasks?.map((task: any) => (
+                          <div
+                            key={task.id}
+                            className="flex items-center gap-3 p-2 bg-muted/20 rounded border border-border/50"
+                          >
+                            <div
+                              className={`w-4 h-4 rounded border flex items-center justify-center ${task.status === "completed"
+                                ? "bg-green-500 border-green-500"
+                                : "border-muted-foreground/30"
+                                }`}
+                            >
+                              {task.status === "completed" && <CheckCircle className="w-3 h-3 text-white" />}
+                            </div>
+                            <span
+                              className={`text-sm flex-1 ${task.status === "completed"
+                                ? "line-through text-muted-foreground"
+                                : "text-foreground font-medium"
+                                }`}
+                            >
+                              {task.title}
+                            </span>
+                            {task.status !== "completed" && (
+                              <AIHelper type="explain" taskTitle={task.title} description="General Internship Task" />
+                            )}
+                            <Badge variant="outline" className="text-[9px] uppercase opacity-50">
+                              {task.priority}
+                            </Badge>
+                          </div>
+                        ))}
+                        {!internship.tasks?.length && (
+                          <div className="py-8 text-center">
+                            <FileCode className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                            <p className="text-xs text-muted-foreground italic">No tasks assigned yet</p>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                    {!internship.tasks?.length && (
-                      <div className="py-8 text-center">
-                        <FileCode className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-                        <p className="text-xs text-muted-foreground italic">No tasks assigned yet</p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Internship Details */}
+                  <Card className="border-border/50">
+                    <CardContent className="p-6 space-y-4">
+                      <h3 className="font-bold border-b border-border/50 pb-2">Program Details</h3>
+                      <div className="flex items-center gap-3 text-sm">
+                        <Building2 className="w-4 h-4 text-accent" />
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Organization</p>
+                          <p>{internship.organization}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <Clock className="w-4 h-4 text-accent" />
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Duration</p>
+                          <p>{internship.duration}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <Award className="w-4 h-4 text-accent" />
+                        <div>
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Type</p>
+                          <p>{internship.type}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="time">
+              <TimeTracking teamId={internship.teamId || internship.id} />
+            </TabsContent>
+
+            <TabsContent value="activity">
+              <Card className="border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-accent" />
+                    Internship activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {internship.activityLog?.length > 0 ? (
+                      internship.activityLog.map((log: any, idx: number) => (
+                        <div key={idx} className="flex gap-4 items-start p-3 rounded-lg border border-border/40 hover:bg-muted/30 transition-colors">
+                          <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                            <Activity className="w-4 h-4 text-accent" />
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium">{log.action}</p>
+                            <p className="text-xs text-muted-foreground">{log.details}</p>
+                            <p className="text-[10px] text-muted-foreground/60">{format(new Date(log.timestamp), "MMM dd, yyyy HH:mm")}</p>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="py-12 text-center text-muted-foreground">
+                        No activity logs found.
                       </div>
                     )}
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Internship Details */}
-              <Card className="border-border/50">
-                <CardContent className="p-6 space-y-4">
-                  <h3 className="font-bold border-b border-border/50 pb-2">Program Details</h3>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Building2 className="w-4 h-4 text-accent" />
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Organization</p>
-                      <p>{internship.organization}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Clock className="w-4 h-4 text-accent" />
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Duration</p>
-                      <p>{internship.duration}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <Award className="w-4 h-4 text-accent" />
-                    <div>
-                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Type</p>
-                      <p>{internship.type}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         )}
       </div>
 
@@ -452,6 +573,11 @@ export default function StudentInternship() {
         onOpenChange={setProjectDetailsOpen}
         project={activeProject}
         refetch={refetch}
+      />
+      <GraduationDialog
+        open={graduationOpen}
+        onOpenChange={setGraduationOpen}
+        internship={internship}
       />
     </PortalLayout>
   );

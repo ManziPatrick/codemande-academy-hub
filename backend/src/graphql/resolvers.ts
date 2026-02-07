@@ -1,4 +1,5 @@
 import { User } from '../models/User';
+import { Resource } from '../models/Resource';
 import { OAuth2Client } from 'google-auth-library';
 import { Message } from '../models/Message';
 import { Conversation } from '../models/Conversation';
@@ -11,7 +12,7 @@ const pubsub = new PubSub<any>();
 import { Booking } from '../models/Booking';
 import { Badge } from '../models/Badge';
 import { Config } from '../models/Config';
-import { Project } from '../models/Project';
+import { Project, IProject } from '../models/Project';
 import { Certificate } from '../models/Certificate';
 import { Internship } from '../models/Internship';
 import { CourseProgress } from '../models/CourseProgress';
@@ -38,17 +39,190 @@ import { sendApplicationConfirmation, sendApplicationStatusUpdate, sendPaymentCo
 import { generateCertificatePDF, generateInvoicePDF } from '../services/pdf.service';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { chatWithAIService } from '../services/ai.service';
+import { chatWithAIService, explainTaskService, reviewSubmissionService } from '../services/ai.service';
 import { generateUploadSignature } from '../services/upload.service';
+
+
+const calculateInternshipProgress = async (internship: any) => {
+  // 1. Tasks Contribution (Internship-specific tasks)
+  const totalTasks = internship.tasks ? internship.tasks.length : 0;
+  const completedTasks = internship.tasks ? internship.tasks.filter((t: any) => t.status === 'completed').length : 0;
+
+  // 2. Project Milestones Contribution
+  let totalMilestones = 0;
+  let completedMilestones = 0;
+
+  // Internal milestones
+  if (internship.milestones) {
+    totalMilestones += internship.milestones.length;
+    completedMilestones += internship.milestones.filter((m: any) => m.completed).length;
+  }
+
+  // Linked Project milestones
+  if (internship.projects && internship.projects.length > 0) {
+    for (const projId of internship.projects) {
+      // Check if projId is object or ID
+      const pid = (projId && (projId as any)._id) ? (projId as any)._id : projId;
+      const project = await Project.findById(pid);
+      if (project && (project as any).milestones) {
+        totalMilestones += (project as any).milestones.length;
+        completedMilestones += (project as any).milestones.filter((m: any) => m.completed || (m as any).status === 'approved').length;
+      }
+    }
+  }
+
+  // Stage Logic integration
+  const currentStage = internship.currentStage || 1;
+  const totalStages = 6;
+  const baseProgress = ((currentStage - 1) / totalStages) * 100;
+
+  const itemsInStage = totalTasks + totalMilestones;
+  const completedInStage = completedTasks + completedMilestones;
+
+  let stageContribution = 0;
+  // If no items, assume 0 contribution (start of stage)
+  if (itemsInStage > 0) {
+    stageContribution = (completedInStage / itemsInStage) * (100 / totalStages);
+  }
+
+  return Math.min(100, Math.round(baseProgress + stageContribution));
+}
 
 export const resolvers = {
   Query: {
     hello: () => 'Hello world from Apollo Server!',
 
+    // Resource Queries
+    getResources: async (_: any, { linkedTo, onModel }: any, context: any) => {
+      const filter: any = {};
+      if (linkedTo) filter.linkedTo = linkedTo;
+      if (onModel) filter.onModel = onModel;
+
+      // If student, only show public or interns_only resources
+      if (!context.user || context.user.role === 'student') {
+        filter.visibility = { $in: ['public', 'interns_only'] };
+      }
+
+      return await Resource.find(filter).populate('createdBy').sort({ createdAt: -1 });
+    },
+
+    getResource: async (_: any, { id }: any) => {
+      return await Resource.findById(id).populate('createdBy');
+    },
+
     getUploadSignature: (_: any, { folder }: { folder?: string }, context: any) => {
       // Optional: Check if user is authenticated
       if (!context.user) throw new Error('Not authenticated');
       return generateUploadSignature(folder);
+    },
+
+    dailyDashboard: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const internship = await Internship.findOne({ userId: context.user.id })
+        .populate({
+          path: 'projects',
+          populate: { path: 'team.userId', model: 'User' } // Deep populate if needed
+        })
+        .exec();
+
+      if (!internship) return null;
+
+      const dashboardTasks = [];
+
+      // 1. Internship Tasks
+      if (internship.tasks) {
+        dashboardTasks.push(...internship.tasks
+          .filter((t: any) => t.status !== 'completed')
+          .map((t: any) => ({
+            id: t._id ? t._id.toString() : `task-${Date.now()}`,
+            title: t.title,
+            priority: t.priority || 'medium',
+            status: t.status,
+            type: 'Internship Task',
+            sourceId: internship._id
+          }))
+        );
+      }
+
+      // 2. Project Tasks & Milestones
+      if (internship.projects) {
+        for (const proj of internship.projects as any[]) {
+          if (proj.status === 'in_progress') {
+            // Tasks
+            if (proj.tasks) {
+              dashboardTasks.push(...proj.tasks
+                .filter((t: any) => !t.completed)
+                .map((t: any) => ({
+                  id: t.id,
+                  title: t.title,
+                  priority: 'medium',
+                  status: 'pending',
+                  type: 'Project Task',
+                  sourceId: proj._id
+                }))
+              );
+            }
+            // Milestones
+            if (proj.milestones) {
+              dashboardTasks.push(...proj.milestones
+                .filter((m: any) => !m.completed)
+                .map((m: any) => ({
+                  id: m._id ? m._id.toString() : `milestone-${Date.now()}`,
+                  title: `Milestone: ${m.title}`,
+                  deadline: m.dueDate ? new Date(m.dueDate).toISOString() : null,
+                  priority: 'high',
+                  status: 'pending',
+                  type: 'Project Milestone',
+                  sourceId: proj._id
+                }))
+              );
+            }
+          }
+        }
+      }
+
+      // 3. Meetings
+      const upcomingMeetings = internship.meetings
+        ? internship.meetings.filter((m: any) => {
+          // Simple check if time is in future (assuming ISO string)
+          return new Date(m.time).getTime() > Date.now();
+        })
+        : [];
+
+      // 4. AI Suggestion (Mock for now, can use explainTaskService later if dynamic)
+      const suggestions = [
+        "Focus on your highest priority task: " + (dashboardTasks[0]?.title || "Review your curriculum"),
+        "Don't forget to commit your code frequently today!",
+        "Reach out to your mentor if you're stuck on the latest milestone."
+      ];
+      const aiSuggestion = suggestions[Math.floor(Math.random() * suggestions.length)];
+
+      // 5. Unread Messages
+      const userConversations = await Conversation.find({ participants: context.user.id });
+      const conversationIds = userConversations.map(c => c._id);
+      const unreadCount = await Message.countDocuments({
+        conversationId: { $in: conversationIds },
+        sender: { $ne: context.user.id },
+        read: false
+      });
+
+      const resources = await Resource.find({
+        $or: [
+          { onModel: 'DailyTracker' },
+          { linkedTo: internship._id, onModel: 'Internship' }
+        ],
+        visibility: { $in: ['public', 'interns_only'] }
+      }).sort({ createdAt: -1 }).limit(10);
+
+      return {
+        tasks: dashboardTasks.slice(0, 10),
+        meetings: upcomingMeetings.slice(0, 3),
+        unreadMessages: unreadCount,
+        aiSuggestion,
+        motivationalQuote: "The only way to do great work is to love what you do.",
+        resources
+      };
     },
 
     getCourseQuestions: async (_: any, { courseId }: { courseId: string }) => {
@@ -537,7 +711,7 @@ export const resolvers = {
       }
       return internship;
     },
-    internshipStages: async () => {
+    allInternshipStages: async () => {
       // These can eventually be fetched from Config model if customized
       return [
         {
@@ -762,8 +936,57 @@ export const resolvers = {
     },
   },
   Mutation: {
+    // Resource Mutations
+    createResource: async (_: any, { input }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const resource = new Resource({
+        ...input,
+        createdBy: context.user.id
+      });
+
+      await resource.save();
+      return await resource.populate('createdBy');
+    },
+
+    updateResource: async (_: any, { id, input }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const resource = await Resource.findById(id);
+      if (!resource) throw new Error('Resource not found');
+
+      // Only creator or admin can update
+      if (resource.createdBy.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      Object.assign(resource, input);
+      await resource.save();
+      return await resource.populate('createdBy');
+    },
+
+    deleteResource: async (_: any, { id }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const resource = await Resource.findById(id);
+      if (!resource) throw new Error('Resource not found');
+
+      if (resource.createdBy.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      await Resource.findByIdAndDelete(id);
+      return true;
+    },
+
     chatWithAI: async (_: any, { message }: { message: string }, context: any) => {
       return await chatWithAIService(message, context.user);
+    },
+    explainTask: async (_: any, { taskTitle, description }: { taskTitle: string, description: string }) => {
+      return await explainTaskService(taskTitle, description);
+    },
+    reviewSubmission: async (_: any, { taskTitle, submissionContent }: { taskTitle: string, submissionContent: string }) => {
+      return await reviewSubmissionService(taskTitle, submissionContent);
     },
     enroll: async (_: any, { courseId }: { courseId: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -868,6 +1091,38 @@ export const resolvers = {
       if (instructorId) updateData.instructor = instructorId;
 
       // Restrict financial and identity updates to admins/super_admins only
+      if (updateData.modules) {
+        updateData.modules = updateData.modules.map((m: any) => {
+          const mod = { ...m };
+          if (mod.id) {
+            mod._id = mod.id;
+            delete mod.id;
+          }
+          if (mod.lessons) {
+            mod.lessons = mod.lessons.map((l: any) => {
+              const les = { ...l };
+              if (les.id) {
+                les._id = les.id;
+                delete les.id;
+              }
+              if (les.resources) {
+                les.resources = les.resources.map((r: any) => {
+                  const res = { ...r };
+                  if (res.id) {
+                    res._id = res.id;
+                    delete res.id;
+                  }
+                  return res;
+                });
+              }
+              return les;
+            });
+          }
+          return mod;
+        });
+      }
+
+      // Restrict financial and identity updates to admins/super_admins only
       if (context.user.role !== 'super_admin' && context.user.role !== 'admin') {
         const restrictedFields = [
           'price', 'discountPrice', 'title', 'description',
@@ -963,33 +1218,46 @@ export const resolvers = {
       return await user.populate('enrolledCourses');
     },
 
-    createUser: async (_: any, { username, email, password, role, permissions }: any, context: any) => {
+    createUser: async (_: any, { password, ...args }: any, context: any) => {
       if (!context.user || (context.user.role !== 'super_admin' && context.user.role !== 'admin')) {
         throw new Error('Not authorized');
       }
 
-      const existingUser = await User.findOne({ email });
+      const existingUser = await User.findOne({ email: args.email });
       if (existingUser) throw new Error('User already exists');
 
       const hashedPassword = await bcrypt.hash(password, 12);
       const user = new User({
-        username,
-        email,
+        ...args,
         password: hashedPassword,
-        role: role || 'student',
-        permissions: permissions || []
+        role: args.role || 'student',
+        permissions: args.permissions || []
       });
       await user.save();
       return user;
     },
 
     updateUser: async (_: any, { id, ...args }: any, context: any) => {
-      if (!context.user || (context.user.role !== 'super_admin' && context.user.role !== 'admin')) {
+      if (!context.user) throw new Error('Not authenticated');
+
+      // Check if user is updating themselves OR is an admin
+      const isSelf = context.user.id === id;
+      const isAdmin = context.user.role === 'super_admin' || context.user.role === 'admin';
+
+      if (!isSelf && !isAdmin) {
         throw new Error('Not authorized');
       }
 
       const user = await User.findById(id);
       if (!user) throw new Error('User not found');
+
+      // Prevent non-admins from changing roles or sensitive fields
+      if (!isAdmin) {
+        delete args.role;
+        delete args.permissions;
+        delete args.isDeleted;
+        delete args.status; // status changes usually require admin/system action
+      }
 
       Object.assign(user, args);
       await user.save();
@@ -1403,6 +1671,15 @@ export const resolvers = {
       Object.assign(project, args);
       if (mentorIds) project.mentors = mentorIds;
       await project.save();
+
+      // Recalculate Internship Progress
+      const internship = await Internship.findOne({ projects: id });
+      if (internship) {
+        const newProgress = await calculateInternshipProgress(internship);
+        internship.progress = newProgress;
+        await internship.save();
+      }
+
       return await project.populate('userId');
     },
     deleteProject: async (_: any, { id }: { id: string }, context: any) => {
@@ -1432,7 +1709,7 @@ export const resolvers = {
       project.status = 'pending_review';
       project.progress = 100;
       project.submittedAt = new Date();
-      project.submissionUrl = submissionUrl;
+      (project as any).submissionUrl = submissionUrl;
       await project.save();
       return await project.populate('userId');
     },
@@ -1611,12 +1888,7 @@ export const resolvers = {
       internship.tasks = [...(internship.tasks || []), newTask as any];
 
       // Recalculate progress
-      const currentStage = internship.currentStage || 1;
-      const totalStages = 6;
-      const baseProgress = ((currentStage - 1) / totalStages) * 100;
-      const completedTasks = internship.tasks.filter((t: any) => t.status === 'completed').length;
-      const stageContribution = (completedTasks / internship.tasks.length) * (100 / totalStages);
-      internship.progress = Math.min(100, Math.round(baseProgress + stageContribution));
+      internship.progress = await calculateInternshipProgress(internship);
 
       await internship.save();
       return await internship.populate('userId mentorId');
@@ -1647,12 +1919,7 @@ export const resolvers = {
         intern.tasks = [...(intern.tasks || []), newTask as any];
 
         // Recalculate progress
-        const currentStage = intern.currentStage || 1;
-        const totalStages = 6;
-        const baseProgress = ((currentStage - 1) / totalStages) * 100;
-        const completedTasks = intern.tasks.filter((t: any) => t.status === 'completed').length;
-        const stageContribution = (completedTasks / intern.tasks.length) * (100 / totalStages);
-        intern.progress = Math.min(100, Math.round(baseProgress + stageContribution));
+        intern.progress = await calculateInternshipProgress(intern);
 
         await intern.save();
       }
@@ -1670,12 +1937,7 @@ export const resolvers = {
       task.status = status;
 
       // Recalculate progress
-      const currentStage = internship.currentStage || 1;
-      const totalStages = 6;
-      const baseProgress = ((currentStage - 1) / totalStages) * 100;
-      const completedTasks = (internship as any).tasks.filter((t: any) => t.status === 'completed').length;
-      const stageContribution = (completedTasks / (internship as any).tasks.length) * (100 / totalStages);
-      internship.progress = Math.min(100, Math.round(baseProgress + stageContribution));
+      internship.progress = await calculateInternshipProgress(internship);
 
       await internship.save();
       return await internship.populate('userId mentorId');
@@ -1835,7 +2097,7 @@ export const resolvers = {
       const project = await Project.findById(projectId);
       if (!project) throw new Error('Project not found');
 
-      let conversationId = project.conversationId;
+      let conversationId = (project as any).conversationId;
 
       if (!conversationId) {
         const teamUserIds = project.team?.map((t: any) => t.userId).filter(Boolean) || [];
@@ -1846,7 +2108,7 @@ export const resolvers = {
         });
         await newConversation.save();
 
-        project.conversationId = newConversation.id;
+        (project as any).conversationId = newConversation.id;
         await project.save();
         conversationId = newConversation.id;
       }
@@ -2011,8 +2273,8 @@ export const resolvers = {
     },
 
     updateBranding: async (_: any, args: any, context: any) => {
-      if (!context.user || !['admin', 'super_admin'].includes(context.user.role)) {
-        throw new Error('Not authorized');
+      if (!context.user || context.user.role !== 'super_admin') {
+        throw new Error('Not authorized. Only Super Admins can change global branding.');
       }
 
       let config = await Config.findOne({ key: 'branding' });

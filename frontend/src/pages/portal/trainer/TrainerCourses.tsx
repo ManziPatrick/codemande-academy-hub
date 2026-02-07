@@ -24,7 +24,7 @@ import {
   FileBox,
   LayoutDashboard,
 } from "lucide-react";
-import { EditCourseDialog } from "@/components/portal/dialogs";
+import { EditCourseDialog, ViewCourseDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_COURSES, GET_ME } from "@/lib/graphql/queries";
@@ -34,13 +34,14 @@ export default function TrainerCourses() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [editCourse, setEditCourse] = useState<any | null>(null);
+  const [viewCourse, setViewCourse] = useState<any | null>(null);
 
   const { data: userData, loading: userLoading } = useQuery(GET_ME);
   const { data: coursesData, loading: coursesLoading, refetch } = useQuery(GET_COURSES);
   const [updateCourseMutation] = useMutation(UPDATE_COURSE);
 
   const me = (userData as any)?.me;
-  
+
   // Filter courses assigned to this trainer
   const myCourses = useMemo(() => {
     const all = (coursesData as any)?.courses || [];
@@ -48,11 +49,11 @@ export default function TrainerCourses() {
     return all.filter((c: any) => c.instructor?.id === me.id);
   }, [coursesData, me]);
 
-  const filteredCourses = myCourses.filter((c: any) => 
+  const filteredCourses = myCourses.filter((c: any) =>
     c.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const selectedCourse = useMemo(() => 
+  const selectedCourse = useMemo(() =>
     myCourses.find((c: any) => c.id === selectedCourseId),
     [myCourses, selectedCourseId]
   );
@@ -143,11 +144,10 @@ export default function TrainerCourses() {
             <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground px-1">My Assigned Tracks</h3>
             <div className="grid gap-4">
               {filteredCourses.map((course) => (
-                <Card 
-                  key={course.id} 
-                  className={`border-border/50 cursor-pointer overflow-hidden group transition-all duration-300 ${
-                    selectedCourseId === course.id ? "ring-2 ring-accent bg-accent/5 shadow-xl" : "hover:bg-muted/10"
-                  }`}
+                <Card
+                  key={course.id}
+                  className={`border-border/50 cursor-pointer overflow-hidden group transition-all duration-300 ${selectedCourseId === course.id ? "ring-2 ring-accent bg-accent/5 shadow-xl" : "hover:bg-muted/10"
+                    }`}
                   onClick={() => setSelectedCourseId(course.id)}
                 >
                   <CardContent className="p-0">
@@ -208,12 +208,12 @@ export default function TrainerCourses() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="h-9 hover:bg-accent hover:text-white" onClick={() => toast.info("Opening Preview...")}>
+                        <Button variant="outline" size="sm" className="h-9 hover:bg-accent hover:text-white" onClick={() => setViewCourse(selectedCourse)}>
                           <Eye className="w-4 h-4 mr-1.5" /> Preview
                         </Button>
-                        <Button 
-                          variant="gold" 
-                          size="sm" 
+                        <Button
+                          variant="gold"
+                          size="sm"
                           className="h-9 shadow-lg shadow-gold/20"
                           onClick={() => setEditCourse(selectedCourse)}
                         >
@@ -248,11 +248,10 @@ export default function TrainerCourses() {
                                     {module.lessons?.map((lesson: any, lIdx: number) => (
                                       <div key={lIdx} className="flex items-center justify-between p-3 bg-background/50 rounded-xl border border-border/30 hover:border-accent/30 transition-all group">
                                         <div className="flex items-center gap-4">
-                                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                                            lesson.type === 'video' ? 'bg-red-500/10 text-red-500' :
-                                            lesson.type === 'pdf' ? 'bg-emerald-500/10 text-emerald-500' :
-                                            'bg-blue-500/10 text-blue-500'
-                                          }`}>
+                                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${lesson.type === 'video' ? 'bg-red-500/10 text-red-500' :
+                                              lesson.type === 'pdf' ? 'bg-emerald-500/10 text-emerald-500' :
+                                                'bg-blue-500/10 text-blue-500'
+                                            }`}>
                                             {lesson.type === 'video' ? <Video className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
                                           </div>
                                           <div>
@@ -288,27 +287,27 @@ export default function TrainerCourses() {
                         </TabsContent>
 
                         <TabsContent value="students" className="pt-6">
-                           <div className="grid gap-4">
-                             {selectedCourse.studentsEnrolled?.map((student: any) => (
-                               <div key={student.id} className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30">
-                                 <div className="flex items-center gap-3">
-                                   <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center font-bold text-accent">
-                                     {(student.username?.[0] || "U").toUpperCase()}
-                                   </div>
-                                   <div>
-                                     <p className="font-bold text-foreground">{student.username || "Anonymous"}</p>
-                                     <p className="text-xs text-muted-foreground">Enrolled Member</p>
-                                   </div>
-                                 </div>
-                                 <Button variant="outline" size="sm">View Progress</Button>
-                               </div>
-                             ))}
-                             {(!selectedCourse.studentsEnrolled || selectedCourse.studentsEnrolled.length === 0) && (
-                               <div className="text-center py-20 text-muted-foreground">
-                                 No students enrolled in this track yet.
-                               </div>
-                             )}
-                           </div>
+                          <div className="grid gap-4">
+                            {selectedCourse.studentsEnrolled?.map((student: any) => (
+                              <div key={student.id} className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center font-bold text-accent">
+                                    {(student.username?.[0] || "U").toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-foreground">{student.username || "Anonymous"}</p>
+                                    <p className="text-xs text-muted-foreground">Enrolled Member</p>
+                                  </div>
+                                </div>
+                                <Button variant="outline" size="sm">View Progress</Button>
+                              </div>
+                            ))}
+                            {(!selectedCourse.studentsEnrolled || selectedCourse.studentsEnrolled.length === 0) && (
+                              <div className="text-center py-20 text-muted-foreground">
+                                No students enrolled in this track yet.
+                              </div>
+                            )}
+                          </div>
                         </TabsContent>
                       </Tabs>
                     </CardContent>
@@ -336,6 +335,12 @@ export default function TrainerCourses() {
           onSave={handleUpdateCourse}
         />
       )}
+
+      <ViewCourseDialog
+        open={!!viewCourse}
+        onOpenChange={(open) => !open && setViewCourse(null)}
+        course={viewCourse}
+      />
     </PortalLayout>
   );
 }

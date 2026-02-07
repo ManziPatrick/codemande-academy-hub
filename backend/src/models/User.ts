@@ -64,6 +64,14 @@ const userSchema = new mongoose.Schema({
   // Navigation Tracking (Last known path)
   lastPath: { type: String },
 
+  // Profile Fields
+  fullName: { type: String },
+  bio: { type: String },
+  avatar: { type: String },
+  phone: { type: String },
+  location: { type: String },
+  title: { type: String },
+
   // Theme Preferences
   themePreference: {
     primaryColor: { type: String },

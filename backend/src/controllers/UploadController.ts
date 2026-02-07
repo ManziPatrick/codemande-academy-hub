@@ -12,19 +12,33 @@ cloudinary.config({
 
 export const uploadImage = async (req: Request, res: Response) => {
     try {
+        console.log('--- Upload Image Signal Received ---');
         if (!req.file) {
+            console.log('No file in request');
             return res.status(400).json({ message: 'No file uploaded' });
         }
+        console.log('File details:', {
+            fieldname: req.file.fieldname,
+            originalname: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size
+        });
 
         // Since we are using memory storage with multer, we need to upload the buffer
         const result = await new Promise((resolve, reject) => {
+            console.log('Streaming to Cloudinary...');
             const uploadStream = cloudinary.uploader.upload_stream(
                 {
                     folder: 'academy_hub',
                 },
                 (error, result) => {
-                    if (error) reject(error);
-                    else resolve(result);
+                    if (error) {
+                        console.error('Cloudinary stream error:', error);
+                        reject(error);
+                    } else {
+                        console.log('Cloudinary upload success');
+                        resolve(result);
+                    }
                 }
             );
             uploadStream.end(req.file?.buffer);
@@ -35,7 +49,7 @@ export const uploadImage = async (req: Request, res: Response) => {
             publicId: (result as any).public_id,
         });
     } catch (error: any) {
-        console.error('Cloudinary Upload Error:', error);
-        res.status(500).json({ message: error.message });
+        console.error('Final Catch - Cloudinary Upload Error:', error);
+        res.status(500).json({ message: `Cloudinary error: ${error.message || 'Unknown error'}` });
     }
 };

@@ -25,9 +25,17 @@ export interface IInternship extends Document {
   payment: {
     amount: number;
     currency: string;
-    status: string; // 'pending', 'paid'
+    status: string; // 'pending', 'paid', 'waived', 'installment'
     paidAt?: Date;
     discount?: number; // Discount percentage (0-100)
+    isPaidProgram?: boolean;
+    installmentsAllowed?: boolean;
+  };
+  applicationDetails?: {
+    background?: string;
+    currentLevel?: string;
+    goal?: string;
+    locationPreference?: string;
   };
   progress: number;
   milestones?: Array<{
@@ -82,9 +90,17 @@ const InternshipSchema: Schema = new Schema(
     payment: {
       amount: { type: Number, required: true },
       currency: { type: String, default: 'RWF' },
-      status: { type: String, enum: ['pending', 'paid'], default: 'pending' },
+      status: { type: String, enum: ['pending', 'paid', 'waived', 'installment'], default: 'pending' },
       paidAt: { type: Date },
       discount: { type: Number, default: 0, min: 0, max: 100 },
+      isPaidProgram: { type: Boolean, default: true }, // Admin control: paid or free
+      installmentsAllowed: { type: Boolean, default: false },
+    },
+    applicationDetails: {
+      background: { type: String }, // e.g. "University Student", "Self-Taught"
+      currentLevel: { type: String }, // "Beginner", "Junior", "Senior"
+      goal: { type: String },
+      locationPreference: { type: String },
     },
     progress: { type: Number, default: 0, min: 0, max: 100 },
     milestones: [

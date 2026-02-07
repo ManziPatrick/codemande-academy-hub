@@ -62,6 +62,7 @@ const studentNavItems: NavItem[] = [
   { label: "Schedule", href: "/portal/student/schedule", icon: Calendar },
   { label: "Billing", href: "/portal/student/billing", icon: CreditCard },
   { label: "Messages", href: "/chat", icon: MessageSquare },
+  { label: "Profile", href: "/portal/student/profile", icon: UserCog },
   { label: "Support", href: "/portal/student/support", icon: HelpCircle },
 ];
 

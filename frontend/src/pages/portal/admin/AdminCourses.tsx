@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,8 +38,8 @@ import { ViewCourseDialog, EditCourseDialog, DeleteConfirmDialog } from "@/compo
 import { QuestionManagerDialog } from "@/components/portal/QuestionManagerDialog";
 import { FileUpload } from "@/components/FileUpload";
 import { toast } from "sonner";
-import { useQuery, useMutation } from "@apollo/client/react";
-import { GET_COURSES, GET_STATS, GET_USERS } from "@/lib/graphql/queries";
+import { useQuery, useMutation, useLazyQuery } from "@apollo/client/react";
+import { GET_COURSES, GET_STATS, GET_USERS, GET_COURSE } from "@/lib/graphql/queries";
 import { CREATE_COURSE, UPDATE_COURSE, DELETE_COURSE } from "@/lib/graphql/mutations";
 
 export default function AdminCourses() {
@@ -55,9 +55,17 @@ export default function AdminCourses() {
 
   // Queries & Mutations
   const { data, loading, refetch } = useQuery(GET_COURSES);
+  const [loadCourse, { data: fullCourseData, loading: courseLoading }] = useLazyQuery(GET_COURSE);
   const [createCourseMutation] = useMutation(CREATE_COURSE);
   const [updateCourseMutation] = useMutation(UPDATE_COURSE);
   const [deleteCourseMutation] = useMutation(DELETE_COURSE);
+
+  useEffect(() => {
+    const fullData = fullCourseData as any;
+    if (fullData?.course && editCourse?.id === fullData.course.id) {
+      setEditCourse(fullData.course);
+    }
+  }, [fullCourseData, editCourse?.id]);
 
   const courses = (data as any)?.courses || [];
 
@@ -163,6 +171,19 @@ export default function AdminCourses() {
     } catch (err: any) {
       toast.error(err.message);
     }
+  };
+
+  const handleEditClick = (course: any) => {
+    setEditCourse(course); // Set immediately to show basic info
+    const toastId = toast.loading("Fetching latest curriculum...");
+    loadCourse({
+      variables: { id: course.id }
+    }).then(() => {
+      toast.dismiss(toastId);
+    }).catch((err) => {
+      toast.error("Curriculum sync failed: " + err.message);
+      toast.dismiss(toastId);
+    });
   };
 
   const filteredCourses = courses.filter((course: any) =>
@@ -487,10 +508,10 @@ export default function AdminCourses() {
                               <DropdownMenuItem onClick={() => setViewCourse(course)}>
                                 <Eye className="w-4 h-4 mr-2" /> View
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setEditCourse(course)}>
+                              <DropdownMenuItem onClick={() => handleEditClick(course)}>
                                 <Edit className="w-4 h-4 mr-2" /> Edit Content
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => setEditPricingCourse(course)}>
+                              <DropdownMenuItem onClick={() => handleEditClick(course)}>
                                 <DollarSign className="w-4 h-4 mr-2" /> Edit Pricing
                               </DropdownMenuItem>
 
@@ -547,6 +568,7 @@ export default function AdminCourses() {
         course={editCourse || editPricingCourse}
         trainers={trainers}
         onSave={handleSaveCourse}
+        isLoading={courseLoading}
       />
       <DeleteConfirmDialog
         open={!!deleteCourse}

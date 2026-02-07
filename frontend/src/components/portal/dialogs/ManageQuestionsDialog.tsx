@@ -17,16 +17,16 @@ interface ManageQuestionsDialogProps {
   lessonTitle?: string;
 }
 
-export function ManageQuestionsDialog({ 
-  open, 
-  onOpenChange, 
-  courseId, 
-  lessonId, 
-  lessonTitle 
+export function ManageQuestionsDialog({
+  open,
+  onOpenChange,
+  courseId,
+  lessonId,
+  lessonTitle
 }: ManageQuestionsDialogProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState({
     questionText: "",
     options: ["", "", "", ""],
@@ -35,7 +35,7 @@ export function ManageQuestionsDialog({
   });
 
   const { data, loading, refetch } = useQuery(GET_QUESTIONS, {
-    variables: { courseId, lessonId },
+    variables: { courseId, lessonId: lessonId || null },
     skip: !open || !courseId
   });
 
@@ -70,7 +70,7 @@ export function ManageQuestionsDialog({
         });
         toast.success("Question added!");
       }
-      
+
       setFormData({ questionText: "", options: ["", "", "", ""], correctOptionIndex: 0, explanation: "" });
       setIsAdding(false);
       setEditingId(null);
@@ -120,30 +120,29 @@ export function ManageQuestionsDialog({
                 </h4>
                 <div>
                   <label className="text-xs font-medium mb-1.5 block">Question Text *</label>
-                  <Input 
+                  <Input
                     value={formData.questionText}
                     onChange={(e) => setFormData({ ...formData, questionText: e.target.value })}
                     placeholder="Enter the question here..."
                   />
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {formData.options.map((opt, i) => (
                     <div key={i} className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <label className="text-xs font-medium">Option {i + 1} *</label>
-                        <button 
+                        <button
                           onClick={() => setFormData({ ...formData, correctOptionIndex: i })}
-                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${
-                            formData.correctOptionIndex === i 
-                              ? "bg-green-500/20 text-green-400 border-green-500/50" 
+                          className={`text-[10px] px-2 py-0.5 rounded-full border transition-all ${formData.correctOptionIndex === i
+                              ? "bg-green-500/20 text-green-400 border-green-500/50"
                               : "text-muted-foreground border-transparent hover:border-border"
-                          }`}
+                            }`}
                         >
                           {formData.correctOptionIndex === i ? "Correct Answer" : "Mark as Correct"}
                         </button>
                       </div>
-                      <Input 
+                      <Input
                         value={opt}
                         onChange={(e) => {
                           const newOpts = [...formData.options];
@@ -158,7 +157,7 @@ export function ManageQuestionsDialog({
 
                 <div>
                   <label className="text-xs font-medium mb-1.5 block">Explanation (Optional)</label>
-                  <Input 
+                  <Input
                     value={formData.explanation}
                     onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
                     placeholder="Why is this the correct answer?"
@@ -169,9 +168,9 @@ export function ManageQuestionsDialog({
                   <Button variant="gold" size="sm" className="flex-1" onClick={handleSave}>
                     {editingId ? "Update Question" : "Save Question"}
                   </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       setIsAdding(false);
                       setEditingId(null);
@@ -183,8 +182,8 @@ export function ManageQuestionsDialog({
                 </div>
               </div>
             ) : (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full border-dashed py-8 border-2"
                 onClick={() => setIsAdding(true)}
               >
@@ -199,7 +198,7 @@ export function ManageQuestionsDialog({
                   {questions.length}
                 </span>
               </h3>
-              
+
               {loading ? (
                 <div className="flex justify-center p-8">
                   <Loader2 className="w-6 h-6 animate-spin text-accent" />
@@ -212,8 +211,8 @@ export function ManageQuestionsDialog({
               ) : (
                 <div className="space-y-3">
                   {questions.map((q: any, idx: number) => (
-                    <div 
-                      key={q.id} 
+                    <div
+                      key={q.id}
                       className="p-4 bg-card border border-border/50 rounded-xl hover:shadow-card transition-all group"
                     >
                       <div className="flex justify-between gap-4 mb-3">
@@ -232,13 +231,12 @@ export function ManageQuestionsDialog({
                       </div>
                       <div className="grid grid-cols-2 gap-2 mb-3">
                         {q.options.map((opt: string, i: number) => (
-                          <div 
-                            key={i} 
-                            className={`text-xs p-2 rounded-lg border flex items-center gap-2 ${
-                              i === q.correctOptionIndex 
-                                ? "bg-green-500/10 border-green-500/30 text-green-400" 
+                          <div
+                            key={i}
+                            className={`text-xs p-2 rounded-lg border flex items-center gap-2 ${i === q.correctOptionIndex
+                                ? "bg-green-500/10 border-green-500/30 text-green-400"
                                 : "bg-muted/30 border-transparent text-muted-foreground"
-                            }`}
+                              }`}
                           >
                             {i === q.correctOptionIndex && <CheckCircle2 className="w-3 h-3" />}
                             <span className="truncate">{opt}</span>

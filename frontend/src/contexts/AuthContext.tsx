@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { useMutation } from "@apollo/client/react";
 import { LOGIN_USER, REGISTER_USER } from "@/lib/graphql/mutations";
 
-export type UserRole = "student" | "trainer" | "admin" | "super_admin";
+export type UserRole = "student" | "trainer" | "admin" | "super_admin" | "mentor";
 
 export interface User {
   id: string;
@@ -14,6 +14,10 @@ export interface User {
   enrolledCourses?: string[];
   completedCourses?: string[];
   createdAt: string;
+  title?: string;
+  bio?: string;
+  phone?: string;
+  location?: string;
   themePreference?: {
     primaryColor?: string;
     mode?: string;
@@ -124,10 +128,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const appUser: User = {
         id: userData.id,
         email: userData.email,
-        fullName: userData.username,
+        fullName: userData.username || userData.fullName,
         role: userData.role || "student",
         createdAt: new Date().toISOString(),
-        themePreference: userData.themePreference
+        themePreference: userData.themePreference,
+        avatar: userData.avatar,
+        title: userData.title,
+        bio: userData.bio,
+        phone: userData.phone,
+        location: userData.location
       };
 
       setUser(appUser);
@@ -160,7 +169,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fullName: userData.username,
         role: "student",
         createdAt: new Date().toISOString(),
-        themePreference: userData.themePreference
+        themePreference: userData.themePreference,
+        avatar: userData.avatar
       };
 
       setUser(appUser);
@@ -192,10 +202,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const appUser: User = {
       id: userData.id,
       email: userData.email,
-      fullName: userData.username,
+      fullName: userData.username || userData.fullName,
       role: userData.role || "student",
       createdAt: new Date().toISOString(),
-      themePreference: userData.themePreference
+      themePreference: userData.themePreference,
+      avatar: userData.avatar,
+      title: userData.title,
+      bio: userData.bio,
+      phone: userData.phone,
+      location: userData.location
     };
     setUser(appUser);
     localStorage.setItem("codemande_user", JSON.stringify(appUser));

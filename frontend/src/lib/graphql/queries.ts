@@ -146,6 +146,13 @@ export const GET_ME = gql`
       username
       email
       role
+      fullName
+      avatar
+      title
+      bio
+      phone
+      location
+      createdAt
       enrolledCourses {
         id
         title
@@ -193,6 +200,8 @@ export const GET_ME = gql`
       themePreference {
         primaryColor
         mode
+        lightBg
+        darkBg
       }
     }
   }
@@ -377,6 +386,11 @@ export const GET_MY_PROJECTS = gql`
         id
         username
       }
+      milestones {
+        title
+        dueDate
+        completed
+      }
       tasks {
         id
         title
@@ -426,6 +440,21 @@ export const GET_PROJECT = gql`
       mentors {
         id
         username
+      }
+      milestones {
+        title
+        description
+        dueDate
+        completed
+        deliverables
+        feedback
+        aiAnalysis
+        submissions {
+          url
+          submittedAt
+          status
+          feedback
+        }
       }
       tasks {
         id
@@ -616,6 +645,8 @@ export const GET_MY_INTERNSHIP = gql`
         status
         paidAt
         discount
+        isPaidProgram
+        installmentsAllowed
       }
       progress
       milestones {
@@ -644,6 +675,37 @@ export const GET_MY_INTERNSHIP = gql`
       }
       createdAt
       updatedAt
+    }
+  }
+`;
+
+export const GET_DAILY_DASHBOARD = gql`
+  query GetDailyDashboard {
+    dailyDashboard {
+      tasks {
+        id
+        title
+        deadline
+        priority
+        type
+        status
+        sourceId
+      }
+      meetings {
+        title
+        time
+        type
+      }
+      unreadMessages
+      aiSuggestion
+      motivationalQuote
+      resources {
+        id
+        title
+        type
+        source
+        url
+      }
     }
   }
 `;
@@ -1341,3 +1403,40 @@ export const VERIFY_CERTIFICATE = gql`
     }
   }
 `;
+
+export const GET_INTERNSHIP_TIME_LOGS = gql`
+  query GetInternshipTimeLogs($teamId: ID, $userId: ID) {
+    internshipTimeLogs(teamId: $teamId, userId: $userId) {
+      id
+      minutes
+      description
+      date
+      createdAt
+      user {
+        id
+        username
+      }
+    }
+  }
+`;
+
+export const GET_RESOURCES = gql`
+  query GetResources($linkedTo: ID, $onModel: String) {
+    getResources(linkedTo: $linkedTo, onModel: $onModel) {
+      id
+      title
+      type
+      source
+      url
+      linkedTo
+      onModel
+      visibility
+      createdAt
+      createdBy {
+        id
+        username
+      }
+    }
+  }
+`;
+

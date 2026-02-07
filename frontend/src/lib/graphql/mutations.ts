@@ -9,6 +9,20 @@ export const CHAT_WITH_AI = gql`
       actionData
     }
   }
+`; export const EXPLAIN_TASK = gql`
+  mutation ExplainTask($taskTitle: String!, $description: String!) {
+    explainTask(taskTitle: $taskTitle, description: $description) {
+      content
+    }
+  }
+`;
+
+export const REVIEW_SUBMISSION = gql`
+  mutation ReviewSubmission($taskTitle: String!, $submissionContent: String!) {
+    reviewSubmission(taskTitle: $taskTitle, submissionContent: $submissionContent) {
+      content
+    }
+  }
 `;
 
 export const LOGIN_USER = gql`
@@ -20,6 +34,19 @@ export const LOGIN_USER = gql`
         username
         email
         role
+        fullName
+        avatar
+        title
+        bio
+        phone
+        location
+        createdAt
+        themePreference {
+          primaryColor
+          mode
+          lightBg
+          darkBg
+        }
       }
     }
   }
@@ -34,6 +61,19 @@ export const REGISTER_USER = gql`
         username
         email
         role
+        fullName
+        avatar
+        title
+        bio
+        phone
+        location
+        createdAt
+        themePreference {
+          primaryColor
+          mode
+          lightBg
+          darkBg
+        }
       }
     }
   }
@@ -101,12 +141,18 @@ export const CREATE_USER = gql`
 `;
 
 export const UPDATE_USER = gql`
-  mutation UpdateUser($id: ID!, $username: String, $email: String, $role: String, $permissions: [String]) {
-    updateUser(id: $id, username: $username, email: $email, role: $role, permissions: $permissions) {
+  mutation UpdateUser($id: ID!, $username: String, $email: String, $role: String, $permissions: [String], $fullName: String, $bio: String, $avatar: String, $phone: String, $location: String, $title: String) {
+    updateUser(id: $id, username: $username, email: $email, role: $role, permissions: $permissions, fullName: $fullName, bio: $bio, avatar: $avatar, phone: $phone, location: $location, title: $title) {
       id
       username
+      fullName
       email
       role
+      bio
+      avatar
+      phone
+      location
+      title
       permissions
     }
   }
@@ -757,20 +803,23 @@ export const SUBMIT_INTERNSHIP_WORK = gql`
   }
 `;
 
+
+export const LOG_INTERNSHIP_TIME = gql`
+  mutation LogInternshipTime($teamId: ID!, $description: String!, $minutes: Int!, $date: String!) {
+    logInternshipTime(teamId: $teamId, description: $description, minutes: $minutes, date: $date) {
+      id
+      minutes
+      description
+      date
+    }
+  }
+`;
+
 export const REVIEW_INTERNSHIP_SUBMISSION_NEW = gql`
   mutation ReviewInternshipSubmission($id: ID!, $status: String!, $feedback: String) {
     reviewInternshipSubmission(id: $id, status: $status, feedback: $feedback) {
       id
       status
-    }
-  }
-`;
-
-export const LOG_INTERNSHIP_TIME = gql`
-  mutation LogInternshipTime($teamId: ID!, $minutes: Int!, $description: String!, $date: String!) {
-    logInternshipTime(teamId: $teamId, minutes: $minutes, description: $description, date: $date) {
-      id
-      minutes
     }
   }
 `;
@@ -1004,5 +1053,41 @@ export const UPDATE_INTERNSHIP_TEAM_NEW = gql`
 export const SUBSCRIBE_TO_NEWSLETTER = gql`
   mutation SubscribeToNewsletter($email: String!) {
     subscribeToNewsletter(email: $email)
+  }
+`;
+
+export const CREATE_RESOURCE = gql`
+  mutation CreateResource($input: ResourceInput!) {
+    createResource(input: $input) {
+      id
+      title
+      type
+      source
+      url
+      linkedTo
+      onModel
+      visibility
+      createdAt
+      createdBy {
+        id
+        username
+      }
+    }
+  }
+`;
+
+export const UPDATE_RESOURCE = gql`
+  mutation UpdateResource($id: ID!, $input: ResourceInput!) {
+    updateResource(id: $id, input: $input) {
+      id
+      title
+      url
+    }
+  }
+`;
+
+export const DELETE_RESOURCE = gql`
+  mutation DeleteResource($id: ID!) {
+    deleteResource(id: $id)
   }
 `;

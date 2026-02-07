@@ -13,12 +13,35 @@ export interface IProject extends Document {
   feedback?: string;
   mentors: mongoose.Types.ObjectId[];
   team?: Array<{ userId?: mongoose.Types.ObjectId; name: string; role: string }>;
-  tasks?: Array<{ 
-    id: string; 
-    title: string; 
-    completed: boolean; 
+  tasks?: Array<{
+    id: string;
+    title: string;
+    completed: boolean;
     approved?: boolean;
     feedback?: string;
+    aiFeedback?: string; // AI review of the task
+  }>;
+  milestoneVideos?: Array<{
+    title: string;
+    videoUrl: string;
+    milestoneIndex: number;
+  }>;
+  milestones?: Array<{
+    title: string;
+    description?: string;
+    dueDate?: Date;
+    completed: boolean;
+    deliverables?: string[];
+    submissions?: Array<{
+      url: string;
+      submittedAt: Date;
+      message?: string;
+      feedback?: string;
+      status: 'pending' | 'approved' | 'rejected';
+      aiReview?: string;
+    }>;
+    feedback?: string;
+    aiAnalysis?: string;
   }>;
   description: string;
   documentation?: {
@@ -60,7 +83,37 @@ const ProjectSchema: Schema = new Schema(
         completed: { type: Boolean, default: false },
         approved: { type: Boolean, default: false },
         feedback: { type: String },
+        aiFeedback: { type: String },
       },
+    ],
+    milestoneVideos: [
+      {
+        title: { type: String },
+        videoUrl: { type: String },
+        milestoneIndex: { type: Number },
+      },
+    ],
+    // Enhanced Milestones for "Real Work" tracking
+    milestones: [
+      {
+        title: { type: String, required: true },
+        description: { type: String },
+        dueDate: { type: Date },
+        completed: { type: Boolean, default: false },
+        deliverables: [{ type: String }], // List of required files/links
+        submissions: [
+          {
+            url: String,
+            submittedAt: { type: Date, default: Date.now },
+            message: String,
+            feedback: String,
+            status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+            aiReview: String
+          }
+        ],
+        feedback: { type: String }, // General mentor feedback
+        aiAnalysis: { type: String }, // AI summary of progress
+      }
     ],
     documentation: {
       images: [String],

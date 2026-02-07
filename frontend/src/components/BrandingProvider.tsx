@@ -81,7 +81,7 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       document.documentElement.style.setProperty("--primary", hsl);
       document.documentElement.style.setProperty("--accent", hsl);
       document.documentElement.style.setProperty("--ring", hsl);
-      
+
       let metaTheme = document.querySelector('meta[name="theme-color"]');
       if (metaTheme) {
         metaTheme.setAttribute("content", activeColor);
@@ -105,13 +105,12 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       setTheme(user.themePreference.mode);
     }
   }, [
-    branding.primaryColor, 
-    user?.themePreference?.primaryColor, 
-    user?.themePreference?.mode, 
+    branding.primaryColor,
+    user?.id, // Only react to user change
+    user?.themePreference?.primaryColor,
+    user?.themePreference?.mode,
     user?.themePreference?.lightBg,
     user?.themePreference?.darkBg,
-    theme, 
-    resolvedTheme, 
     setTheme
   ]);
 

@@ -23,12 +23,20 @@ import {
   User,
   Github,
   Globe,
-  Youtube
+  Youtube,
+  BrainCircuit,
+  Plus,
+  Link as LinkIcon
 } from "lucide-react";
-import { useMutation } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { UPDATE_TASK_PROGRESS } from "@/lib/graphql/mutations";
+import { GET_RESOURCES } from "@/lib/graphql/queries";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { AIHelper } from "../AIHelper";
+import { Sparkles } from "lucide-react";
+import { AddResourceDialog } from "./AddResourceDialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProjectDetailsDialogProps {
   open: boolean;
@@ -38,7 +46,16 @@ interface ProjectDetailsDialogProps {
 }
 
 export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: ProjectDetailsDialogProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "tasks" | "documentation">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "milestones" | "tasks" | "documentation">("overview");
+  const [showAddResource, setShowAddResource] = useState(false);
+  const { user } = useAuth();
+
+  const { data: resourcesData, refetch: refetchResources } = useQuery(GET_RESOURCES, {
+    variables: { linkedTo: project.id, onModel: 'Project' },
+    skip: !project.id
+  });
+
+  const resources = (resourcesData as any)?.getResources || [];
 
   const [updateTask, { loading: updatingTask }] = useMutation(UPDATE_TASK_PROGRESS, {
     onCompleted: () => {
@@ -63,8 +80,11 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
   };
 
   const tasks = project.tasks || [];
-  const completedTasks = tasks.filter((t: any) => t.completed).length;
-  const progress = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+  const milestones = project.milestones || [];
+  const totalItems = tasks.length + milestones.length;
+  const completedItems = tasks.filter((t: any) => t.completed).length + milestones.filter((m: any) => m.completed).length;
+
+  const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : (project.progress || 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,11 +109,28 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
               </DialogTitle>
             </div>
             <div className="text-right">
-              <p className="text-xs font-medium text-muted-foreground uppercase mb-1">Total Progress</p>
-              <p className="text-2xl font-bold text-accent">{progress}%</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Project Health</p>
+              <div className="flex items-center gap-2 justify-end">
+                <p className={`text-2xl font-bold ${progress > 70 ? "text-green-500" : progress > 30 ? "text-accent" : "text-amber-500"}`}>
+                  {progress}%
+                </p>
+                {progress === 100 && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+              </div>
             </div>
           </div>
-          <Progress value={progress} className="h-2 bg-muted" />
+          <div className="relative h-3 w-full bg-muted rounded-full overflow-hidden border border-border/50">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className={`absolute top-0 left-0 h-full rounded-full ${progress > 70 ? "bg-gradient-to-r from-green-600 to-green-400" :
+                progress > 30 ? "bg-gradient-to-r from-gold to-accent" :
+                  "bg-gradient-to-r from-amber-600 to-amber-400"
+                }`}
+            />
+            {/* Glossy Effect */}
+            <div className="absolute top-0 left-0 w-full h-[30%] bg-white/10 opacity-50" />
+          </div>
         </div>
 
         {/* Tabs Navigation */}
@@ -106,6 +143,17 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
             Overview
             {activeTab === "overview" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />}
           </button>
+
+          {project.milestones && project.milestones.length > 0 && (
+            <button
+              onClick={() => setActiveTab("milestones")}
+              className={`px-6 py-3 text-sm font-medium transition-all relative ${activeTab === "milestones" ? "text-accent" : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              Milestones ({project.milestones.length})
+              {activeTab === "milestones" && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent" />}
+            </button>
+          )}
           <button
             onClick={() => setActiveTab("tasks")}
             className={`px-6 py-3 text-sm font-medium transition-all relative ${activeTab === "tasks" ? "text-accent" : "text-muted-foreground hover:text-foreground"
@@ -181,17 +229,137 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
               </motion.div>
             )}
 
+            {activeTab === "milestones" && (
+              <motion.div
+                key="milestones"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Project Roadmap</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {project.milestones.filter((m: any) => m.completed).length} of {project.milestones.length} completed
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {project.milestones.map((milestone: any, idx: number) => (
+                    <div key={idx} className={`p-4 rounded-xl border transition-all ${milestone.completed ? "bg-green-500/5 border-green-500/20" : "bg-card border-border/50 hover:border-accent/30"
+                      }`}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className={`font-bold ${milestone.completed ? "text-muted-foreground" : "text-foreground"}`}>
+                              {milestone.title}
+                            </h4>
+                            {milestone.completed && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                          </div>
+                          {milestone.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2">{milestone.description}</p>
+                          )}
+                          {milestone.dueDate && (
+                            <p className={`text-xs font-medium flex items-center gap-1 ${new Date(milestone.dueDate) < new Date() && !milestone.completed ? "text-red-400" : "text-muted-foreground"
+                              }`}>
+                              <Clock className="w-3 h-3" /> Due {new Date(milestone.dueDate).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex flex-col items-end gap-2">
+                          {milestone.submissions && milestone.submissions.length > 0 && (
+                            <Badge variant="secondary" className="bg-muted text-[10px]">
+                              {milestone.submissions.length} Submission(s)
+                            </Badge>
+                          )}
+                          {!milestone.completed && (
+                            <Button size="sm" variant={milestone.submissions?.length ? "secondary" : "default"} className="h-8 text-xs">
+                              {milestone.submissions?.length ? "Resubmit" : "Submit Work"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Deliverables Checklist */}
+                      {milestone.deliverables && milestone.deliverables.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-border/50">
+                          <p className="text-xs font-bold text-muted-foreground create-uppercase mb-2">Deliverables:</p>
+                          <ul className="space-y-1">
+                            {milestone.deliverables.map((del: string, dIdx: number) => (
+                              <li key={dIdx} className="text-xs flex items-start gap-2 text-muted-foreground">
+                                <div className="w-1 h-1 rounded-full bg-accent/50 mt-1.5 shrink-0" />
+                                {del}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Feedback Area */}
+                      {milestone.feedback && (
+                        <div className="mt-4 p-3 bg-accent/5 rounded-lg border border-accent/10">
+                          <p className="text-xs italic text-muted-foreground flex gap-2">
+                            <MessageSquare className="w-3 h-3 mt-0.5 shrink-0" />
+                            {milestone.feedback}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
             {activeTab === "tasks" && (
               <motion.div
                 key="tasks"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
-                className="space-y-4"
+                className="space-y-6"
               >
+                {/* Milestone Videos */}
+                {project.milestoneVideos?.length > 0 && (
+                  <div className="p-4 rounded-xl border border-accent/20 bg-accent/5 space-y-3">
+                    <h4 className="font-bold flex items-center gap-2 text-accent">
+                      <Youtube className="w-5 h-5" />
+                      Milestone Guidance Videos
+                    </h4>
+                    <div className="grid gap-3">
+                      {project.milestoneVideos.map((vid: any, idx: number) => (
+                        <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-background border border-border/50 group hover:border-accent transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded bg-accent/10 flex items-center justify-center text-accent font-bold text-xs">
+                              {idx + 1}
+                            </div>
+                            <span className="text-sm font-medium">{vid.title}</span>
+                          </div>
+                          <Button size="sm" variant="heroOutline" className="h-8" asChild>
+                            <a href={vid.videoUrl} target="_blank" rel="noopener noreferrer">
+                              Watch <ExternalLink className="w-3 h-3 ml-2" />
+                            </a>
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Deliverables Checklist</h3>
-                  <span className="text-xs font-medium text-muted-foreground">{completedTasks} of {tasks.length} completed</span>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Deliverables Checklist</h3>
+                    {progress === 100 ? (
+                      <p className="text-[10px] font-bold text-green-500 uppercase tracking-widest flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> All tasks completed! Ready for Final Submission.
+                      </p>
+                    ) : (
+                      <p className="text-[10px] font-bold text-accent uppercase tracking-widest flex items-center gap-1 animate-pulse">
+                        <BrainCircuit className="w-3 h-3" /> {progress > 50 ? "Ahead of Schedule" : "On Track"} — Keep going!
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-xs font-medium text-muted-foreground">{tasks.filter((t: any) => t.completed).length} of {tasks.length} completed</span>
                 </div>
 
                 <div className="space-y-3">
@@ -199,16 +367,16 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
                     <div
                       key={task.id}
                       className={`group flex items-start gap-4 p-4 rounded-xl border transition-all ${task.completed
-                          ? "bg-green-500/5 border-green-500/20"
-                          : "bg-muted/5 border-border/50 hover:border-accent/30"
+                        ? "bg-green-500/5 border-green-500/20"
+                        : "bg-muted/5 border-border/50 hover:border-accent/30"
                         }`}
                     >
                       <button
                         onClick={() => handleToggleTask(task.id, task.completed)}
                         disabled={updatingTask}
                         className={`mt-0.5 w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${task.completed
-                            ? "bg-green-500 border-green-500 text-white"
-                            : "border-muted-foreground/30 hover:border-accent"
+                          ? "bg-green-500 border-green-500 text-white"
+                          : "border-muted-foreground/30 hover:border-accent"
                           }`}
                       >
                         {task.completed && <CheckCircle2 className="w-4 h-4" />}
@@ -219,15 +387,23 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
                           <p className={`font-medium ${task.completed ? "text-muted-foreground line-through" : "text-foreground"}`}>
                             {task.title}
                           </p>
-                          {task.approved ? (
-                            <Badge className="bg-green-500/20 text-green-400 border-none text-[10px] font-bold px-2 py-0">
-                              Approved
-                            </Badge>
-                          ) : task.completed ? (
-                            <Badge className="bg-amber-500/20 text-amber-500 border-none text-[10px] font-bold px-2 py-0">
-                              Pending Review
-                            </Badge>
-                          ) : null}
+                          <div className="flex items-center gap-2">
+                            {!task.completed && (
+                              <AIHelper type="explain" taskTitle={task.title} description={`Task in project: ${project.title}`} />
+                            )}
+                            {task.approved ? (
+                              <Badge className="bg-green-500/20 text-green-400 border-none text-[10px] font-bold px-2 py-0">
+                                Approved
+                              </Badge>
+                            ) : task.completed ? (
+                              <div className="flex items-center gap-2">
+                                <AIHelper type="review" taskTitle={task.title} submissionContent="Student work is being prepared for review..." />
+                                <Badge className="bg-amber-500/20 text-amber-500 border-none text-[10px] font-bold px-2 py-0">
+                                  Pending Review
+                                </Badge>
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
                         {task.feedback && (
                           <div className="mt-2 p-3 rounded-lg bg-accent/5 border border-accent/10 flex items-start gap-2">
@@ -248,8 +424,58 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
-                className="space-y-8"
+                className="space-y-8 pb-10"
               >
+                {/* Unified Resources Section */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold flex items-center gap-2">
+                      <LinkIcon className="w-4 h-4 text-accent" />
+                      Consolidated Learning Resources
+                    </h3>
+                    {(user?.role === 'admin' || user?.role === 'super_admin' || user?.role === 'mentor') && (
+                      <Button
+                        size="sm"
+                        variant="heroOutline"
+                        className="h-8 gap-2"
+                        onClick={() => setShowAddResource(true)}
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add Resource
+                      </Button>
+                    )}
+                  </div>
+
+                  {resources.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {resources.map((res: any) => (
+                        <a
+                          key={res.id}
+                          href={res.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-between p-3 rounded-xl border border-border/50 bg-muted/5 hover:bg-muted/10 group transition-all"
+                        >
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="p-2 rounded bg-accent/10 text-accent group-hover:bg-accent group-hover:text-white transition-colors">
+                              {res.type === 'video' ? <Video className="w-4 h-4" /> :
+                                res.type === 'pdf' ? <FileText className="w-4 h-4" /> :
+                                  <ExternalLink className="w-4 h-4" />}
+                            </div>
+                            <div className="overflow-hidden">
+                              <p className="text-sm font-medium truncate">{res.title}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase">{res.source.replace('_', ' ')}</p>
+                            </div>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center bg-accent/5 border border-dashed border-accent/20 rounded-xl italic text-muted-foreground text-sm">
+                      No linked resources found. Click "Add Resource" to attach learning materials.
+                    </div>
+                  )}
+                </div>
+
                 {/* Visual Documentation */}
                 <div className="space-y-4">
                   <h3 className="font-bold flex items-center gap-2">
@@ -380,6 +606,13 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
             </Button>
           </div>
         </div>
+        <AddResourceDialog
+          open={showAddResource}
+          onOpenChange={setShowAddResource}
+          linkedTo={project.id}
+          onModel="Project"
+          onSuccess={() => refetchResources()}
+        />
       </DialogContent>
     </Dialog>
   );
