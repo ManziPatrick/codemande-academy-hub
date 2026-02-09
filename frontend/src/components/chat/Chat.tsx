@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, Search, MessageSquare, Clock } from 'lucide-react';
+import { Send, Search, MessageSquare, Clock, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePusher } from '@/hooks/use-pusher';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -20,6 +20,7 @@ export function Chat() {
     const [message, setMessage] = useState('');
     const [conversations, setConversations] = useState<any[]>([]);
     const [activeMessages, setActiveMessages] = useState<any[]>([]);
+    const [showMobileChat, setShowMobileChat] = useState(false);
 
     const { user } = useAuth();
     const pusher = usePusher();
@@ -86,6 +87,7 @@ export function Chat() {
             setActiveConversationId('new');
             setActiveMessages([]);
         }
+        setShowMobileChat(true);
     };
 
     const handleSend = async () => {
@@ -118,9 +120,12 @@ export function Chat() {
 
     return (
         <PortalLayout>
-            <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-6">
+            <div className="flex flex-col lg:flex-row h-[calc(100vh-140px)] gap-6 relative">
                 {/* Sidebar: Users & Conversations */}
-                <Card className="w-full lg:w-[380px] border-border/50 flex flex-col overflow-hidden bg-card/50 backdrop-blur-sm shadow-xl">
+                <Card className={cn(
+                    "w-full lg:w-[380px] border-border/50 flex flex-col overflow-hidden bg-card/50 backdrop-blur-sm shadow-xl",
+                    showMobileChat ? "hidden lg:flex" : "flex"
+                )}>
                     <CardHeader className="border-b border-border/50 bg-card/80 p-4 shrink-0">
                         <CardTitle className="text-xl font-heading flex items-center gap-2 text-foreground">
                             <MessageSquare className="h-5 w-5 text-accent" /> Messages
@@ -150,6 +155,7 @@ export function Chat() {
                                                     onClick={() => {
                                                         setSelectedUser(otherUser);
                                                         setActiveConversationId(conv.id);
+                                                        setShowMobileChat(true);
                                                     }}
                                                     className={cn(
                                                         "flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border border-transparent group",
@@ -217,12 +223,23 @@ export function Chat() {
                 </Card>
 
                 {/* Main Chat Area */}
-                <Card className="flex-1 border-border/50 flex flex-col overflow-hidden bg-card/30 backdrop-blur-md shadow-xl">
+                <Card className={cn(
+                    "flex-1 border-border/50 flex flex-col overflow-hidden bg-card/30 backdrop-blur-md shadow-xl",
+                    !showMobileChat ? "hidden lg:flex" : "flex"
+                )}>
                     {selectedUser ? (
                         <>
                             <CardHeader className="bg-card/40 border-b border-border/50 py-4 px-6 flex flex-row items-center justify-between shrink-0">
                                 <div className="flex items-center gap-3">
-                                    <Avatar className="h-12 w-12 border border-accent/20">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="lg:hidden h-8 w-8 -ml-2"
+                                        onClick={() => setShowMobileChat(false)}
+                                    >
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </Button>
+                                    <Avatar className="h-10 w-10 lg:h-12 lg:w-12 border border-accent/20">
                                         <AvatarFallback className="bg-accent text-accent-foreground font-bold">
                                             {selectedUser.username.substring(0, 2).toUpperCase()}
                                         </AvatarFallback>
@@ -296,20 +313,20 @@ export function Chat() {
                                 </ScrollArea>
                             </CardContent>
 
-                            <div className="p-4 lg:p-6 bg-card/40 border-t border-border/50 flex gap-3 items-center shrink-0">
+                            <div className="p-3 lg:p-6 bg-card/40 border-t border-border/50 flex gap-2 lg:gap-3 items-center shrink-0">
                                 <Input
                                     value={message}
                                     onChange={(e) => setMessage(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                                     placeholder="Type your message..."
-                                    className="flex-1 h-12 rounded-xl bg-background border-border/50 focus-visible:ring-accent px-5"
+                                    className="flex-1 h-10 lg:h-12 rounded-xl bg-background border-border/50 focus-visible:ring-accent px-4 lg:px-5"
                                 />
                                 <Button
                                     onClick={handleSend}
                                     size="icon"
-                                    className="h-12 w-12 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/10 transition-all hover:scale-105 active:scale-95"
+                                    className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90 shadow-lg shadow-accent/10 transition-all hover:scale-105 active:scale-95 shrink-0"
                                 >
-                                    <Send className="h-5 w-5" />
+                                    <Send className="h-4 w-4 lg:h-5 lg:w-5" />
                                 </Button>
                             </div>
                         </>

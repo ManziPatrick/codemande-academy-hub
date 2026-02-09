@@ -423,8 +423,8 @@ export function PortalLayout({ children }: PortalLayoutProps) {
           </button>
 
           {/* Page Title - Mobile */}
-          <div className="lg:hidden">
-            <span className="font-heading font-semibold text-card-foreground">
+          <div className="lg:hidden flex-1 px-2">
+            <span className="font-heading font-semibold text-card-foreground text-sm truncate block">
               {roleLabel}
             </span>
           </div>
@@ -441,9 +441,11 @@ export function PortalLayout({ children }: PortalLayoutProps) {
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3">
             {/* Theme Toggle */}
-            <ThemeToggle />
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
 
             {/* Notifications */}
             <DropdownMenu>
@@ -532,10 +534,10 @@ export function PortalLayout({ children }: PortalLayoutProps) {
                       {getInitials(user.fullName)}
                     </AvatarFallback>
                   </Avatar>
-                  <span className="hidden md:block text-sm font-medium text-card-foreground">
+                  <span className="hidden sm:block text-sm font-medium text-card-foreground truncate max-w-[100px]">
                     {user.fullName}
                   </span>
-                  <ChevronDown className="w-4 h-4 text-card-foreground/50 hidden md:block" />
+                  <ChevronDown className="w-4 h-4 text-card-foreground/50 hidden sm:block" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
@@ -576,7 +578,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
           {children}
         </main>
       </div>
-      {location.pathname !== '/chat' && <FloatingChat />}
+      {!location.pathname.startsWith('/chat') && <FloatingChat />}
     </div>
   );
 }

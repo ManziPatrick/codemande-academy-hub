@@ -380,7 +380,7 @@ export default function TrainerStudents() {
                     </div>
 
                     {/* Progress */}
-                    <div className="lg:w-48">
+                    <div className="w-full lg:w-48">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs text-card-foreground/60">Progress</span>
                         <span className="text-xs font-medium text-accent">{student.progress}%</span>
@@ -392,7 +392,7 @@ export default function TrainerStudents() {
                     </div>
 
                     {/* Pending */}
-                    <div className="lg:w-24 text-center">
+                    <div className="w-full lg:w-24 text-left lg:text-center">
                       {student.pendingAssignments > 0 ? (
                         <div className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/20 rounded-full">
                           <AlertCircle className="w-3 h-3 text-orange-400" />
@@ -404,7 +404,7 @@ export default function TrainerStudents() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 mt-2 lg:mt-0">
                       <Button
                         variant="ghost"
                         size="sm"

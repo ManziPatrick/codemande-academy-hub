@@ -140,8 +140,8 @@ export function FloatingChat() {
   const currentOtherUser = activeConversation?.otherUser || activeConversation?.participants?.find((p: any) => p.id !== user?.id);
 
   return (
-    <div className="fixed bottom-0 right-8 z-[100] w-80 pointer-events-auto">
-      <Card className="border-border/50 shadow-2xl rounded-t-xl overflow-hidden flex flex-col bg-card">
+    <div className="fixed bottom-0 right-0 md:right-8 z-[100] w-full md:w-80 pointer-events-auto">
+      <Card className="border-border/50 shadow-2xl rounded-t-xl overflow-hidden flex flex-col bg-card mx-auto">
         {/* Header Bar - Always visible */}
         <div
           onClick={handleToggleHeader}
@@ -184,12 +184,17 @@ export function FloatingChat() {
           </div>
 
           <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-card-foreground/50 hover:text-accent" onClick={openFullChat}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-card-foreground/50 hover:text-accent hidden md:flex" onClick={openFullChat}>
               <Maximize2 className="w-3.5 h-3.5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-7 w-7 text-card-foreground/50 hover:text-accent" onClick={handleToggleHeader}>
               {viewState === 'collapsed' ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </Button>
+            {viewState !== 'collapsed' && (
+              <Button variant="ghost" size="icon" className="h-7 w-7 text-card-foreground/50 hover:text-accent md:hidden" onClick={() => setViewState('collapsed')}>
+                <X className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
 

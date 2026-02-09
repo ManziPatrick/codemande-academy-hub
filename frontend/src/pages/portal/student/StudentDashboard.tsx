@@ -95,7 +95,7 @@ export default function StudentDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
           <Card className="border-border/50">
             <CardContent className="p-4">
@@ -164,7 +164,7 @@ export default function StudentDashboard() {
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-lg font-heading">Continue Learning</CardTitle>
                 <Link to="/portal/student/courses">
-                  <Button variant="ghost" size="sm" className="text-accent">
+                  <Button variant="ghost" size="sm" className="text-accent hover:bg-accent/5">
                     View All <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
