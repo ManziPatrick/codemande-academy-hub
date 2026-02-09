@@ -24,9 +24,11 @@ import {
   Eye,
 } from "lucide-react";
 import { GradeStudentDialog, StudentDetailDialog } from "@/components/portal/dialogs";
-import { useMutation } from "@apollo/client/react";
+import { useQuery, useMutation } from "@apollo/client/react";
 import { toast } from "sonner";
 import { gql } from "@apollo/client";
+import { BadgeAwardDialog } from "@/components/portal/BadgeAwardDialog";
+import { GET_TRAINER_STUDENTS } from "@/lib/graphql/queries";
 
 const CREATE_BADGE = gql`
   mutation CreateBadge($title: String!, $description: String!, $icon: String, $category: String) {
@@ -134,8 +136,7 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-import { useQuery } from "@apollo/client/react";
-import { GET_TRAINER_STUDENTS } from "@/lib/graphql/queries";
+
 
 export default function TrainerStudents() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -143,6 +144,7 @@ export default function TrainerStudents() {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
   const [viewStudentDialogOpen, setViewStudentDialogOpen] = useState(false);
+  const [awardBadgeDialogOpen, setAwardBadgeDialogOpen] = useState(false);
   const [studentToView, setStudentToView] = useState<any>(null);
 
   const { data, loading, refetch } = useQuery(GET_TRAINER_STUDENTS);
@@ -417,6 +419,16 @@ export default function TrainerStudents() {
                         <Mail className="w-4 h-4" />
                       </Button>
                       <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedStudent(student);
+                          setAwardBadgeDialogOpen(true);
+                        }}
+                      >
+                        <Award className="w-4 h-4" />
+                      </Button>
+                      <Button
                         variant="gold"
                         size="sm"
                         onClick={() => {
@@ -446,6 +458,12 @@ export default function TrainerStudents() {
         open={viewStudentDialogOpen}
         onOpenChange={setViewStudentDialogOpen}
         student={studentToView}
+      />
+
+      <BadgeAwardDialog
+        isOpen={awardBadgeDialogOpen}
+        onClose={() => setAwardBadgeDialogOpen(false)}
+        user={selectedStudent}
       />
     </PortalLayout>
   );

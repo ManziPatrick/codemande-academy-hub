@@ -21,15 +21,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Award, 
-  Plus, 
-  Search, 
-  Edit2, 
-  Trash2, 
-  Star, 
-  Zap, 
-  Trophy, 
+import {
+  Award,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  Star,
+  Zap,
+  Trophy,
   Target,
   MoreVertical,
   Loader2
@@ -52,7 +52,7 @@ export default function AdminBadges() {
     category: "skill",
   });
 
-  const { data, loading: queryLoading, refetch } = useQuery(GET_BADGES);
+  const { data, loading: queryLoading, refetch } = useQuery<{ badges: any[] }>(GET_BADGES);
   const badges = data?.badges || [];
 
   const [createBadge] = useMutation(CREATE_BADGE, {
@@ -134,8 +134,8 @@ export default function AdminBadges() {
   };
 
   const filteredBadges = badges.filter((b: any) =>
-    b.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    b.category.toLowerCase().includes(searchQuery.toLowerCase())
+    (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (b.category || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const getIcon = (iconName: string) => {
@@ -261,7 +261,7 @@ export default function AdminBadges() {
                 <Award className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
                 <p className="text-muted-foreground">No badges found matching your criteria</p>
                 <Button variant="ghost" className="mt-2" onClick={() => handleOpenDialog()}>
-                   Create your first badge
+                  Create your first badge
                 </Button>
               </div>
             )}

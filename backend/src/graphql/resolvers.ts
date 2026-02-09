@@ -3701,6 +3701,22 @@ export const resolvers = {
     user: async (parent: any) => await User.findById(parent.userId),
     course: async (parent: any) => await Course.findById(parent.courseId),
   },
+  UserBadge: {
+    badge: async (parent: any) => {
+      // If it's already populated, return it
+      if (parent.badgeId && (parent.badgeId.title || (parent.badgeId as any)._id)) {
+        return parent.badgeId;
+      }
+      // If not populated, fetch it
+      if (parent.badgeId) {
+        return await Badge.findById(parent.badgeId);
+      }
+      return null;
+    }
+  },
+  Badge: {
+    id: (parent: any) => parent.id || parent._id,
+  },
   Subscription: {
     messageAdded: {
       subscribe: withFilter(
