@@ -382,7 +382,7 @@ export default function StudentDashboard() {
                       <p className="text-xs text-muted-foreground">Keep learning to earn badges!</p>
                     </div>
                   ) : (
-                    me?.badges?.map((ub: any, index: number) => (
+                    me?.badges?.filter((ub: any) => ub && ub.badge).map((ub: any, index: number) => (
                       <div
                         key={ub.badge.id}
                         className="flex items-center gap-3 p-2 bg-background/30 rounded-lg"

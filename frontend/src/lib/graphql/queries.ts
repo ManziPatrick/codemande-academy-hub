@@ -1568,3 +1568,16 @@ export const GET_ASSIGNMENT_SUBMISSIONS = gql`
     }
   }
 `;
+export const GET_NOTIFICATIONS = gql`
+  query GetNotifications {
+    notifications {
+      id
+      type
+      title
+      message
+      link
+      read
+      createdAt
+    }
+  }
+`;

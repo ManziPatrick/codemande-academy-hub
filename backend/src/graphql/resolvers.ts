@@ -1,4 +1,5 @@
 import { User } from '../models/User';
+import Notification from '../models/Notification';
 import { Resource } from '../models/Resource';
 import { OAuth2Client } from 'google-auth-library';
 import { Message } from '../models/Message';
@@ -259,6 +260,11 @@ export const resolvers = {
         motivationalQuote: "The only way to do great work is to love what you do.",
         resources
       };
+    },
+
+    notifications: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      return await Notification.find({ userId: context.user.id }).sort({ createdAt: -1 }).limit(50);
     },
 
     getCourseQuestions: async (_: any, { courseId }: { courseId: string }) => {
@@ -1013,6 +1019,23 @@ export const resolvers = {
     },
   },
   Mutation: {
+    markNotificationRead: async (_: any, { id }: { id: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const notification = await Notification.findOneAndUpdate(
+        { _id: id, userId: context.user.id },
+        { read: true },
+        { new: true }
+      );
+      return notification;
+    },
+    markAllNotificationsRead: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      await Notification.updateMany(
+        { userId: context.user.id, read: false },
+        { read: true }
+      );
+      return true;
+    },
     // Resource Mutations
     createResource: async (_: any, { input }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -2739,6 +2762,7 @@ export const resolvers = {
       // Notify via Socket
       sendNotification(application.userId.toString(), {
         type: 'INTERNSHIP_APPLICATION_STATUS',
+        title: 'Application Update',
         status,
         applicationId: id,
         message: `Your internship application status has been updated to: ${status}`
@@ -2839,6 +2863,7 @@ export const resolvers = {
       // Notify intern
       sendNotification(userId.toString(), {
         type: 'TEAM_ASSIGNMENT',
+        title: 'New Team Assignment',
         teamId,
         message: `You have been assigned to a new internship team.`
       });
@@ -2884,6 +2909,7 @@ export const resolvers = {
       if (team && team.mentorId) {
         sendNotification(team.mentorId.toString(), {
           type: 'NEW_SUBMISSION',
+          title: 'New Project Submission',
           teamId: args.teamId,
           submissionId: submission.id,
           message: `New submission from team ${team.name}`
@@ -2907,6 +2933,7 @@ export const resolvers = {
       // Notify team member who submitted
       sendNotification(submission.userId.toString(), {
         type: 'SUBMISSION_REVIEWED',
+        title: 'Submission Reviewed',
         status,
         submissionId: id,
         message: `Your project submission has been reviewed: ${status}`
@@ -2938,6 +2965,7 @@ export const resolvers = {
       // Notify student
       sendNotification(args.userId.toString(), {
         type: 'NEW_MENTOR_FEEDBACK',
+        title: 'New Mentor Feedback',
         mentorId: context.user.id,
         message: `Your mentor has provided new feedback on your performance.`
       });
@@ -3096,6 +3124,7 @@ export const resolvers = {
       // Notify admin
       sendNotification('admin', {
         type: 'PAYMENT_RECEIVED',
+        title: 'New Payment Received',
         userId: payment.userId.toString(),
         amount: payment.amount,
         currency: payment.currency,
@@ -3122,6 +3151,7 @@ export const resolvers = {
       // Notify student
       sendNotification(payment.userId.toString(), {
         type: 'PAYMENT_WAIVED',
+        title: 'Payment Waived',
         message: `Your internship payment has been waived. You can now proceed with the program.`
       });
 
@@ -3144,6 +3174,7 @@ export const resolvers = {
       // Notify student
       sendNotification(payment.userId.toString(), {
         type: 'PAYMENT_REFUNDED',
+        title: 'Payment Refunded',
         amount: payment.amount,
         currency: payment.currency,
         message: `Your internship payment has been refunded.`
@@ -3313,6 +3344,7 @@ export const resolvers = {
       // Notify student
       sendNotification(userId, {
         type: 'CERTIFICATE_READY',
+        title: 'Certificate Ready',
         certificateId: certificate.id,
         certificateNumber: certificate.certificateNumber,
         message: `Congratulations! Your certificate for ${program.title} is ready for download.`
@@ -3339,6 +3371,7 @@ export const resolvers = {
       // Notify student
       sendNotification(certificate.userId.toString(), {
         type: 'CERTIFICATE_REVOKED',
+        title: 'Certificate Revoked',
         certificateNumber: certificate.certificateNumber,
         message: `Your certificate ${certificate.certificateNumber} has been revoked. Reason: ${args.reason}`
       });
@@ -3386,6 +3419,7 @@ export const resolvers = {
       // Notify student
       sendNotification(userId, {
         type: 'CERTIFICATE_APPROVAL',
+        title: 'Certificate Approved',
         message: `Your trainer has approved you for certification with grade: ${finalGrade}%`
       });
 

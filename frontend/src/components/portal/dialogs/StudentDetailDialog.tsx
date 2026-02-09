@@ -285,8 +285,8 @@ export function StudentDetailDialog({ open, onOpenChange, student }: StudentDeta
                             <TabsContent value="badges" className="space-y-3 mt-4">
                                 {student.badges && student.badges.length > 0 ? (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                        {student.badges.map((userBadge: any, index: number) => {
-                                            const badge = userBadge.badge || userBadge;
+                                        {student.badges.filter((ub: any) => ub && ub.badge).map((userBadge: any, index: number) => {
+                                            const badge = userBadge.badge;
                                             return (
                                                 <Card key={index} className="border-border/50">
                                                     <CardContent className="p-4">
@@ -299,7 +299,7 @@ export function StudentDetailDialog({ open, onOpenChange, student }: StudentDeta
                                                                 <p className="text-xs text-card-foreground/60 mt-1">{badge.description}</p>
                                                                 {userBadge.awardedAt && (
                                                                     <p className="text-xs text-card-foreground/40 mt-2">
-                                                                        Awarded {new Date(userBadge.awardedAt).toLocaleDateString()}
+                                                                        Awarded {new Date(parseInt(userBadge.awardedAt) || userBadge.awardedAt).toLocaleDateString()}
                                                                     </p>
                                                                 )}
                                                             </div>

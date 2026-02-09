@@ -1,20 +1,47 @@
 import { pusher } from '../lib/pusher';
+import Notification from '../models/Notification';
 
-export const sendNotification = async (userId: string, data: any) => {
+export const sendNotification = async (userId: string, data: {
+  type: string;
+  title: string;
+  message: string;
+  link?: string;
+  [key: string]: any;
+}) => {
   try {
-    await pusher.trigger(`user-${userId}`, 'notification', data);
+    // Save to database
+    const notification = await Notification.create({
+      userId,
+      ...data,
+      read: false
+    });
+
+    // Send via Pusher (including the ID for interaction)
+    await pusher.trigger(`user-${userId}`, 'notification', {
+      id: notification._id,
+      ...data,
+      userId,
+      read: false,
+      createdAt: notification.createdAt
+    });
+
+    return notification;
   } catch (error) {
     console.error('Pusher notification error:', error);
+    return null;
   }
 };
 
-export const broadcastToTeam = async (userIds: string[], data: any) => {
-  // Pusher has a limit on batch triggers, but loop is fine for small teams
+export const broadcastToTeam = async (userIds: string[], data: {
+  type: string;
+  title: string;
+  message: string;
+  link?: string
+}) => {
+  const notifications = [];
   for (const id of userIds) {
-    try {
-      await pusher.trigger(`user-${id}`, 'notification', data);
-    } catch (error) {
-      console.error(`Pusher broadcast error for user ${id}:`, error);
-    }
+    const notify = await sendNotification(id, data);
+    if (notify) notifications.push(notify);
   }
+  return notifications;
 };

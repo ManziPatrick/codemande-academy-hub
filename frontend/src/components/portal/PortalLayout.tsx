@@ -41,11 +41,15 @@ import {
   FileText,
   UserCog,
   GraduationCap,
+  Circle,
+  Clock,
+  ExternalLink,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { usePusher } from "@/hooks/use-pusher";
 import { toast } from "sonner";
 import { FloatingChat } from "@/components/chat/FloatingChat";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface NavItem {
   label: string;
@@ -126,6 +130,9 @@ interface PortalLayoutProps {
 }
 
 import { useBranding } from "@/components/BrandingProvider";
+import { GET_NOTIFICATIONS } from "@/lib/graphql/queries";
+import { MARK_NOTIFICATION_READ, MARK_ALL_NOTIFICATIONS_READ } from "@/lib/graphql/mutations";
+import { formatDistanceToNow } from "date-fns";
 
 export function PortalLayout({ children }: PortalLayoutProps) {
   const { user, logout } = useAuth();
@@ -136,6 +143,25 @@ export function PortalLayout({ children }: PortalLayoutProps) {
 
   const [trackActivity] = useMutation(TRACK_ACTIVITY);
   const { branding } = useBranding();
+
+  const { data: notifData } = useQuery<{ notifications: any[] }>(GET_NOTIFICATIONS, {
+    skip: !user,
+    pollInterval: 60000,
+  });
+
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [markRead] = useMutation(MARK_NOTIFICATION_READ);
+  const [markAllRead] = useMutation(MARK_ALL_NOTIFICATIONS_READ, {
+    onCompleted: () => {
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
+  });
+
+  useEffect(() => {
+    if (notifData?.notifications) {
+      setNotifications(notifData.notifications);
+    }
+  }, [notifData]);
 
   // Persist portal mode
   useEffect(() => {
@@ -178,9 +204,22 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     };
 
     const handleNotification = (data: any) => {
+      console.log("Interactive notification received:", data);
+      setNotifications(prev => [data, ...prev].slice(0, 50));
+
       if (user.role === 'trainer' || user.role === 'mentor' || user.role === 'admin') {
         playNotificationSound();
         if (data.message) toast.info(data.message);
+      } else {
+        // Students also get sound for important notifications
+        playNotificationSound();
+        if (data.message) toast(data.title || "New Notification", {
+          description: data.message,
+          action: data.link ? {
+            label: "View",
+            onClick: () => navigate(data.link)
+          } : undefined
+        });
       }
     };
 
@@ -407,10 +446,81 @@ export function PortalLayout({ children }: PortalLayoutProps) {
             <ThemeToggle />
 
             {/* Notifications */}
-            <button className="relative p-2 text-card-foreground/70 hover:text-card-foreground transition-colors">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full" />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="relative p-2 text-card-foreground/70 hover:text-card-foreground transition-colors">
+                  <Bell className="w-5 h-5" />
+                  {notifications.some(n => !n.read) && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full animate-pulse" />
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80 p-0">
+                <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
+                  <DropdownMenuLabel className="p-0">Notifications</DropdownMenuLabel>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-accent hover:bg-transparent"
+                    onClick={() => markAllRead()}
+                  >
+                    Mark all as read
+                  </Button>
+                </div>
+                <ScrollArea className="max-h-[400px]">
+                  {notifications.length === 0 ? (
+                    <div className="py-8 text-center text-muted-foreground">
+                      <p className="text-sm">No notifications yet</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col">
+                      {notifications.map((notif) => (
+                        <div
+                          key={notif.id || notif._id}
+                          className={`flex items-start gap-3 p-4 border-b border-border/30 last:border-0 cursor-pointer transition-colors hover:bg-accent/5 ${!notif.read ? 'bg-accent/5' : ''}`}
+                          onClick={async () => {
+                            if (!notif.read) {
+                              markRead({ variables: { id: notif.id || notif._id } });
+                              setNotifications(prev => prev.map(n =>
+                                (n.id === notif.id || n._id === notif._id) ? { ...n, read: true } : n
+                              ));
+                            }
+                            if (notif.link) navigate(notif.link);
+                          }}
+                        >
+                          <div className={`mt-1 p-1.5 rounded-full ${!notif.read ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground'}`}>
+                            {notif.type === 'message' ? <MessageSquare className="w-3.5 h-3.5" /> :
+                              notif.type === 'booking' ? <Calendar className="w-3.5 h-3.5" /> :
+                                <Bell className="w-3.5 h-3.5" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm leading-tight ${!notif.read ? 'font-semibold text-card-foreground' : 'text-card-foreground/80'}`}>
+                              {notif.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                              {notif.message}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground/60 mt-1 flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              {formatDistanceToNow(new Date(parseInt(notif.createdAt) || notif.createdAt), { addSuffix: true })}
+                            </p>
+                          </div>
+                          {!notif.read && (
+                            <Circle className="w-2 h-2 fill-accent text-accent mt-2 shrink-0" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+                <DropdownMenuSeparator />
+                <div className="p-2">
+                  <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground hover:text-accent" onClick={() => navigate('/portal/notifications')}>
+                    View all notifications
+                  </Button>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* User Menu */}
             <DropdownMenu>

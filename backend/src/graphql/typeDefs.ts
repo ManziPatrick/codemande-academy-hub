@@ -560,7 +560,7 @@ export const typeDefs = `#graphql
     allInternshipStages: [ProgramStage]
     
     dailyDashboard: DailyDashboard
-
+    notifications: [Notification]
     getCourseQuestions(courseId: ID!): [Question!]!
     getUploadSignature(folder: String): UploadSignature!
     
@@ -792,7 +792,8 @@ export const typeDefs = `#graphql
       meetingLink: String
     ): Booking
     updateBookingStatus(id: ID!, status: String!, meetingLink: String): Booking
-    
+    markNotificationRead(id: ID!): Notification
+    markAllNotificationsRead: Boolean
     createBadge(title: String!, description: String!, icon: String, category: String): Badge
 
     awardBadgeToBatch(userIds: [ID!]!, badgeId: ID!): Boolean
@@ -1365,6 +1366,7 @@ export const typeDefs = `#graphql
     type: String!
     title: String!
     message: String!
+    link: String
     read: Boolean!
     createdAt: String!
   }
