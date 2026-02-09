@@ -43,7 +43,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useSocket } from "@/hooks/use-socket";
+import { usePusher } from "@/hooks/use-pusher";
 import { toast } from "sonner";
 import { FloatingChat } from "@/components/chat/FloatingChat";
 
@@ -74,7 +74,7 @@ const trainerNavItems: NavItem[] = [
   { label: "Schedule", href: "/portal/trainer/schedule", icon: Calendar },
   { label: "Mentorship", href: "/portal/trainer/mentorship", icon: GraduationCap },
   { label: "Internships", href: "/portal/trainer/internships", icon: Briefcase },
-  { label: "Projects", href: "/portal/admin/projects", icon: FolderOpen },
+  { label: "Projects", href: "/portal/trainer/projects", icon: FolderOpen },
   { label: "Messages", href: "/chat", icon: MessageSquare },
 ];
 
@@ -108,6 +108,7 @@ const superAdminNavItems: NavItem[] = [
 const navItemsByRole: Record<UserRole, NavItem[]> = {
   student: studentNavItems,
   trainer: trainerNavItems,
+  mentor: trainerNavItems,
   admin: adminNavItems,
   super_admin: superAdminNavItems,
 };
@@ -115,6 +116,7 @@ const navItemsByRole: Record<UserRole, NavItem[]> = {
 const roleLabels: Record<UserRole, string> = {
   student: "Student Portal",
   trainer: "Trainer Portal",
+  mentor: "Trainer Portal",
   admin: "Admin Dashboard",
   super_admin: "Super Admin",
 };
@@ -130,23 +132,78 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const socket = useSocket();
+  const pusher = usePusher();
 
   const [trackActivity] = useMutation(TRACK_ACTIVITY);
   const { branding } = useBranding();
 
+  // Persist portal mode
   useEffect(() => {
-    if (socket) {
-      socket.on('receive_message', (msg: any) => {
-        // FloatingChat handles the UI for new messages now
-        console.log("New message received:", msg);
-      });
-
-      return () => {
-        socket.off('receive_message');
-      };
+    if (user?.role) {
+      const savedMode = localStorage.getItem(`portal_mode_${user.id}`);
+      if (!savedMode) {
+        localStorage.setItem(`portal_mode_${user.id}`, user.role);
+      }
     }
-  }, [socket, location.pathname, navigate]);
+  }, [user]);
+
+  const playNotificationSound = () => {
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(e => console.error("Audio play failed:", e));
+    } catch (error) {
+      console.error("Failed to play notification sound:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (!pusher || !user) return;
+
+    const channel = pusher.subscribe(`user-${user.id}`);
+
+    const handleReceiveMessage = (msg: any) => {
+      console.log("New message received:", msg);
+      playNotificationSound();
+    };
+
+    const handleNewBooking = (booking: any) => {
+      toast.info("New session request received!");
+      playNotificationSound();
+    };
+
+    const handleBookingUpdate = (booking: any) => {
+      toast.info(`Session status updated: ${booking.status}`);
+      playNotificationSound();
+    };
+
+    const handleNotification = (data: any) => {
+      if (user.role === 'trainer' || user.role === 'mentor' || user.role === 'admin') {
+        playNotificationSound();
+        if (data.message) toast.info(data.message);
+      }
+    };
+
+    const handleStudentActivity = () => {
+      if (user.role === 'trainer' || user.role === 'mentor') {
+        playNotificationSound();
+      }
+    };
+
+    channel.bind('receive_message', handleReceiveMessage);
+    channel.bind('new_booking', handleNewBooking);
+    channel.bind('booking_updated', handleBookingUpdate);
+    channel.bind('notification', handleNotification);
+    channel.bind('student_activity', handleStudentActivity);
+
+    return () => {
+      channel.unbind('receive_message', handleReceiveMessage);
+      channel.unbind('new_booking', handleNewBooking);
+      channel.unbind('booking_updated', handleBookingUpdate);
+      channel.unbind('notification', handleNotification);
+      channel.unbind('student_activity', handleStudentActivity);
+    };
+  }, [pusher, user]);
 
   useEffect(() => {
     if (user) {
@@ -161,16 +218,17 @@ export function PortalLayout({ children }: PortalLayoutProps) {
 
   if (!user) return null;
 
-  const navItems = navItemsByRole[user.role];
+  const navItems = navItemsByRole[user.role] || studentNavItems;
   const roleLabel = roleLabels[user.role];
 
   const handleLogout = () => {
+    localStorage.removeItem(`portal_mode_${user?.id}`);
     logout();
     navigate("/");
   };
 
   const getInitials = (name: string) => {
-    return name
+    return (name || "")
       .split(" ")
       .map((n) => n[0])
       .join("")

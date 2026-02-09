@@ -37,6 +37,7 @@ import { AIHelper } from "../AIHelper";
 import { Sparkles } from "lucide-react";
 import { AddResourceDialog } from "./AddResourceDialog";
 import { useAuth } from "@/contexts/AuthContext";
+import ReactMarkdown from 'react-markdown';
 
 interface ProjectDetailsDialogProps {
   open: boolean;
@@ -51,8 +52,8 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
   const { user } = useAuth();
 
   const { data: resourcesData, refetch: refetchResources } = useQuery(GET_RESOURCES, {
-    variables: { linkedTo: project.id, onModel: 'Project' },
-    skip: !project.id
+    variables: { linkedTo: project?.id, onModel: 'Project' },
+    skip: !project?.id
   });
 
   const resources = (resourcesData as any)?.getResources || [];
@@ -79,12 +80,12 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
     });
   };
 
-  const tasks = project.tasks || [];
-  const milestones = project.milestones || [];
+  const tasks = project?.tasks || [];
+  const milestones = project?.milestones || [];
   const totalItems = tasks.length + milestones.length;
   const completedItems = tasks.filter((t: any) => t.completed).length + milestones.filter((m: any) => m.completed).length;
 
-  const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : (project.progress || 0);
+  const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : (project?.progress || 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -95,17 +96,17 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Badge variant="outline" className="text-[10px] uppercase font-bold text-accent border-accent/30 bg-accent/5">
-                  {project.type}
+                  {project?.type}
                 </Badge>
-                {project.deadline && (
+                {project?.deadline && (
                   <Badge variant="outline" className="text-[10px] uppercase font-bold">
                     <Clock className="w-3 h-3 mr-1" />
-                    Due {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'TBD'}
+                    Due {project?.deadline ? new Date(project.deadline).toLocaleDateString() : 'TBD'}
                   </Badge>
                 )}
               </div>
               <DialogTitle className="text-2xl font-heading font-bold text-foreground">
-                {project.title}
+                {project?.title}
               </DialogTitle>
             </div>
             <div className="text-right">
@@ -185,9 +186,11 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
               >
                 <div>
                   <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Project Description</h3>
-                  <p className="text-foreground leading-relaxed whitespace-pre-wrap">
-                    {project.description}
-                  </p>
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-heading prose-headings:font-bold prose-p:leading-relaxed prose-a:text-accent hover:prose-a:underline">
+                    <ReactMarkdown>
+                      {project.description}
+                    </ReactMarkdown>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -609,7 +612,7 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
         <AddResourceDialog
           open={showAddResource}
           onOpenChange={setShowAddResource}
-          linkedTo={project.id}
+          linkedTo={project?.id}
           onModel="Project"
           onSuccess={() => refetchResources()}
         />

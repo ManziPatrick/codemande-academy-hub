@@ -31,8 +31,8 @@ import { RequestHelpDialog, BookCallDialog } from "@/components/portal/dialogs";
 import { LessonQuiz } from "@/components/portal/LessonQuiz";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
-import { GET_COURSE, GET_ME } from "@/lib/graphql/queries";
-import { COMPLETE_LESSON } from "@/lib/graphql/mutations";
+import { GET_COURSE, GET_ME, GET_ASSIGNMENT_SUBMISSIONS } from "@/lib/graphql/queries";
+import { COMPLETE_LESSON, SUBMIT_ASSIGNMENT } from "@/lib/graphql/mutations";
 
 export default function CourseDetail() {
   const { courseId } = useParams();
@@ -40,6 +40,8 @@ export default function CourseDetail() {
   const [notes, setNotes] = useState("");
   const [helpOpen, setHelpOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [submissionContent, setSubmissionContent] = useState("");
+  const [isSubmittingAssignment, setIsSubmittingAssignment] = useState(false);
 
   // Queries
   const { data: userData, refetch: refetchUser } = useQuery(GET_ME);
@@ -59,6 +61,12 @@ export default function CourseDetail() {
   }, [course, activeLessonId]);
 
   const [completeLessonMutation] = useMutation(COMPLETE_LESSON);
+  const [submitAssignmentMutation] = useMutation(SUBMIT_ASSIGNMENT);
+
+  const { data: submissionsData, refetch: refetchSubmissions } = useQuery(GET_ASSIGNMENT_SUBMISSIONS, {
+    variables: { courseId, lessonId: activeLessonId },
+    skip: !activeLessonId
+  });
 
   if (loading) return (
     <PortalLayout>
@@ -127,6 +135,32 @@ export default function CourseDetail() {
     toast.success("Notes saved successfully!");
   };
 
+  const handleSubmitAssignment = async () => {
+    if (!submissionContent.trim()) {
+      toast.error("Please provide your submission content (URL or text)");
+      return;
+    }
+
+    setIsSubmittingAssignment(true);
+    try {
+      await submitAssignmentMutation({
+        variables: {
+          courseId,
+          lessonId: activeLessonId,
+          content: submissionContent
+        }
+      });
+      toast.success("Assignment submitted successfully!");
+      refetchSubmissions();
+      // Optionally mark lesson as complete automatically on submission
+      handleMarkComplete();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to submit assignment");
+    } finally {
+      setIsSubmittingAssignment(false);
+    }
+  };
+
   const handleStartDiscussion = () => {
     toast.success("Opening discussion forum...");
   };
@@ -141,6 +175,7 @@ export default function CourseDetail() {
       case "quiz": return HelpCircle;
       case "challenge": return Code;
       case "project": return FolderOpen;
+      case "assignment": return Code;
       default: return BookOpen;
     }
   };
@@ -190,7 +225,7 @@ export default function CourseDetail() {
               <p className="text-[10px] uppercase font-black text-muted-foreground tracking-tighter">Current Mastery</p>
             </div>
             <div className="w-32 bg-muted/20 rounded-full h-3 overflow-hidden">
-              <motion.div 
+              <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${progressPercent}%` }}
                 className="bg-accent h-full shadow-[0_0_10px_rgba(255,184,0,0.5)]"
@@ -207,49 +242,49 @@ export default function CourseDetail() {
             className="lg:col-span-8 space-y-6"
           >
             {currentLesson?.type === 'quiz' ? (
-                <Card className="border-border/50 overflow-hidden shadow-2xl">
-                  <div className="p-8 pb-12">
-                    <LessonQuiz 
-                      courseId={courseId!} 
-                      lessonId={(currentLesson.id || currentLesson._id)} 
-                      onComplete={handleMarkComplete} 
+              <Card className="border-border/50 overflow-hidden shadow-2xl">
+                <div className="p-8 pb-12">
+                  <LessonQuiz
+                    courseId={courseId!}
+                    lessonId={(currentLesson.id || currentLesson._id)}
+                    onComplete={handleMarkComplete}
+                  />
+                </div>
+              </Card>
+            ) : (
+              <Card className="border-border/50 overflow-hidden shadow-2xl group relative">
+                <div className="aspect-video bg-gradient-to-br from-card to-accent/5 flex items-center justify-center relative overflow-hidden">
+                  {currentLesson?.videoUrl ? (
+                    <iframe
+                      src={currentLesson.videoUrl.replace("watch?v=", "embed/")}
+                      className="w-full h-full border-none shadow-inner"
+                      allowFullScreen
                     />
-                  </div>
-                </Card>
-              ) : (
-                <Card className="border-border/50 overflow-hidden shadow-2xl group relative">
-                  <div className="aspect-video bg-gradient-to-br from-card to-accent/5 flex items-center justify-center relative overflow-hidden">
-                    {currentLesson?.videoUrl ? (
-                      <iframe 
-                        src={currentLesson.videoUrl.replace("watch?v=", "embed/")} 
-                        className="w-full h-full border-none shadow-inner"
-                        allowFullScreen
-                      />
-                    ) : currentLesson?.fileUrl ? (
-                      <div className="text-center p-12">
-                        <div className="w-24 h-24 rounded-3xl bg-accent/10 flex items-center justify-center mx-auto mb-6">
-                           {React.createElement(getLessonIcon(currentLesson.type), { className: "w-10 h-10 text-accent" })}
-                        </div>
-                        <h3 className="text-xl font-bold mb-3">{currentLesson.title}</h3>
-                        <p className="text-muted-foreground mb-6 max-w-sm mx-auto">This lesson contains document resources.</p>
-                        <Button variant="gold" className="shadow-lg shadow-gold/20" asChild>
-                           <a href={currentLesson.fileUrl} target="_blank" rel="noopener noreferrer">
-                              <Download className="w-4 h-4 mr-2" /> Open Lesson Document
-                           </a>
-                        </Button>
+                  ) : currentLesson?.fileUrl ? (
+                    <div className="text-center p-12">
+                      <div className="w-24 h-24 rounded-3xl bg-accent/10 flex items-center justify-center mx-auto mb-6">
+                        {React.createElement(getLessonIcon(currentLesson.type), { className: "w-10 h-10 text-accent" })}
                       </div>
-                    ) : (
-                      <div className="text-center p-12">
-                        <div className="w-24 h-24 rounded-3xl bg-accent/10 flex items-center justify-center mx-auto mb-6">
-                          <BookOpen className="w-10 h-10 text-accent" />
-                        </div>
-                        <p className="text-card-foreground font-bold text-lg">{currentLesson?.title}</p>
-                        <p className="text-muted-foreground text-sm font-medium mt-2 italic">Reading Material Only</p>
+                      <h3 className="text-xl font-bold mb-3">{currentLesson.title}</h3>
+                      <p className="text-muted-foreground mb-6 max-w-sm mx-auto">This lesson contains document resources.</p>
+                      <Button variant="gold" className="shadow-lg shadow-gold/20" asChild>
+                        <a href={currentLesson.fileUrl} target="_blank" rel="noopener noreferrer">
+                          <Download className="w-4 h-4 mr-2" /> Open Lesson Document
+                        </a>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center p-12">
+                      <div className="w-24 h-24 rounded-3xl bg-accent/10 flex items-center justify-center mx-auto mb-6">
+                        <BookOpen className="w-10 h-10 text-accent" />
                       </div>
-                    )}
-                  </div>
-                </Card>
-              )}
+                      <p className="text-card-foreground font-bold text-lg">{currentLesson?.title}</p>
+                      <p className="text-muted-foreground text-sm font-medium mt-2 italic">Reading Material Only</p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            )}
 
             <Tabs defaultValue="overview" className="space-y-4">
               <TabsList className="bg-muted/20 p-1 rounded-xl h-12 border border-border/30">
@@ -264,7 +299,7 @@ export default function CourseDetail() {
                   <CardContent className="p-8">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
-                         {React.createElement(getLessonIcon(currentLesson?.type))}
+                        {React.createElement(getLessonIcon(currentLesson?.type))}
                       </div>
                       <div>
                         <h3 className="font-heading text-xl font-bold text-foreground">
@@ -275,8 +310,8 @@ export default function CourseDetail() {
                         </p>
                       </div>
                     </div>
-                    
-                    <div 
+
+                    <div
                       className="prose prose-sm prose-invert max-w-none text-card-foreground/80 mb-8 leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: currentLesson?.content || currentLesson?.description || "No specific instructions provided." }}
                     />
@@ -293,9 +328,9 @@ export default function CourseDetail() {
                     </div>
 
                     <div className="flex items-center justify-between mt-8 pt-6 border-t border-border/50">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className="font-bold"
                         onClick={handlePrevious}
                         disabled={currentIndex === 0}
@@ -310,6 +345,82 @@ export default function CourseDetail() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {currentLesson?.type === 'assignment' && (
+                  <Card className="border-accent/20 bg-accent/5 backdrop-blur-sm overflow-hidden mt-6">
+                    <CardContent className="p-8 space-y-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-accent/20 flex items-center justify-center text-accent">
+                          <Code className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="font-heading text-lg font-bold text-foreground">Exercise Submission</h3>
+                          <p className="text-[10px] uppercase font-bold text-accent tracking-widest">Submit your daily work for review</p>
+                        </div>
+                      </div>
+
+                      {currentLesson.assignmentDescription && (
+                        <div className="bg-background/40 p-4 rounded-xl border border-accent/10">
+                          <p className="text-xs font-bold text-accent uppercase mb-2">Instructions</p>
+                          <p className="text-sm text-card-foreground/80 leading-relaxed text-secondary-foreground">{currentLesson.assignmentDescription}</p>
+
+                          {currentLesson.assignmentDeliverables?.length > 0 && (
+                            <div className="mt-4 space-y-2">
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase">Expected Deliverables:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {currentLesson.assignmentDeliverables.map((d: string, i: number) => (
+                                  <Badge key={i} variant="outline" className="text-[10px] border-accent/30 bg-accent/5">{d}</Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="space-y-4">
+                        <textarea
+                          className="w-full h-32 p-4 bg-background border border-accent/20 rounded-xl resize-none text-sm font-mono focus:ring-1 focus:ring-accent focus:border-accent"
+                          placeholder="Paste your GitHub URL, Live Link, or notes here..."
+                          value={submissionContent}
+                          onChange={(e) => setSubmissionContent(e.target.value)}
+                        />
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            {(submissionsData as any)?.getAssignmentSubmissions?.[0] && (
+                              <p className="text-xs font-medium flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                                Last submitted: {new Date(parseInt((submissionsData as any).getAssignmentSubmissions[0].createdAt)).toLocaleDateString()}
+                              </p>
+                            )}
+                            {(submissionsData as any)?.getAssignmentSubmissions?.[0]?.grade !== undefined && (
+                              <p className="text-sm font-bold text-gold">
+                                Grade: {(submissionsData as any).getAssignmentSubmissions[0].grade}/100
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            variant="gold"
+                            className="px-8 shadow-lg shadow-gold/20"
+                            onClick={handleSubmitAssignment}
+                            disabled={isSubmittingAssignment || !submissionContent.trim()}
+                          >
+                            {isSubmittingAssignment ? "Submitting..." : "Submit Evolution"}
+                          </Button>
+                        </div>
+
+                        {(submissionsData as any)?.getAssignmentSubmissions?.[0]?.feedback && (
+                          <div className="mt-4 p-4 bg-muted/20 rounded-xl border border-border/30">
+                            <p className="text-[10px] uppercase font-bold text-accent mb-1 flex items-center gap-1.5">
+                              <MessageSquare className="w-3 h-3" /> Trainer Feedback
+                            </p>
+                            <p className="text-sm italic text-muted-foreground">"{(submissionsData as any).getAssignmentSubmissions[0].feedback}"</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="resources">
@@ -364,8 +475,8 @@ export default function CourseDetail() {
           >
             <Card className="border-border/50 bg-background/50 backdrop-blur-sm sticky top-24 shadow-2xl overflow-hidden">
               <div className="p-4 bg-accent/20 border-b border-border/30 flex justify-between items-center">
-                 <span className="text-[10px] uppercase font-black tracking-widest text-accent">Blueprint</span>
-                 <Badge variant="secondary" className="bg-background/80 text-[10px]">{allLessons.length} UNITS</Badge>
+                <span className="text-[10px] uppercase font-black tracking-widest text-accent">Blueprint</span>
+                <Badge variant="secondary" className="bg-background/80 text-[10px]">{allLessons.length} UNITS</Badge>
               </div>
               <CardContent className="p-0">
                 <ScrollArea className="h-[calc(100vh-320px)]">
@@ -386,9 +497,8 @@ export default function CourseDetail() {
                               <li key={lessonId || lIdx}>
                                 <button
                                   onClick={() => setActiveLessonId(lessonId)}
-                                  className={`w-full flex items-center gap-3 p-3 rounded-xl text-left text-sm transition-all group ${
-                                    isActive ? "bg-accent/10 border border-accent/30" : "hover:bg-muted/10"
-                                  }`}
+                                  className={`w-full flex items-center gap-3 p-3 rounded-xl text-left text-sm transition-all group ${isActive ? "bg-accent/10 border border-accent/30" : "hover:bg-muted/10"
+                                    }`}
                                 >
                                   {isCompleted ? <CheckCircle className="w-3.5 h-3.5 text-green-500" /> : <LessonIcon className={`w-3.5 h-3.5 ${isActive ? 'text-accent' : ''}`} />}
                                   <div className="flex-1 truncate">
@@ -425,6 +535,7 @@ export default function CourseDetail() {
         open={bookingOpen}
         onOpenChange={setBookingOpen}
         mentorName={course.instructor?.username}
+        mentorId={course.instructor?.id}
         purpose={`Lesson Help: ${currentLesson?.title}`}
       />
     </PortalLayout>

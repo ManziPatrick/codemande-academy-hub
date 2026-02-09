@@ -24,11 +24,13 @@ import {
   FileBox,
   LayoutDashboard,
   ExternalLink,
+  UserPlus,
+  Rocket
 } from "lucide-react";
-import { EditCourseDialog, ViewCourseDialog } from "@/components/portal/dialogs";
+import { EditCourseDialog, ViewCourseDialog, EnrollStudentDialog, CreateProjectDialog, GradeProjectDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
-import { GET_COURSES, GET_ME } from "@/lib/graphql/queries";
+import { GET_COURSES, GET_ME, GET_ALL_PROJECTS } from "@/lib/graphql/queries";
 import { UPDATE_COURSE } from "@/lib/graphql/mutations";
 
 export default function TrainerCourses() {
@@ -36,9 +38,14 @@ export default function TrainerCourses() {
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [editCourse, setEditCourse] = useState<any | null>(null);
   const [viewCourse, setViewCourse] = useState<any | null>(null);
+  const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
+  const [assignProjectOpen, setAssignProjectOpen] = useState(false);
+  const [gradeProject, setGradeProject] = useState<any>(null);
+  const [gradeOpen, setGradeOpen] = useState(false);
 
   const { data: userData, loading: userLoading } = useQuery(GET_ME);
   const { data: coursesData, loading: coursesLoading, refetch } = useQuery(GET_COURSES);
+  const { data: projectsData, refetch: refetchProjects } = useQuery(GET_ALL_PROJECTS);
   const [updateCourseMutation] = useMutation(UPDATE_COURSE);
 
   const me = (userData as any)?.me;
@@ -58,6 +65,12 @@ export default function TrainerCourses() {
     myCourses.find((c: any) => c.id === selectedCourseId),
     [myCourses, selectedCourseId]
   );
+
+  const courseProjects = useMemo(() => {
+    const all = (projectsData as any)?.projects || [];
+    if (!selectedCourse) return [];
+    return all.filter((p: any) => p.course === selectedCourse.title);
+  }, [projectsData, selectedCourse]);
 
   const handleUpdateCourse = async (updatedCourseData: any) => {
     try {
@@ -230,6 +243,7 @@ export default function TrainerCourses() {
                         <TabsList className="bg-muted/20 p-1 rounded-lg h-12 border border-border/30">
                           <TabsTrigger value="modules" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Modules & Lessons</TabsTrigger>
                           <TabsTrigger value="students" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Enrolled Students</TabsTrigger>
+                          <TabsTrigger value="teams" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Project Teams</TabsTrigger>
                           <TabsTrigger value="analytics" className="rounded-md data-[state=active]:bg-background data-[state=active]:shadow-sm">Tracking</TabsTrigger>
                         </TabsList>
 
@@ -291,6 +305,13 @@ export default function TrainerCourses() {
                         </TabsContent>
 
                         <TabsContent value="students" className="pt-6">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="text-sm font-bold uppercase text-muted-foreground">Course Participants</h4>
+                            <Button variant="gold" size="sm" onClick={() => setEnrollDialogOpen(true)}>
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Enroll Student
+                            </Button>
+                          </div>
                           <div className="grid gap-4">
                             {selectedCourse.studentsEnrolled?.map((student: any) => (
                               <div key={student.id} className="flex items-center justify-between p-4 bg-background/50 rounded-xl border border-border/30">
@@ -309,6 +330,91 @@ export default function TrainerCourses() {
                             {(!selectedCourse.studentsEnrolled || selectedCourse.studentsEnrolled.length === 0) && (
                               <div className="text-center py-20 text-muted-foreground">
                                 No students enrolled in this track yet.
+                              </div>
+                            )}
+                          </div>
+                        </TabsContent>
+
+                        <TabsContent value="teams" className="pt-6">
+                          <div className="flex items-center justify-between mb-6">
+                            <div>
+                              <h4 className="text-sm font-bold uppercase text-muted-foreground">Project & Team Infrastructure</h4>
+                              <p className="text-xs text-muted-foreground mt-1">Assign projects and monitor team collaboration</p>
+                            </div>
+                            <Button variant="gold" size="sm" onClick={() => setAssignProjectOpen(true)}>
+                              <Rocket className="w-4 h-4 mr-2" />
+                              Assign Project
+                            </Button>
+                          </div>
+
+                          <div className="grid gap-4">
+                            {courseProjects.length > 0 ? (
+                              courseProjects.map((project: any) => (
+                                <div key={project.id} className="p-4 bg-background/50 rounded-xl border border-border/30 hover:border-accent/30 transition-all">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+                                        <Layers className="w-5 h-5" />
+                                      </div>
+                                      <div>
+                                        <p className="font-bold text-foreground">{project.title}</p>
+                                        <p className="text-xs text-muted-foreground uppercase">{project.type}</p>
+                                      </div>
+                                    </div>
+                                    <Badge variant="outline" className={
+                                      project.status === 'completed' ? 'bg-green-500/10 text-green-500' :
+                                        'bg-amber-500/10 text-amber-500'
+                                    }>
+                                      {project.status.replace('_', ' ')}
+                                    </Badge>
+                                  </div>
+
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex -space-x-2">
+                                      {project.team?.map((m: any, i: number) => (
+                                        <div key={i} className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[10px] font-bold overflow-hidden" title={m.name}>
+                                          {m.name?.[0] || 'U'}
+                                        </div>
+                                      ))}
+                                      {(!project.team || project.team.length === 0) && (
+                                        <p className="text-[10px] text-muted-foreground">Individual</p>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="text-right mr-3">
+                                        <p className="text-[10px] text-muted-foreground uppercase font-bold">Progress</p>
+                                        <p className="text-sm font-bold text-accent">{project.progress}%</p>
+                                      </div>
+                                      <div className="flex gap-1">
+                                        <Button variant="ghost" size="sm" className="h-8">Details</Button>
+                                        {(project.status === 'pending_review' || project.status === 'in_progress') && (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="h-8 border-accent text-accent hover:bg-accent hover:text-white"
+                                            onClick={() => {
+                                              setGradeProject(project);
+                                              setGradeOpen(true);
+                                            }}
+                                          >
+                                            Grade
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-20 bg-background/20 rounded-2xl border border-dashed border-border/50">
+                                <Rocket className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
+                                <h3 className="font-bold text-lg">No Projects Assigned</h3>
+                                <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-6">
+                                  There are no projects or teams established for this course yet.
+                                </p>
+                                <Button variant="gold" onClick={() => setAssignProjectOpen(true)}>
+                                  <Plus className="w-4 h-4 mr-2" /> Assign First Project
+                                </Button>
                               </div>
                             )}
                           </div>
@@ -344,6 +450,25 @@ export default function TrainerCourses() {
         open={!!viewCourse}
         onOpenChange={(open) => !open && setViewCourse(null)}
         course={viewCourse}
+      />
+
+      <EnrollStudentDialog
+        open={enrollDialogOpen}
+        onOpenChange={setEnrollDialogOpen}
+        course={selectedCourse}
+      />
+
+      <GradeProjectDialog
+        open={gradeOpen}
+        onOpenChange={setGradeOpen}
+        project={gradeProject}
+        refetch={refetchProjects}
+      />
+
+      <CreateProjectDialog
+        open={assignProjectOpen}
+        onOpenChange={setAssignProjectOpen}
+        refetch={refetchProjects}
       />
     </PortalLayout>
   );

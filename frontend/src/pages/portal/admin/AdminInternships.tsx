@@ -15,7 +15,8 @@ import {
   XCircle,
   Clock,
   LayoutGrid,
-  BarChart3
+  BarChart3,
+  Code
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import ProgramList from "@/components/portal/admin/internship/ProgramList";
 import ApplicationReview from "@/components/portal/admin/internship/ApplicationReview";
 import TeamManagement from "@/components/portal/admin/internship/TeamManagement";
+import InternshipProjectList from "@/components/portal/admin/internship/InternshipProjectList";
 import InternshipActivityLogs from "@/components/portal/admin/internship/InternshipActivityLogs";
 import EngagementDashboard from "@/components/portal/admin/internship/EngagementDashboard";
 
@@ -61,7 +63,11 @@ export default function AdminInternships() {
             </TabsTrigger>
             <TabsTrigger value="teams" className="gap-2">
               <LayoutGrid className="w-4 h-4" />
-              Teams & Projects
+              Teams
+            </TabsTrigger>
+            <TabsTrigger value="projects" className="gap-2">
+              <Code className="w-4 h-4" />
+              Projects
             </TabsTrigger>
             <TabsTrigger value="logs" className="gap-2">
               <Activity className="w-4 h-4" />
@@ -83,6 +89,10 @@ export default function AdminInternships() {
 
           <TabsContent value="teams">
             <TeamManagement />
+          </TabsContent>
+
+          <TabsContent value="projects">
+            <InternshipProjectList />
           </TabsContent>
 
           <TabsContent value="logs">

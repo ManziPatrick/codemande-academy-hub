@@ -23,11 +23,18 @@ import {
 import { useQuery, useMutation, useSubscription } from "@apollo/client/react";
 import { GET_CONVERSATIONS, GET_MESSAGES, GET_USERS } from "@/lib/graphql/queries";
 import { SEND_MESSAGE } from "@/lib/graphql/mutations";
-import { MESSAGE_ADDED } from "@/lib/graphql/subscriptions";
-import { useSocket } from "@/hooks/use-socket";
+import { usePusher } from "@/hooks/use-pusher";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { toast } from "sonner";
+
+const safeFormatDate = (dateString: any, formatStr: string = 'HH:mm') => {
+  if (!dateString) return '';
+  const timestamp = parseInt(dateString);
+  const date = !isNaN(timestamp) ? new Date(timestamp) : new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  return format(date, formatStr);
+};
 
 const faqs = [
   { q: "How do I reset my password?", a: "Go to Settings > Profile." },
@@ -43,7 +50,7 @@ const supportTickets = [
 
 export default function StudentSupport() {
   const { user: currentUser } = useAuth();
-  const socket = useSocket();
+  const pusher = usePusher();
   const [activeTab, setActiveTab] = useState<"contact" | "chat">("contact");
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
@@ -62,27 +69,23 @@ export default function StudentSupport() {
 
   const [sendMessageMutation] = useMutation(SEND_MESSAGE);
 
-  // GraphQL Subscription
-  useSubscription(MESSAGE_ADDED, {
-    variables: { conversationId: activeConversationId },
-    skip: !activeConversationId,
-    onData: () => {
+  // Real-time updates via Pusher
+  useEffect(() => {
+    if (!pusher || !currentUser) return;
+
+    const channel = pusher.subscribe(`user-${currentUser.id}`);
+
+    const handleReceiveMessage = () => {
       refetchMsgs();
       refetchConvs();
-    }
-  });
+    };
 
-  // Keep socket for other legacy real-time features if any, 
-  // but remove message listener if it's redundant
-  useEffect(() => {
-    if (socket) {
-      // socket.on('receive_message', ...) removed in favor of subscriptions
+    channel.bind('receive_message', handleReceiveMessage);
 
-      return () => {
-        // socket.off('receive_message');
-      };
-    }
-  }, [socket]);
+    return () => {
+      channel.unbind('receive_message', handleReceiveMessage);
+    };
+  }, [pusher, currentUser, refetchMsgs, refetchConvs]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -376,7 +379,7 @@ export default function StudentSupport() {
                           <div className="flex items-center justify-between mb-0.5">
                             <p className="text-sm font-semibold text-card-foreground truncate">{otherUser?.username}</p>
                             <span className="text-[10px] text-muted-foreground">
-                              {conv.lastMessage ? format(new Date(parseInt(conv.updatedAt)), 'HH:mm') : ''}
+                              {conv.lastMessage ? safeFormatDate(conv.updatedAt) : ''}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground truncate">
@@ -438,7 +441,7 @@ export default function StudentSupport() {
                               }`}>
                               {msg.content}
                               <p className={`text-[9px] mt-1 opacity-50 ${isMe ? 'text-right' : 'text-left'}`}>
-                                {format(new Date(parseInt(msg.createdAt)), 'HH:mm')}
+                                {safeFormatDate(msg.createdAt)}
                               </p>
                             </div>
                           </div>

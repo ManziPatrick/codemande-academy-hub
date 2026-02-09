@@ -219,9 +219,28 @@ export const GET_TRAINER_STUDENTS = gql`
       id
       username
       email
+      fullName
+      bio
+      phone
+      location
+      avatar
+      createdAt
+      completedLessons {
+        courseId
+        lessonId
+      }
       enrolledCourses {
         id
         title
+        level
+        modules {
+          id
+          title
+          lessons {
+            id
+            title
+          }
+        }
       }
       completedLessons {
         courseId
@@ -229,13 +248,18 @@ export const GET_TRAINER_STUDENTS = gql`
       }
       activityLog {
         action
+        details
         timestamp
       }
       badges {
         badge {
           id
           title
+          description
+          icon
+          category
         }
+        awardedAt
       }
       grades {
         courseId
@@ -245,6 +269,21 @@ export const GET_TRAINER_STUDENTS = gql`
       }
       level
       academicStatus
+      bookings {
+        id
+        type
+        date
+        time
+        topic
+        notes
+        status
+        meetingLink
+        mentor {
+          id
+          username
+        }
+        createdAt
+      }
     }
   }
 `;
@@ -514,6 +553,7 @@ export const GET_ALL_PROJECTS = gql`
         username
       }
       tasks {
+        id
         title
         completed
       }
@@ -975,6 +1015,12 @@ export const GET_INTERNSHIP_PROJECTS_NEW = gql`
       title
       description
       requiredSkills
+      documentation {
+        links {
+          title
+          url
+        }
+      }
     }
   }
 `;
@@ -987,6 +1033,12 @@ export const GET_INTERNSHIP_PROJECT_NEW = gql`
       description
       requiredSkills
       status
+      documentation {
+        links {
+          title
+          url
+        }
+      }
       teamSizeRange {
         min
         max
@@ -1143,6 +1195,61 @@ export const GET_MY_MENTEES = gql`
         id
         username
         email
+        fullName
+        bio
+        phone
+        location
+        avatar
+        createdAt
+        level
+        academicStatus
+        enrolledCourses {
+          id
+          title
+          level
+          modules {
+            id
+            title
+            lessons {
+              id
+              title
+            }
+          }
+        }
+        completedLessons {
+          courseId
+          lessonId
+        }
+        activityLog {
+          action
+          details
+          timestamp
+        }
+        badges {
+          badge {
+            id
+            title
+            description
+            icon
+            category
+          }
+          awardedAt
+        }
+        bookings {
+          id
+          type
+          date
+          time
+          topic
+          notes
+          status
+          meetingLink
+          mentor {
+            id
+            username
+          }
+          createdAt
+        }
       }
       mentors {
         id
@@ -1440,3 +1547,24 @@ export const GET_RESOURCES = gql`
   }
 `;
 
+export const GET_ASSIGNMENT_SUBMISSIONS = gql`
+  query GetAssignmentSubmissions($courseId: ID, $lessonId: String) {
+    getAssignmentSubmissions(courseId: $courseId, lessonId: $lessonId) {
+      id
+      userId
+      user {
+        id
+        username
+        fullName
+        avatar
+      }
+      courseId
+      lessonId
+      content
+      status
+      grade
+      feedback
+      createdAt
+    }
+  }
+`;

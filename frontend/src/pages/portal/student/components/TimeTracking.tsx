@@ -29,9 +29,17 @@ import {
     CheckCircle2,
     AlertCircle,
     History,
-    Timer
+    Timer,
+    Loader2
 } from "lucide-react";
 import { format } from "date-fns";
+
+const safeFormatDate = (dateString: any, formatStr: string = 'yyyy-MM-dd') => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return format(date, formatStr);
+};
 import { toast } from "sonner";
 import { GET_INTERNSHIP_TIME_LOGS } from "@/lib/graphql/queries";
 import { LOG_INTERNSHIP_TIME } from "@/lib/graphql/mutations";
@@ -45,7 +53,7 @@ export function TimeTracking({ teamId }: TimeTrackingProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [minutes, setMinutes] = useState("");
     const [description, setDescription] = useState("");
-    const [date, setDate] = useState(format(new Date(), "yyyy-MM-dd"));
+    const [date, setDate] = useState(safeFormatDate(new Date()));
 
     const { data, loading, refetch } = useQuery(GET_INTERNSHIP_TIME_LOGS, {
         variables: { teamId },
@@ -82,7 +90,7 @@ export function TimeTracking({ teamId }: TimeTrackingProps) {
         });
     };
 
-    const logs = data?.internshipTimeLogs || [];
+    const logs = (data as any)?.internshipTimeLogs || [];
     const totalMinutes = logs.reduce((acc: number, log: any) => acc + log.minutes, 0);
     const totalHours = (totalMinutes / 60).toFixed(1);
 
@@ -237,7 +245,7 @@ export function TimeTracking({ teamId }: TimeTrackingProps) {
                                                 className="border-border/50 hover:bg-muted/20"
                                             >
                                                 <TableCell className="font-medium">
-                                                    {format(new Date(log.date), "MMM dd, yyyy")}
+                                                    {safeFormatDate(log.date, "MMM dd, yyyy")}
                                                 </TableCell>
                                                 <TableCell className="text-muted-foreground">
                                                     {log.description}

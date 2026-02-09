@@ -174,6 +174,9 @@ export function EditCourseDialog({
           fileUrl: l.fileUrl || "",
           type: l.type || "video",
           content: l.content || "",
+          isAssignment: l.type === 'assignment',
+          assignmentDescription: l.assignmentDescription || "",
+          assignmentDeliverables: l.assignmentDeliverables || [],
           resources: l.resources?.map((r: any) => ({
             id: r.id || r._id,
             title: r.title,
@@ -575,7 +578,7 @@ export function EditCourseDialog({
                                           setFormData({ ...formData, modules: newModules });
                                         }}
                                       >
-                                        {['video', 'pdf', 'ppt', 'book', 'article', 'quiz'].map(t => (
+                                        {['video', 'pdf', 'ppt', 'book', 'article', 'quiz', 'assignment'].map(t => (
                                           <option key={t} value={t}>{t}</option>
                                         ))}
                                       </select>
@@ -593,6 +596,42 @@ export function EditCourseDialog({
                                         <Trash2 className="w-3.5 h-3.5" />
                                       </Button>
                                     </div>
+
+                                    {lesson.type === 'assignment' && (
+                                      <div className="space-y-3 p-3 bg-accent/5 rounded-lg border border-accent/10">
+                                        <div>
+                                          <label className="text-[10px] font-bold text-accent uppercase block mb-1">Assignment Description</label>
+                                          <Input
+                                            className="text-xs bg-background border-accent/20"
+                                            placeholder="Submission instructions..."
+                                            value={lesson.assignmentDescription || ""}
+                                            onChange={(e) => {
+                                              const newModules = [...formData.modules];
+                                              const newLessons = [...module.lessons];
+                                              newLessons[lIdx] = { ...lesson, assignmentDescription: e.target.value, isAssignment: true };
+                                              newModules[mIdx] = { ...module, lessons: newLessons };
+                                              setFormData({ ...formData, modules: newModules });
+                                            }}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-[10px] font-bold text-accent uppercase block mb-1">Expected Deliverables (comma separated)</label>
+                                          <Input
+                                            className="text-xs bg-background border-accent/20"
+                                            placeholder="GitHub URL, Live Link"
+                                            value={lesson.assignmentDeliverables?.join(', ') || ""}
+                                            onChange={(e) => {
+                                              const deliverables = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                                              const newModules = [...formData.modules];
+                                              const newLessons = [...module.lessons];
+                                              newLessons[lIdx] = { ...lesson, assignmentDeliverables: deliverables, isAssignment: true };
+                                              newModules[mIdx] = { ...module, lessons: newLessons };
+                                              setFormData({ ...formData, modules: newModules });
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                    )}
 
                                     <div className="grid grid-cols-2 gap-4 pt-2">
                                       <div className="space-y-1.5">
@@ -772,7 +811,7 @@ export function EditCourseDialog({
             Publish Course Updates
           </Button>
         </div>
-      </DialogContent>
+      </DialogContent >
       <ManageQuestionsDialog
         open={!!questionLesson}
         onOpenChange={(open) => !open && setQuestionLesson(null)}
@@ -803,6 +842,6 @@ export function EditCourseDialog({
           }
         }}
       />
-    </Dialog>
+    </Dialog >
   );
 }

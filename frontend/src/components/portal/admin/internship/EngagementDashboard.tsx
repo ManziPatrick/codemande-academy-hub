@@ -21,6 +21,13 @@ import {
     Search
 } from "lucide-react";
 import { format } from "date-fns";
+
+const safeFormatDate = (dateString: any, formatStr: string = 'HH:mm') => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    return format(date, formatStr);
+};
 import { GET_INTERNSHIP_TIME_LOGS, GET_INTERNSHIP_ACTIVITY_LOGS } from "@/lib/graphql/queries";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/input";
@@ -32,8 +39,8 @@ export default function EngagementDashboard() {
     const { data: timeData, loading: timeLoading } = useQuery(GET_INTERNSHIP_TIME_LOGS);
     const { data: activityData, loading: activityLoading } = useQuery(GET_INTERNSHIP_ACTIVITY_LOGS);
 
-    const timeLogs = timeData?.internshipTimeLogs || [];
-    const activityLogs = activityData?.internshipActivityLogs || [];
+    const timeLogs = (timeData as any)?.internshipTimeLogs || [];
+    const activityLogs = (activityData as any)?.internshipActivityLogs || [];
 
     const totalMinutes = timeLogs.reduce((acc: number, log: any) => acc + log.minutes, 0);
     const totalHours = (totalMinutes / 60).toFixed(0);
@@ -154,7 +161,7 @@ export default function EngagementDashboard() {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-xs whitespace-nowrap">
-                                                {format(new Date(log.date), "MMM dd, yyyy")}
+                                                {safeFormatDate(log.date, "MMM dd, yyyy")}
                                             </TableCell>
                                             <TableCell className="text-xs text-muted-foreground max-w-[300px] truncate">
                                                 {log.description}
@@ -214,7 +221,7 @@ export default function EngagementDashboard() {
                                                 </p>
                                                 <p className="text-[9px] text-muted-foreground/50 flex items-center gap-1 mt-1">
                                                     <CalendarIcon className="w-2.5 h-2.5" />
-                                                    {format(new Date(activity.createdAt), "MMM dd, HH:mm")}
+                                                    {safeFormatDate(activity.createdAt, "MMM dd, HH:mm")}
                                                 </p>
                                             </div>
                                         </motion.div>

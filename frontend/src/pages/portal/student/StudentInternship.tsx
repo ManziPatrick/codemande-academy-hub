@@ -3,6 +3,13 @@ import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
+
+const safeFormatDate = (dateString: any, formatStr: string = 'MMM dd, yyyy HH:mm') => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '';
+  return format(date, formatStr);
+};
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -526,7 +533,7 @@ export default function StudentInternship() {
                           <div className="space-y-1">
                             <p className="text-sm font-medium">{log.action}</p>
                             <p className="text-xs text-muted-foreground">{log.details}</p>
-                            <p className="text-[10px] text-muted-foreground/60">{format(new Date(log.timestamp), "MMM dd, yyyy HH:mm")}</p>
+                            <p className="text-[10px] text-muted-foreground/60">{safeFormatDate(log.timestamp)}</p>
                           </div>
                         </div>
                       ))

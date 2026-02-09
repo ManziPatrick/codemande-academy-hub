@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   BookOpen,
@@ -22,7 +23,7 @@ import {
   CreditCard
 } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
-import { GET_ME, GET_MY_BOOKINGS, GET_CONVERSATIONS, GET_MY_PAYMENTS } from "@/lib/graphql/queries";
+import { GET_ME, GET_MY_BOOKINGS, GET_CONVERSATIONS, GET_MY_PAYMENTS, GET_MY_PROJECTS } from "@/lib/graphql/queries";
 
 // No static achievements needed
 
@@ -32,8 +33,9 @@ export default function StudentDashboard() {
   const { data: bookingsData, loading: bookingsLoading } = useQuery(GET_MY_BOOKINGS);
   const { data: conversationsData } = useQuery(GET_CONVERSATIONS);
   const { data: paymentsData } = useQuery(GET_MY_PAYMENTS);
+  const { data: projectsData, loading: projectsLoading } = useQuery(GET_MY_PROJECTS);
 
-  if (meLoading || bookingsLoading) {
+  if (meLoading || bookingsLoading || projectsLoading) {
     return (
       <PortalLayout>
         <div className="flex items-center justify-center min-h-[400px]">
@@ -48,10 +50,12 @@ export default function StudentDashboard() {
   const completedLessons = me?.completedLessons || [];
   const bookings = (bookingsData as any)?.myBookings || [];
   const payments = (paymentsData as any)?.myPayments || [];
+  const projects = (projectsData as any)?.myProjects || [];
 
-  const getCourseProgress = (courseId: string, totalLessons: number) => {
+  const getCourseProgress = (course: any) => {
+    const totalLessons = course.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 0;
     if (totalLessons === 0) return 0;
-    const completed = completedLessons.filter((l: any) => l.courseId === courseId).length;
+    const completed = completedLessons.filter((l: any) => l.courseId === (course.id || course._id)).length;
     return Math.round((completed / totalLessons) * 100);
   };
 
@@ -167,17 +171,17 @@ export default function StudentDashboard() {
               </CardHeader>
               <CardContent className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar">
                 {enrolledCourses.length === 0 && (
-                   <div className="text-center py-8">
-                     <p className="text-muted-foreground mb-4">You haven't enrolled in any courses yet.</p>
-                     <Link to="/training">
-                       <Button variant="gold">Browse Courses</Button>
-                     </Link>
-                   </div>
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">You haven't enrolled in any courses yet.</p>
+                    <Link to="/training">
+                      <Button variant="gold">Browse Courses</Button>
+                    </Link>
+                  </div>
                 )}
                 {enrolledCourses.map((course: any, index: number) => {
                   const courseId = course.id || course._id;
                   const totalLessons = course.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 0;
-                  const progress = getCourseProgress(courseId, totalLessons);
+                  const progress = getCourseProgress(course);
                   const lastCompletedLesson = completedLessons.filter((l: any) => l.courseId === courseId).pop();
 
                   return (
@@ -218,6 +222,46 @@ export default function StudentDashboard() {
                 })}
               </CardContent>
             </Card>
+
+            {/* In-Progress Projects */}
+            <Card className="border-border/50">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-lg font-heading">Active Projects</CardTitle>
+                <Link to="/portal/student/projects">
+                  <Button variant="ghost" size="sm" className="text-accent">
+                    View All <ArrowRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent className="space-y-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                {projects.length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground italic">No projects assigned yet.</p>
+                  </div>
+                )}
+                {projects.filter((p: any) => p.status !== 'completed').map((project: any) => (
+                  <div
+                    key={project.id}
+                    className="p-4 bg-background/50 rounded-lg border border-border/30 hover:border-accent/30 transition-all"
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-heading font-semibold text-card-foreground text-sm">
+                        {project.title}
+                      </h3>
+                      <Badge variant="outline" className="text-[10px] uppercase bg-accent/10 border-accent/20 text-accent">
+                        {project.status.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3 line-clamp-1">{project.course}</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-muted-foreground">Progress</span>
+                      <span className="text-[10px] font-bold text-accent">{project.progress}%</span>
+                    </div>
+                    <Progress value={project.progress} className="h-1.5" />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </motion.div>
 
           {/* Sidebar Content */}
@@ -248,10 +292,9 @@ export default function StudentDashboard() {
                       >
                         <div className="flex justify-between items-start">
                           <p className="font-medium text-sm text-card-foreground capitalize">{booking.type.replace('-', ' ')}</p>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                            booking.status === 'confirmed' ? 'bg-green-500/20 text-green-400' : 
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded ${booking.status === 'confirmed' ? 'bg-green-500/20 text-green-400' :
                             booking.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
-                          }`}>
+                            }`}>
                             {booking.status}
                           </span>
                         </div>
@@ -287,7 +330,7 @@ export default function StudentDashboard() {
                   </CardTitle>
                   <Link to="/chat">
                     <Button variant="ghost" size="sm" className="text-accent h-7 px-2">
-                       View All
+                      View All
                     </Button>
                   </Link>
                 </CardHeader>
@@ -372,7 +415,7 @@ export default function StudentDashboard() {
                   </CardTitle>
                   <Link to="/portal/student/billing">
                     <Button variant="ghost" size="sm" className="text-accent h-7 px-2">
-                       History
+                      History
                     </Button>
                   </Link>
                 </CardHeader>
@@ -384,11 +427,11 @@ export default function StudentDashboard() {
                   ) : (
                     payments.slice(0, 2).map((p: any) => (
                       <div key={p.id} className="flex justify-between items-center p-2 bg-accent/5 rounded-lg border border-accent/10">
-                         <div className="flex-1 min-w-0">
-                           <p className="text-[10px] font-bold truncate">{p.itemTitle}</p>
-                           <p className="text-[8px] text-muted-foreground">{new Date(p.date).toLocaleDateString()}</p>
-                         </div>
-                         <p className="text-[10px] font-black">{p.amount.toLocaleString()} {p.currency}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-bold truncate">{p.itemTitle}</p>
+                          <p className="text-[8px] text-muted-foreground">{new Date(p.date).toLocaleDateString()}</p>
+                        </div>
+                        <p className="text-[10px] font-black">{p.amount.toLocaleString()} {p.currency}</p>
                       </div>
                     ))
                   )}

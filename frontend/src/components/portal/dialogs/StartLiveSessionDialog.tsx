@@ -54,8 +54,9 @@ export function StartLiveSessionDialog({
   const [copied, setCopied] = useState(false);
 
   const generateMeetingLink = () => {
-    const meetId = Math.random().toString(36).substring(2, 12);
-    return `https://meet.codemande.com/${meetId}`;
+    const chars = "abcdefghijklmnopqrstuvwxyz";
+    const segment = (len: number) => Array.from({ length: len }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+    return `https://meet.google.com/${segment(3)}-${segment(4)}-${segment(3)}`;
   };
 
   const handleStartSession = async () => {
@@ -67,7 +68,7 @@ export function StartLiveSessionDialog({
     const meetingLink = form.meetingLink || generateMeetingLink();
     setForm({ ...form, meetingLink });
     setStep("ready");
-    
+
     onStart?.({ ...form, meetingLink });
     toast.success("Live session is ready!");
   };
@@ -104,78 +105,78 @@ export function StartLiveSessionDialog({
           <>
             <ScrollArea className="flex-1 px-4 sm:px-6 overflow-y-auto">
               <div className="space-y-4 py-4">
-            {/* Session Title */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Session Title *
-              </label>
-              <Input
-                placeholder="e.g., React Hooks Deep Dive"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-              />
-            </div>
+                {/* Session Title */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Session Title *
+                  </label>
+                  <Input
+                    placeholder="e.g., React Hooks Deep Dive"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  />
+                </div>
 
-            {/* Description */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Description
-              </label>
-              <Textarea
-                placeholder="What will you cover in this session?"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={2}
-              />
-            </div>
+                {/* Description */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Description
+                  </label>
+                  <Textarea
+                    placeholder="What will you cover in this session?"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    rows={2}
+                  />
+                </div>
 
-            {/* Course Selection */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Course *
-              </label>
-              <Select
-                value={form.courseId}
-                onValueChange={(value) => setForm({ ...form, courseId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select course" />
-                </SelectTrigger>
-                <SelectContent>
-                  {courses.map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {/* Course Selection */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Course *
+                  </label>
+                  <Select
+                    value={form.courseId}
+                    onValueChange={(value) => setForm({ ...form, courseId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select course" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((course) => (
+                        <SelectItem key={course.id} value={course.id}>
+                          {course.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* Meeting Link */}
-            <div>
-              <label className="text-sm font-medium mb-2 block">
-                Meeting Link (Optional)
-              </label>
-              <Input
-                placeholder="https://meet.google.com/..."
-                value={form.meetingLink}
-                onChange={(e) => setForm({ ...form, meetingLink: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Paste your Google Meet link here, or leave empty to generate a CodeMande Meet link.
-              </p>
-            </div>
+                {/* Meeting Link */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Meeting Link (Optional)
+                  </label>
+                  <Input
+                    placeholder="https://meet.google.com/..."
+                    value={form.meetingLink}
+                    onChange={(e) => setForm({ ...form, meetingLink: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Paste your Google Meet link here, or leave empty to generate a CodeMande Meet link.
+                  </p>
+                </div>
 
-            {/* Info */}
-            <div className="p-3 bg-accent/10 rounded-lg flex items-start gap-2">
-              <Users className="w-5 h-5 text-accent mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">Notify Students</p>
-                <p className="text-xs text-muted-foreground">
-                  Enrolled students will receive an instant notification
-                </p>
-              </div>
-            </div>
+                {/* Info */}
+                <div className="p-3 bg-accent/10 rounded-lg flex items-start gap-2">
+                  <Users className="w-5 h-5 text-accent mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium">Notify Students</p>
+                    <p className="text-xs text-muted-foreground">
+                      Enrolled students will receive an instant notification
+                    </p>
+                  </div>
+                </div>
               </div>
             </ScrollArea>
 

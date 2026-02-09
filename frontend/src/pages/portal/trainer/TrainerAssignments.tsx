@@ -28,10 +28,12 @@ import { ViewSubmissionDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
-const formatDate = (dateString: string) => {
-  if (!dateString) return 'Unknown';
-  const date = /^\d+$/.test(dateString) ? new Date(parseInt(dateString)) : new Date(dateString);
-  return format(date, 'MMM d, HH:mm');
+const safeFormatDate = (dateString: any, formatStr: string = 'MMM d, HH:mm') => {
+  if (!dateString) return 'N/A';
+  const timestamp = parseInt(dateString);
+  const date = !isNaN(timestamp) ? new Date(timestamp) : new Date(dateString);
+  if (isNaN(date.getTime())) return 'N/A';
+  return format(date, formatStr);
 };
 
 
@@ -53,16 +55,16 @@ export default function TrainerAssignments() {
   // And "reviewed" if it has a grade.
   // Note: projects without submittedAt are not submissions yet.
 
-  const pendingSubmissions = projects.filter((p: any) => 
-    p.submittedAt && !p.grade && 
-    (p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-     p.user.username.toLowerCase().includes(searchQuery.toLowerCase()))
+  const pendingSubmissions = projects.filter((p: any) =>
+    p.submittedAt && !p.grade &&
+    (p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.user.username.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const reviewedSubmissions = projects.filter((p: any) => 
-    p.grade && 
-    (p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-     p.user.username.toLowerCase().includes(searchQuery.toLowerCase()))
+  const reviewedSubmissions = projects.filter((p: any) =>
+    p.grade &&
+    (p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.user.username.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const selectedSubmission = projects.find((p: any) => p.id === selectedSubmissionId);
@@ -90,7 +92,7 @@ export default function TrainerAssignments() {
           status: 'completed'
         }
       });
-      
+
       toast.success("Grade submitted successfully");
       refetch();
       setSelectedSubmissionId(null);
@@ -104,7 +106,7 @@ export default function TrainerAssignments() {
 
   const handleRequestRevision = async () => {
     if (!selectedSubmissionId) return;
-    
+
     try {
       if (!feedback) {
         toast.error("Please provide feedback for revision");
@@ -124,13 +126,13 @@ export default function TrainerAssignments() {
       setSelectedSubmissionId(null);
       setFeedback("");
     } catch (error) {
-       console.error("Error requesting revision:", error);
-       toast.error("Failed to request revision");
+      console.error("Error requesting revision:", error);
+      toast.error("Failed to request revision");
     }
   };
 
   const handleDownload = () => {
-    if(selectedSubmission?.submissionUrl) {
+    if (selectedSubmission?.submissionUrl) {
       window.open(selectedSubmission.submissionUrl, '_blank');
     } else {
       toast.error("No submission file available");
@@ -214,9 +216,8 @@ export default function TrainerAssignments() {
                 {pendingSubmissions.map((submission: any) => (
                   <Card
                     key={submission.id}
-                    className={`border-border/50 cursor-pointer transition-all hover:shadow-card-hover ${
-                      selectedSubmissionId === submission.id ? "ring-2 ring-accent" : ""
-                    }`}
+                    className={`border-border/50 cursor-pointer transition-all hover:shadow-card-hover ${selectedSubmissionId === submission.id ? "ring-2 ring-accent" : ""
+                      }`}
                     onClick={() => setSelectedSubmissionId(submission.id)}
                   >
                     <CardContent className="p-4">
@@ -224,7 +225,7 @@ export default function TrainerAssignments() {
                         <div className="flex items-start gap-4">
                           <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
                             <span className="text-accent font-medium">
-                              {submission.user?.username ? submission.user.username.substring(0,2).toUpperCase() : '??'}
+                              {submission.user?.username ? submission.user.username.substring(0, 2).toUpperCase() : '??'}
                             </span>
                           </div>
                           <div>
@@ -247,7 +248,7 @@ export default function TrainerAssignments() {
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-card-foreground/60 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {submission.submittedAt ? format(new Date(parseInt(submission.submittedAt)), 'MMM d, HH:mm') : 'Unknown'}
+                            {safeFormatDate(submission.submittedAt)}
                           </span>
                           <ChevronRight className="w-4 h-4 text-card-foreground/40" />
                         </div>
@@ -296,18 +297,18 @@ export default function TrainerAssignments() {
                             {submission.grade}/100
                           </Badge>
                           <p className="text-xs text-card-foreground/60 mt-1">
-                            {submission.updatedAt ? format(new Date(parseInt(submission.updatedAt)), 'MMM d') : ''}
+                            {safeFormatDate(submission.updatedAt, 'MMM d')}
                           </p>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
-                
+
                 {reviewedSubmissions.length === 0 && (
-                   <div className="py-12 text-center text-muted-foreground">
-                     <p>No reviewed submissions yet.</p>
-                   </div>
+                  <div className="py-12 text-center text-muted-foreground">
+                    <p>No reviewed submissions yet.</p>
+                  </div>
                 )}
               </TabsContent>
             </Tabs>
@@ -336,17 +337,17 @@ export default function TrainerAssignments() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="flex-1"
                         onClick={() => setViewSubmission(selectedSubmission)}
                       >
                         <Eye className="w-4 h-4 mr-1" /> View Details
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="flex-1"
                         onClick={handleDownload}
                         disabled={!selectedSubmission.submissionUrl}
@@ -381,16 +382,16 @@ export default function TrainerAssignments() {
                     </div>
 
                     <div className="flex gap-2">
-                       {selectedSubmission.status !== 'graded' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1"
-                            onClick={handleRequestRevision}
-                          >
-                            <ThumbsDown className="w-4 h-4 mr-1" /> Request Revision
-                          </Button>
-                       )}
+                      {selectedSubmission.status !== 'graded' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={handleRequestRevision}
+                        >
+                          <ThumbsDown className="w-4 h-4 mr-1" /> Request Revision
+                        </Button>
+                      )}
                       <Button
                         variant="gold"
                         size="sm"
@@ -424,7 +425,7 @@ export default function TrainerAssignments() {
           student: viewSubmission.user?.username || 'Unknown User',
           assignment: viewSubmission.title,
           course: viewSubmission.course,
-          submittedAt: viewSubmission.submittedAt ? format(new Date(parseInt(viewSubmission.submittedAt)), 'MMM d, HH:mm') : 'Unknown',
+          submittedAt: safeFormatDate(viewSubmission.submittedAt),
           type: viewSubmission.type,
           description: viewSubmission.description, // Pass description if available
           submissionUrl: viewSubmission.submissionUrl

@@ -21,8 +21,9 @@ import {
   ChevronRight,
   GraduationCap,
   Award,
+  Eye,
 } from "lucide-react";
-import { GradeStudentDialog } from "@/components/portal/dialogs";
+import { GradeStudentDialog, StudentDetailDialog } from "@/components/portal/dialogs";
 import { useMutation } from "@apollo/client/react";
 import { toast } from "sonner";
 import { gql } from "@apollo/client";
@@ -141,9 +142,11 @@ export default function TrainerStudents() {
   const [filterCourse, setFilterCourse] = useState("all");
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
+  const [viewStudentDialogOpen, setViewStudentDialogOpen] = useState(false);
+  const [studentToView, setStudentToView] = useState<any>(null);
 
   const { data, loading, refetch } = useQuery(GET_TRAINER_STUDENTS);
-  
+
   const [createBadge] = useMutation(CREATE_BADGE, {
     onCompleted: () => {
       toast.success("Initial badge created! You can now award it.");
@@ -177,21 +180,34 @@ export default function TrainerStudents() {
   const processedStudents = rawStudents.map((s: any) => {
     // Basic status and progress logic
     const lastActivity = s.activityLog?.[s.activityLog.length - 1];
-    const lastActiveText = lastActivity 
-      ? `Active: ${lastActivity.action.replace('_', ' ')}` 
+    const lastActiveText = lastActivity
+      ? `Active: ${lastActivity.action.replace('_', ' ')}`
       : "No recent activity";
 
-    // Just use the first course for progress display in the list
-    const mainCourse = s.enrolledCourses?.[0];
-    const completedInMain = s.completedLessons?.filter((l: any) => l.courseId === mainCourse?.id).length || 0;
-    
-    // Progress calculation (mocking total lessons if not available here, ideally would come from course)
-    // For now assume 20 lessons as default if we don't have course details here
-    const progress = Math.min(100, Math.round((completedInMain / 20) * 100));
+    // Aggregate progress across ALL enrolled courses
+    const courses = s.enrolledCourses || [];
+    const completedList = s.completedLessons || [];
+
+    let studentTotalLessonsCount = 0;
+    let studentTotalCompletedCount = 0;
+
+    courses.forEach((course: any) => {
+      const courseTotal = course.modules?.reduce((acc: number, mod: any) => acc + (mod.lessons?.length || 0), 0) || 0;
+      const courseCompleted = completedList.filter((l: any) => l.courseId === (course.id || course._id)).length;
+
+      studentTotalLessonsCount += courseTotal;
+      studentTotalCompletedCount += courseCompleted;
+    });
+
+    const progress = studentTotalLessonsCount > 0
+      ? Math.round((studentTotalCompletedCount / studentTotalLessonsCount) * 100)
+      : 0;
 
     let status = "on_track";
     if (progress < 20) status = "at_risk";
     else if (progress > 80) status = "ahead";
+
+    const mainCourse = courses[0];
 
     return {
       id: s.id,
@@ -201,19 +217,20 @@ export default function TrainerStudents() {
       progress: progress,
       lastActive: lastActiveText,
       status: status,
-      completedLessons: completedInMain,
-      totalLessons: 20,
+      completedLessonsCount: studentTotalCompletedCount,
+      totalLessons: studentTotalLessonsCount,
       pendingAssignments: 0,
       level: s.level,
       academicStatus: s.academicStatus,
       badges: s.badges?.map((b: any) => b.badge) || [],
       enrolledCourses: s.enrolledCourses,
+      completedLessons: completedList, // Pass the original array
     };
   });
 
   const filteredStudents = processedStudents.filter((student: any) => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          student.email.toLowerCase().includes(searchQuery.toLowerCase());
+      student.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCourse = filterCourse === "all" || student.course === filterCourse;
     return matchesSearch && matchesCourse;
   });
@@ -349,8 +366,8 @@ export default function TrainerStudents() {
                         <p className="text-sm text-card-foreground/60">{student.course} • Level {student.level}</p>
                         {student.badges?.length > 0 && (
                           <div className="flex gap-1 mt-1">
-                            {student.badges.map((b: any, i: number) => (
-                              <div key={i} title={b.title} className="w-4 h-4 rounded-full bg-accent/20 flex items-center justify-center">
+                            {student.badges.filter((b: any) => b).map((b: any, i: number) => (
+                              <div key={i} title={b?.title || 'Badge'} className="w-4 h-4 rounded-full bg-accent/20 flex items-center justify-center">
                                 <Award className="w-2.5 h-2.5 text-accent" />
                               </div>
                             ))}
@@ -368,7 +385,7 @@ export default function TrainerStudents() {
                       </div>
                       <Progress value={student.progress} className="h-2" />
                       <p className="text-xs text-card-foreground/50 mt-1">
-                        {student.completedLessons}/{student.totalLessons} lessons
+                        {student.completedLessonsCount}/{student.totalLessons} lessons
                       </p>
                     </div>
 
@@ -386,11 +403,21 @@ export default function TrainerStudents() {
 
                     {/* Actions */}
                     <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setStudentToView(student);
+                          setViewStudentDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
                       <Button variant="ghost" size="sm">
                         <Mail className="w-4 h-4" />
                       </Button>
-                      <Button 
-                        variant="gold" 
+                      <Button
+                        variant="gold"
                         size="sm"
                         onClick={() => {
                           setSelectedStudent(student);
@@ -409,10 +436,16 @@ export default function TrainerStudents() {
         </motion.div>
       </div>
 
-      <GradeStudentDialog 
-        open={gradeDialogOpen} 
-        onOpenChange={setGradeDialogOpen} 
-        student={selectedStudent} 
+      <GradeStudentDialog
+        open={gradeDialogOpen}
+        onOpenChange={setGradeDialogOpen}
+        student={selectedStudent}
+      />
+
+      <StudentDetailDialog
+        open={viewStudentDialogOpen}
+        onOpenChange={setViewStudentDialogOpen}
+        student={studentToView}
       />
     </PortalLayout>
   );

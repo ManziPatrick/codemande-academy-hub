@@ -20,8 +20,9 @@ import {
   FileCode,
   Layers,
   Loader2,
+  Eye,
 } from "lucide-react";
-import { TeamChatDialog } from "@/components/portal/dialogs/TeamChatDialog";
+import { TeamChatDialog, StudentDetailDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_MY_MENTEES } from "@/lib/graphql/queries";
@@ -36,6 +37,8 @@ export default function TrainerMentorship() {
   const [taskManagerOpen, setTaskManagerOpen] = useState<string | null>(null);
   const [activeChatProject, setActiveChatProject] = useState<any>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [viewMenteeDialogOpen, setViewMenteeDialogOpen] = useState(false);
+  const [menteeToView, setMenteeToView] = useState<any>(null);
 
   const [addTask] = useMutation(ADD_INTERNSHIP_TASK, {
     onCompleted: () => {
@@ -63,7 +66,7 @@ export default function TrainerMentorship() {
       toast.error("Please enter a task title");
       return;
     }
-    
+
     await addTask({
       variables: {
         internshipId,
@@ -141,69 +144,102 @@ export default function TrainerMentorship() {
               transition={{ delay: 0.1 }}
               className="lg:col-span-2 space-y-4"
             >
-              {mentees.map((mentee: any) => (
-                <Card
-                  key={mentee.id}
-                  className={`border-border/50 cursor-pointer transition-all hover:shadow-lg hover:border-accent/40 ${
-                    selectedMentee === mentee.id ? "ring-2 ring-accent shadow-lg" : ""
-                  }`}
-                  onClick={() => setSelectedMentee(mentee.id)}
-                >
-                  <CardContent className="p-5">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="w-12 h-12 ring-2 ring-accent/10">
-                        <AvatarFallback className="bg-accent/20 text-accent font-bold">
-                          {getInitials(mentee.user?.username)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <div>
-                            <h4 className="font-medium text-card-foreground">
-                              {mentee.user?.username}
-                            </h4>
-                            <p className="text-sm text-card-foreground/60">
-                              {mentee.title}
-                            </p>
+              {mentees.map((m: any) => {
+                const s = m.user || {};
+                const courses = s.enrolledCourses || [];
+                const completedList = s.completedLessons || [];
+
+                let studentTotalLessonsCount = 0;
+                let studentTotalCompletedCount = 0;
+
+                courses.forEach((course: any) => {
+                  const courseTotal = course.modules?.reduce((acc: number, mod: any) => acc + (mod.lessons?.length || 0), 0) || 0;
+                  const courseCompleted = completedList.filter((l: any) => l.courseId === (course.id || course._id)).length;
+
+                  studentTotalLessonsCount += courseTotal;
+                  studentTotalCompletedCount += courseCompleted;
+                });
+
+                const dynamicProgress = studentTotalLessonsCount > 0
+                  ? Math.round((studentTotalCompletedCount / studentTotalLessonsCount) * 100)
+                  : 0;
+
+                const mentee = { ...m, progress: dynamicProgress };
+
+                return (
+                  <Card
+                    key={mentee.id}
+                    className={`border-border/50 cursor-pointer transition-all hover:shadow-lg hover:border-accent/40 ${selectedMentee === mentee.id ? "ring-2 ring-accent shadow-lg" : ""
+                      }`}
+                    onClick={() => setSelectedMentee(mentee.id)}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-4">
+                        <Avatar className="w-12 h-12 ring-2 ring-accent/10">
+                          <AvatarFallback className="bg-accent/20 text-accent font-bold">
+                            {getInitials(mentee.user?.username)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="font-medium text-card-foreground">
+                                {mentee.user?.username}
+                              </h4>
+                              <p className="text-sm text-card-foreground/60">
+                                {mentee.title}
+                              </p>
+                            </div>
+                            <Badge
+                              className={
+                                mentee.status === "graduated"
+                                  ? "bg-green-500/20 text-green-400 border-none"
+                                  : mentee.status === "in_progress" || mentee.status === "enrolled"
+                                    ? "bg-blue-500/20 text-blue-400 border-none"
+                                    : "bg-accent/20 text-accent border-none"
+                              }
+                            >
+                              {mentee.status === "graduated" ? "Graduated" :
+                                mentee.status === "in_progress" ? "In Progress" :
+                                  mentee.status === "enrolled" ? "Enrolled" : "Eligible"}
+                            </Badge>
                           </div>
-                          <Badge
-                            className={
-                              mentee.status === "graduated"
-                                ? "bg-green-500/20 text-green-400 border-none"
-                                : mentee.status === "in_progress" || mentee.status === "enrolled"
-                                ? "bg-blue-500/20 text-blue-400 border-none"
-                                : "bg-accent/20 text-accent border-none"
-                            }
-                          >
-                            {mentee.status === "graduated" ? "Graduated" : 
-                             mentee.status === "in_progress" ? "In Progress" :
-                             mentee.status === "enrolled" ? "Enrolled" : "Eligible"}
-                          </Badge>
-                        </div>
-                        <div className="mb-3">
-                          <div className="flex items-center justify-between text-xs mb-1">
-                            <span className="text-card-foreground/60">Progress</span>
-                            <span className="text-accent font-medium">{mentee.progress}%</span>
+                          <div className="mb-3">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-card-foreground/60">Progress</span>
+                              <span className="text-accent font-medium">{mentee.progress}%</span>
+                            </div>
+                            <Progress value={mentee.progress} className="h-2" />
                           </div>
-                          <Progress value={mentee.progress} className="h-2" />
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-3">
-                            <span className="flex items-center gap-1 text-card-foreground/60">
-                              <Layers className="w-3 h-3 text-accent" />
-                              {mentee.stage}
-                            </span>
-                            <span className="flex items-center gap-1 text-card-foreground/60">
-                              <FileCode className="w-3 h-3 text-accent" />
-                              {mentee.tasks?.filter((t: any) => t.status === "completed").length || 0}/{mentee.tasks?.length || 0} Tasks
-                            </span>
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center gap-1 text-card-foreground/60">
+                                <Layers className="w-3 h-3 text-accent" />
+                                {mentee.stage}
+                              </span>
+                              <span className="flex items-center gap-1 text-card-foreground/60">
+                                <FileCode className="w-3 h-3 text-accent" />
+                                {mentee.tasks?.filter((t: any) => t.status === "completed").length || 0}/{mentee.tasks?.length || 0} Tasks
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setMenteeToView(mentee.user);
+                                setViewMenteeDialogOpen(true);
+                              }}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}</motion.div>
+                    </CardContent>
+                  </Card>
+                );
+              })}</motion.div>
 
             {/* Mentee Details */}
             <motion.div
@@ -213,13 +249,34 @@ export default function TrainerMentorship() {
             >
               {selectedMentee ? (
                 <Card className="border-border/50 sticky top-20">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-heading">Intern Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+                  <header className="p-6 border-b border-border/50">
+                    <h3 className="text-lg font-heading font-medium">Intern Details</h3>
+                  </header>
+                  <CardContent className="space-y-4 pt-6">
                     {(() => {
-                      const mentee = mentees.find((m: any) => m.id === selectedMentee);
-                      if (!mentee) return null;
+                      const m = mentees.find((m: any) => m.id === selectedMentee);
+                      if (!m) return null;
+
+                      const s = m.user || {};
+                      const courses = s.enrolledCourses || [];
+                      const completedList = s.completedLessons || [];
+
+                      let studentTotalLessonsCount = 0;
+                      let studentTotalCompletedCount = 0;
+
+                      courses.forEach((course: any) => {
+                        const courseTotal = course.modules?.reduce((acc: number, mod: any) => acc + (mod.lessons?.length || 0), 0) || 0;
+                        const courseCompleted = completedList.filter((l: any) => l.courseId === (course.id || course._id)).length;
+
+                        studentTotalLessonsCount += courseTotal;
+                        studentTotalCompletedCount += courseCompleted;
+                      });
+
+                      const dynamicProgress = studentTotalLessonsCount > 0
+                        ? Math.round((studentTotalCompletedCount / studentTotalLessonsCount) * 100)
+                        : 0;
+
+                      const mentee = { ...m, progress: dynamicProgress };
                       return (
                         <>
                           <div className="text-center mb-4">
@@ -270,7 +327,7 @@ export default function TrainerMentorship() {
                                 <TabsTrigger value="tasks">Tasks</TabsTrigger>
                                 <TabsTrigger value="projects">Projects</TabsTrigger>
                               </TabsList>
-                              
+
                               <TabsContent value="tasks" className="space-y-4">
                                 <div className="flex items-center justify-between">
                                   <h5 className="text-sm font-medium text-card-foreground flex items-center gap-2">
@@ -281,7 +338,7 @@ export default function TrainerMentorship() {
                                     {mentee.tasks?.filter((t: any) => t.status === "completed").length || 0}/{mentee.tasks?.length || 0}
                                   </Badge>
                                 </div>
-                                
+
                                 <div className="flex gap-2">
                                   <Input
                                     placeholder="New task title..."
@@ -290,8 +347,8 @@ export default function TrainerMentorship() {
                                     onKeyDown={(e) => e.key === "Enter" && handleAddTask(mentee.id)}
                                     className="text-sm"
                                   />
-                                  <Button 
-                                    variant="outline" 
+                                  <Button
+                                    variant="outline"
                                     size="sm"
                                     onClick={() => handleAddTask(mentee.id)}
                                   >
@@ -307,21 +364,19 @@ export default function TrainerMentorship() {
                                     >
                                       <div className="flex items-center gap-3 flex-1">
                                         <div
-                                          className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${
-                                            task.status === "completed"
-                                              ? "bg-green-500 border-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]"
-                                              : "border-muted-foreground/30 hover:border-accent"
-                                          }`}
+                                          className={`w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-all ${task.status === "completed"
+                                            ? "bg-green-500 border-green-500 shadow-[0_0_8px_rgba(34,197,94,0.3)]"
+                                            : "border-muted-foreground/30 hover:border-accent"
+                                            }`}
                                           onClick={() => handleToggleTask(mentee.id, task.id, task.status)}
                                         >
                                           {task.status === "completed" && <CheckCircle className="w-3 h-3 text-white" />}
                                         </div>
                                         <span
-                                          className={`text-sm ${
-                                            task.status === "completed"
-                                              ? "line-through text-muted-foreground"
-                                              : "text-foreground font-medium"
-                                          }`}
+                                          className={`text-sm ${task.status === "completed"
+                                            ? "line-through text-muted-foreground"
+                                            : "text-foreground font-medium"
+                                            }`}
                                         >
                                           {task.title}
                                         </span>
@@ -352,9 +407,9 @@ export default function TrainerMentorship() {
                                               {project.status || "In Progress"}
                                             </Badge>
                                           </div>
-                                          <Button 
-                                            size="icon" 
-                                            variant="ghost" 
+                                          <Button
+                                            size="icon"
+                                            variant="ghost"
                                             className="h-8 w-8 text-accent"
                                             onClick={() => {
                                               setActiveChatProject(project);
@@ -364,7 +419,7 @@ export default function TrainerMentorship() {
                                             <MessageSquare className="w-4 h-4" />
                                           </Button>
                                         </div>
-                                        
+
                                         <div className="flex items-center justify-between text-[10px]">
                                           <div className="flex -space-x-1.5 overflow-hidden">
                                             {project.team?.map((member: any, i: number) => (
@@ -411,17 +466,25 @@ export default function TrainerMentorship() {
         )}
       </div>
 
-      {activeChatProject && (
-        <TeamChatDialog
-          open={chatOpen}
-          onOpenChange={setChatOpen}
-          projectId={activeChatProject.id}
-          conversationId={activeChatProject.conversationId}
-          projectTitle={activeChatProject.title}
-          teamMembers={activeChatProject.team || []}
-          mentors={activeChatProject.mentors || []}
-        />
-      )}
-    </PortalLayout>
+      {
+        activeChatProject && (
+          <TeamChatDialog
+            open={chatOpen}
+            onOpenChange={setChatOpen}
+            projectId={activeChatProject.id}
+            conversationId={activeChatProject.conversationId}
+            projectTitle={activeChatProject.title}
+            teamMembers={activeChatProject.team || []}
+            mentors={activeChatProject.mentors || []}
+          />
+        )
+      }
+
+      <StudentDetailDialog
+        open={viewMenteeDialogOpen}
+        onOpenChange={setViewMenteeDialogOpen}
+        student={menteeToView}
+      />
+    </PortalLayout >
   );
 }

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Upload, FileText, X, CheckCircle } from "lucide-react";
 import { useMutation } from "@apollo/client/react";
 import { SUBMIT_PROJECT } from "@/lib/graphql/mutations";
+import { useRef } from "react";
 
 interface SubmitProjectDialogProps {
   open: boolean;
@@ -17,15 +18,43 @@ interface SubmitProjectDialogProps {
 }
 
 export function SubmitProjectDialog({ open, onOpenChange, projectTitle, projectId }: SubmitProjectDialogProps) {
-  const [files, setFiles] = useState<string[]>([]);
+  const [files, setFiles] = useState<{ name: string, url: string }[]>([]);
   const [notes, setNotes] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitProject, { loading: isSubmitting }] = useMutation(SUBMIT_PROJECT);
 
-  const handleAddFile = () => {
-    // For now, simple mock file addition since we don't have a file upload service
-    setFiles([...files, `file-${files.length + 1}.zip`]);
-    toast.success("File added (mock)");
+  const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/upload/file`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('codemande_token')}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('Upload failed');
+      const data = await response.json();
+
+      setFiles([...files, { name: file.name, url: data.url }]);
+      toast.success("File uploaded successfully");
+    } catch (error) {
+      toast.error("Failed to upload file");
+      console.error(error);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleRemoveFile = (index: number) => {
@@ -38,9 +67,7 @@ export function SubmitProjectDialog({ open, onOpenChange, projectTitle, projectI
       return;
     }
 
-    const submissionUrl = repoUrl || (files.length > 0 ? files[0] : 'No URL');
-    // Note: If files are "uploaded", we'd upload them to a file server/S3 and get a URL.
-    // Since we don't have that, we'll prioritize repoUrl or use the file name as a placeholder.
+    const submissionUrl = repoUrl || (files.length > 0 ? files[0].url : 'No URL');
 
     try {
       await submitProject({
@@ -49,7 +76,7 @@ export function SubmitProjectDialog({ open, onOpenChange, projectTitle, projectI
           submissionUrl: submissionUrl
         }
       });
-      
+
       toast.success("Project submitted successfully!");
       setFiles([]);
       setNotes("");
@@ -74,55 +101,62 @@ export function SubmitProjectDialog({ open, onOpenChange, projectTitle, projectI
               <p className="font-medium text-card-foreground">{projectTitle}</p>
             </div>
 
-          <div>
-            <label className="text-sm font-medium mb-2 block">Repository URL (Required)</label>
-            <Input
-              placeholder="https://github.com/username/project"
-              value={repoUrl}
-              onChange={(e) => setRepoUrl(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Provide a link to your code repository or live demo.
-            </p>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium mb-2 block">Upload Files (Mock)</label>
-            <div
-              className="border-2 border-dashed border-border/50 rounded-lg p-6 text-center cursor-pointer hover:border-accent/50 transition-colors"
-              onClick={handleAddFile}
-            >
-              <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Click to upload or drag and drop
-              </p>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Repository URL (Required)</label>
+              <Input
+                placeholder="https://github.com/username/project"
+                value={repoUrl}
+                onChange={(e) => setRepoUrl(e.target.value)}
+              />
               <p className="text-xs text-muted-foreground mt-1">
-                ZIP, PDF, or document files up to 50MB
+                Provide a link to your code repository or live demo.
               </p>
             </div>
-          </div>
 
-          {files.length > 0 && (
-            <div className="space-y-2">
-              {files.map((file, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 bg-background/50 rounded-lg"
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-accent" />
-                    <span className="text-sm text-card-foreground">{file}</span>
-                  </div>
-                  <button
-                    onClick={() => handleRemoveFile(index)}
-                    className="p-1 hover:bg-destructive/20 rounded"
-                  >
-                    <X className="w-4 h-4 text-destructive" />
-                  </button>
-                </div>
-              ))}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Upload Files</label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                onChange={handleFileChange}
+                disabled={isUploading}
+              />
+              <div
+                className={`border-2 border-dashed border-border/50 rounded-lg p-6 text-center cursor-pointer hover:border-accent/50 transition-colors ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className={`w-8 h-8 text-muted-foreground mx-auto mb-2 ${isUploading ? 'animate-bounce' : ''}`} />
+                <p className="text-sm text-muted-foreground">
+                  {isUploading ? 'Uploading...' : 'Click to upload or drag and drop'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  ZIP, PDF, or document files up to 50MB
+                </p>
+              </div>
             </div>
-          )}
+
+            {files.length > 0 && (
+              <div className="space-y-2">
+                {files.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-2 bg-background/50 rounded-lg"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-accent" />
+                      <span className="text-sm text-card-foreground">{file.name}</span>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveFile(index)}
+                      className="p-1 hover:bg-destructive/20 rounded"
+                    >
+                      <X className="w-4 h-4 text-destructive" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div>
               <label className="text-sm font-medium mb-2 block">Additional Notes</label>

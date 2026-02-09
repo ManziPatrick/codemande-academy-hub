@@ -40,6 +40,7 @@ import TrainerAssignments from "@/pages/portal/trainer/TrainerAssignments";
 import TrainerSchedule from "@/pages/portal/trainer/TrainerSchedule";
 import TrainerMentorship from "@/pages/portal/trainer/TrainerMentorship";
 import TrainerInternships from "@/pages/portal/trainer/TrainerInternships";
+import TrainerProjects from "@/pages/portal/trainer/TrainerProjects";
 
 // Admin Portal
 import AdminDashboard from "@/pages/portal/admin/AdminDashboard";
@@ -110,6 +111,7 @@ export function AnimatedRoutes() {
         <Route path="/portal/trainer/schedule" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerSchedule /></ProtectedRoute>} />
         <Route path="/portal/trainer/mentorship" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerMentorship /></ProtectedRoute>} />
         <Route path="/portal/trainer/internships" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerInternships /></ProtectedRoute>} />
+        <Route path="/portal/trainer/projects" element={<ProtectedRoute allowedRoles={["trainer"]}><TrainerProjects /></ProtectedRoute>} />
 
         {/* Admin Portal */}
         <Route path="/portal/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />

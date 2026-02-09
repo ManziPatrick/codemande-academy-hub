@@ -100,18 +100,22 @@ export function BrandingProvider({ children }: { children: ReactNode }) {
       document.documentElement.style.removeProperty("--background");
     }
 
-    // 3. Handle Theme Mode
-    if (user?.themePreference?.mode) {
+    // 3. Handle Theme Mode - Only sync from backend if user specifically chose 'light' or 'dark'
+    // and we don't have a local override yet, or just rely on next-themes for persistence.
+    // To satisfy the user request "stored in local storage", we let next-themes manage it.
+    // We only force it if there's a strong reason to sync from DB.
+    /* 
+    if (user?.themePreference?.mode && user.themePreference.mode !== 'system') {
       setTheme(user.themePreference.mode);
     }
+    */
   }, [
     branding.primaryColor,
-    user?.id, // Only react to user change
+    user?.id,
     user?.themePreference?.primaryColor,
-    user?.themePreference?.mode,
     user?.themePreference?.lightBg,
     user?.themePreference?.darkBg,
-    setTheme
+    // setTheme removed from dependencies to avoid loop if we were calling it
   ]);
 
   return (

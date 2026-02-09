@@ -25,6 +25,7 @@ import {
   Layers,
   FileText,
   Eye,
+  Stars,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -37,10 +38,11 @@ import { GET_ALL_PROJECTS, GET_USERS } from "@/lib/graphql/queries";
 import { DELETE_PROJECT, UPDATE_PROJECT } from "@/lib/graphql/mutations";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { TeamChatDialog, ManageProjectTasksDialog, ProjectDetailsDialog, CreateAgileProjectDialog } from "@/components/portal/dialogs";
+import { TeamChatDialog, ManageProjectTasksDialog, ProjectDetailsDialog, CreateAgileProjectDialog, CreateProjectDialog, GradeProjectDialog } from "@/components/portal/dialogs";
 
 export default function AdminProjects() {
   const [createOpen, setCreateOpen] = useState(false);
+  const [assignOpen, setAssignOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeChatProject, setActiveChatProject] = useState<any>(null);
@@ -49,6 +51,8 @@ export default function AdminProjects() {
   const [manageTasksOpen, setManageTasksOpen] = useState(false);
   const [activeProjectForDetails, setActiveProjectForDetails] = useState<any>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [gradeProject, setGradeProject] = useState<any>(null);
+  const [gradeOpen, setGradeOpen] = useState(false);
 
   const { data, loading, refetch } = useQuery(GET_ALL_PROJECTS);
   const projects = (data as any)?.projects || [];
@@ -87,19 +91,33 @@ export default function AdminProjects() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button 
+            <Button
               className="bg-accent hover:bg-accent/90 text-white gap-2"
               onClick={() => setCreateOpen(true)}
+              variant="outline"
             >
               <Plus className="w-4 h-4" />
-              New Agile Project
+              Project Template
+            </Button>
+            <Button
+              className="bg-gold hover:bg-gold/90 text-white gap-2"
+              onClick={() => setAssignOpen(true)}
+            >
+              <Users className="w-4 h-4" />
+              Assign Project
             </Button>
           </div>
         </div>
 
-        <CreateAgileProjectDialog 
-          open={createOpen} 
-          onOpenChange={setCreateOpen} 
+        <CreateAgileProjectDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          refetch={refetch}
+        />
+
+        <CreateProjectDialog
+          open={assignOpen}
+          onOpenChange={setAssignOpen}
           refetch={refetch}
         />
 
@@ -181,11 +199,10 @@ export default function AdminProjects() {
                 <Card className="h-full border-border/50 bg-card hover:border-accent/30 transition-all group">
                   <CardHeader className="p-5 pb-0">
                     <div className="flex items-start justify-between mb-2">
-                      <Badge 
-                        variant="outline" 
-                        className={`text-[10px] uppercase font-bold ${
-                          project.type === 'Team Project' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-purple-500/10 text-purple-500 border-purple-500/20'
-                        }`}
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] uppercase font-bold ${project.type === 'Team Project' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20' : 'bg-purple-500/10 text-purple-500 border-purple-500/20'
+                          }`}
                       >
                         {project.type}
                       </Badge>
@@ -196,7 +213,7 @@ export default function AdminProjects() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             className="gap-2 cursor-pointer"
                             onClick={() => {
                               setActiveProjectForDetails(project);
@@ -205,7 +222,7 @@ export default function AdminProjects() {
                           >
                             <Eye className="w-4 h-4" /> View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
+                          <DropdownMenuItem
                             className="gap-2 cursor-pointer"
                             onClick={() => {
                               setManageTasksProject(project);
@@ -214,6 +231,17 @@ export default function AdminProjects() {
                           >
                             <CheckCircle2 className="w-4 h-4" /> Manage Tasks
                           </DropdownMenuItem>
+                          {(project.status === 'pending_review' || project.status === 'in_progress') && (
+                            <DropdownMenuItem
+                              className="gap-2 cursor-pointer text-accent focus:text-accent font-bold"
+                              onClick={() => {
+                                setGradeProject(project);
+                                setGradeOpen(true);
+                              }}
+                            >
+                              <Stars className="w-4 h-4" /> Grade Project
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem className="gap-2 cursor-pointer text-destructive focus:text-destructive"
                             onClick={() => {
                               if (confirm("Are you sure you want to delete this project?")) {
@@ -231,7 +259,7 @@ export default function AdminProjects() {
                       <Layers className="w-3 h-3" /> {project.course}
                     </p>
                   </CardHeader>
-                  
+
                   <CardContent className="p-5 space-y-4">
                     <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
                       {project.description}
@@ -261,9 +289,9 @@ export default function AdminProjects() {
                         )}
                       </div>
                       <div className="flex gap-2">
-                        <Button 
-                          size="icon" 
-                          variant="outline" 
+                        <Button
+                          size="icon"
+                          variant="outline"
                           className="h-8 w-8 border-border/50 hover:bg-accent/10 hover:text-accent"
                           onClick={() => {
                             setActiveChatProject(project);
@@ -272,9 +300,9 @@ export default function AdminProjects() {
                         >
                           <MessageSquare className="w-4 h-4" />
                         </Button>
-                        <Button 
-                          size="icon" 
-                          variant="outline" 
+                        <Button
+                          size="icon"
+                          variant="outline"
                           className="h-8 w-8 border-border/50 hover:bg-accent/10 hover:text-accent"
                           asChild
                         >
@@ -288,21 +316,20 @@ export default function AdminProjects() {
                     <div className="pt-4 border-t border-border/50 flex items-center justify-between text-[11px]">
                       <div className="flex items-center gap-1.5 text-muted-foreground uppercase font-bold tracking-wider">
                         <Calendar className="w-3 h-3" />
-                        Deadline: {project.deadline ? format(new Date(project.deadline), "MMM d, yyyy") : "N/A"}
+                        Deadline: {project.deadline && !isNaN(new Date(project.deadline).getTime()) ? format(new Date(project.deadline), "MMM d, yyyy") : "N/A"}
                       </div>
-                      <Badge 
-                        className={`text-[9px] uppercase font-black ${
-                          project.status === 'completed' ? 'bg-green-500/20 text-green-500' :
+                      <Badge
+                        className={`text-[9px] uppercase font-black ${project.status === 'completed' ? 'bg-green-500/20 text-green-500' :
                           project.status === 'pending_review' ? 'bg-rose-500/20 text-rose-500' :
-                          'bg-amber-500/20 text-amber-500'
-                        }`}
+                            'bg-amber-500/20 text-amber-500'
+                          }`}
                       >
                         {project.status?.replace('_', ' ')}
                       </Badge>
                     </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       className="w-full mt-2 font-bold text-xs"
                       onClick={() => {
                         setManageTasksProject(project);
@@ -342,6 +369,13 @@ export default function AdminProjects() {
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
         project={activeProjectForDetails}
+        refetch={refetch}
+      />
+
+      <GradeProjectDialog
+        open={gradeOpen}
+        onOpenChange={setGradeOpen}
+        project={gradeProject}
         refetch={refetch}
       />
     </PortalLayout>

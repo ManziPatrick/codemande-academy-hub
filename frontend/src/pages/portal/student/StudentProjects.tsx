@@ -17,6 +17,8 @@ import {
   ExternalLink,
   BookOpen,
   Layers,
+  Box,
+  Link as LinkIcon,
 } from "lucide-react";
 import { SubmitProjectDialog, TeamChatDialog, ViewGuidelinesDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
@@ -50,6 +52,9 @@ interface Project {
   team?: TeamMember[];
   tasks?: Task[];
   description: string;
+  documentation?: {
+    links: { title: string; url: string }[];
+  };
 }
 
 const getStatusBadge = (status: string) => {
@@ -243,6 +248,30 @@ export default function StudentProjects() {
                           </div>
                         )}
 
+                        {/* Project Resources (Toolbox) */}
+                        {project.documentation?.links && project.documentation.links.length > 0 && (
+                          <div className="mb-4 p-3 bg-accent/5 rounded-lg border border-accent/10">
+                            <p className="text-xs font-bold text-accent uppercase tracking-wider mb-2 flex items-center gap-2">
+                              <Box className="w-3.5 h-3.5" />
+                              Project Toolbox
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {project.documentation.links.map((link, i) => (
+                                <a
+                                  key={i}
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1.5 px-3 py-1 bg-background border border-border/50 rounded-md text-[10px] hover:border-accent/50 hover:text-accent transition-all"
+                                >
+                                  <LinkIcon className="w-3 h-3" />
+                                  {link.title}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Grade & Feedback */}
                         {project.status === "completed" && (
                           <div className="p-4 bg-green-500/10 rounded-lg border border-green-500/20">
@@ -361,7 +390,7 @@ export default function StudentProjects() {
                             onClick={() => setGuidelinesProject(project)}
                           >
                             <FileText className="w-4 h-4 mr-2" />
-                            View Guidelines
+                            View Details & Guidelines
                           </Button>
                         </div>
                       </div>
@@ -390,7 +419,7 @@ export default function StudentProjects() {
       <ViewGuidelinesDialog
         open={!!guidelinesProject}
         onOpenChange={(open) => !open && setGuidelinesProject(null)}
-        projectTitle={guidelinesProject?.title || ""}
+        project={guidelinesProject}
       />
     </PortalLayout>
   );

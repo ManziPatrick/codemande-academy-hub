@@ -68,7 +68,7 @@ export function AddResourceDialog({ open, onOpenChange, linkedTo, onModel, onSuc
             const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('codemande_token')}`
                 },
                 body: formData
             });

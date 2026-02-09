@@ -103,6 +103,19 @@ export const ENROLL_COURSE = gql`
   }
 `;
 
+export const ENROLL_STUDENT_IN_COURSE = gql`
+  mutation EnrollStudentInCourse($courseId: ID!, $userId: ID!) {
+    enrollStudentInCourse(courseId: $courseId, userId: $userId) {
+      id
+      studentsEnrolled {
+        id
+        username
+        email
+      }
+    }
+  }
+`;
+
 export const CREATE_COURSE = gql`
   mutation CreateCourse($title: String!, $description: String!, $thumbnail: String, $price: Float, $discountPrice: Float, $level: String, $category: String, $instructorId: ID, $status: String, $modules: [ModuleInput!]!) {
     createCourse(title: $title, description: $description, thumbnail: $thumbnail, price: $price, discountPrice: $discountPrice, level: $level, category: $category, instructorId: $instructorId, status: $status, modules: $modules) {
@@ -423,6 +436,18 @@ export const SUBMIT_PROJECT = gql`
       progress
       submittedAt
       submissionUrl
+    }
+  }
+`;
+
+export const GRADE_PROJECT = gql`
+  mutation GradeProject($id: ID!, $grade: String!, $feedback: String!) {
+    gradeProject(id: $id, grade: $grade, feedback: $feedback) {
+      id
+      status
+      grade
+      feedback
+      progress
     }
   }
 `;
@@ -759,11 +784,26 @@ export const REVIEW_INTERNSHIP_APPLICATION = gql`
 `;
 
 export const CREATE_INTERNSHIP_PROJECT_NEW = gql`
-  mutation CreateInternshipProject($title: String!, $description: String!, $requiredSkills: [String!]!, $minTeamSize: Int!, $maxTeamSize: Int!, $internshipProgramId: ID!) {
-    createInternshipProject(title: $title, description: $description, requiredSkills: $requiredSkills, minTeamSize: $minTeamSize, maxTeamSize: $maxTeamSize, internshipProgramId: $internshipProgramId) {
+  mutation CreateInternshipProject($title: String!, $description: String!, $requiredSkills: [String!]!, $minTeamSize: Int!, $maxTeamSize: Int!, $internshipProgramId: ID!, $documentation: DocumentationInput) {
+    createInternshipProject(title: $title, description: $description, requiredSkills: $requiredSkills, minTeamSize: $minTeamSize, maxTeamSize: $maxTeamSize, internshipProgramId: $internshipProgramId, documentation: $documentation) {
       id
       title
     }
+  }
+`;
+
+export const UPDATE_INTERNSHIP_PROJECT_NEW = gql`
+  mutation UpdateInternshipProject($id: ID!, $title: String, $description: String, $requiredSkills: [String], $minTeamSize: Int, $maxTeamSize: Int, $status: String, $documentation: DocumentationInput) {
+    updateInternshipProject(id: $id, title: $title, description: $description, requiredSkills: $requiredSkills, minTeamSize: $minTeamSize, maxTeamSize: $maxTeamSize, status: $status, documentation: $documentation) {
+      id
+      title
+    }
+  }
+`;
+
+export const DELETE_INTERNSHIP_PROJECT = gql`
+  mutation DeleteInternshipProject($id: ID!) {
+    deleteInternshipProject(id: $id)
   }
 `;
 
@@ -1089,5 +1129,29 @@ export const UPDATE_RESOURCE = gql`
 export const DELETE_RESOURCE = gql`
   mutation DeleteResource($id: ID!) {
     deleteResource(id: $id)
+  }
+`;
+
+export const SUBMIT_ASSIGNMENT = gql`
+  mutation SubmitAssignment($courseId: ID!, $lessonId: String!, $content: String!) {
+    submitAssignment(courseId: $courseId, lessonId: $lessonId, content: $content) {
+      id
+      content
+      status
+      grade
+      feedback
+      createdAt
+    }
+  }
+`;
+
+export const GRADE_ASSIGNMENT = gql`
+  mutation GradeAssignment($submissionId: ID!, $grade: Int!, $feedback: String) {
+    gradeAssignment(submissionId: $submissionId, grade: $grade, feedback: $feedback) {
+      id
+      status
+      grade
+      feedback
+    }
   }
 `;

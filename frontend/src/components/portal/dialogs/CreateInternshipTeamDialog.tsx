@@ -25,9 +25,10 @@ export function CreateInternshipTeamDialog({ open, onOpenChange }: CreateInterns
   });
 
   const { data: programsData } = useQuery(GET_INTERNSHIP_PROGRAMS);
-  const { data: projectsData } = useQuery(GET_INTERNSHIP_PROJECTS_NEW, {
+  const { data: projectsData, loading: projectsLoading } = useQuery(GET_INTERNSHIP_PROJECTS_NEW, {
     variables: { programId: formData.internshipProgramId },
-    skip: !formData.internshipProgramId
+    skip: !formData.internshipProgramId,
+    fetchPolicy: 'network-only'
   });
   const { data: usersData } = useQuery(GET_USERS);
 
@@ -100,11 +101,19 @@ export function CreateInternshipTeamDialog({ open, onOpenChange }: CreateInterns
             <Label>Assigned Project</Label>
             <Select
               value={formData.internshipProjectId}
-              disabled={!formData.internshipProgramId}
+              disabled={!formData.internshipProgramId || projectsLoading}
               onValueChange={(val) => setFormData({ ...formData, internshipProjectId: val })}
             >
               <SelectTrigger>
-                <SelectValue placeholder={formData.internshipProgramId ? "Select a project" : "First select a program"} />
+                <SelectValue placeholder={
+                  !formData.internshipProgramId
+                    ? "First select a program"
+                    : projectsLoading
+                      ? "Loading projects..."
+                      : projects.length === 0
+                        ? "No projects available"
+                        : "Select a project"
+                } />
               </SelectTrigger>
               <SelectContent>
                 {projects.map((p: any) => (
