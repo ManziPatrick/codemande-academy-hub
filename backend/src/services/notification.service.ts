@@ -1,21 +1,20 @@
-import { Server } from 'socket.io';
+import { pusher } from '../lib/pusher';
 
-let io: Server;
-
-export const initNotificationService = (socketIo: Server) => {
-  io = socketIo;
-};
-
-export const sendNotification = (userId: string, data: any) => {
-  if (io) {
-    io.to(userId.toString()).emit('notification', data);
+export const sendNotification = async (userId: string, data: any) => {
+  try {
+    await pusher.trigger(`user-${userId}`, 'notification', data);
+  } catch (error) {
+    console.error('Pusher notification error:', error);
   }
 };
 
-export const broadcastToTeam = (userIds: string[], data: any) => {
-  if (io) {
-    userIds.forEach(id => {
-      io.to(id.toString()).emit('notification', data);
-    });
+export const broadcastToTeam = async (userIds: string[], data: any) => {
+  // Pusher has a limit on batch triggers, but loop is fine for small teams
+  for (const id of userIds) {
+    try {
+      await pusher.trigger(`user-${id}`, 'notification', data);
+    } catch (error) {
+      console.error(`Pusher broadcast error for user ${id}:`, error);
+    }
   }
 };

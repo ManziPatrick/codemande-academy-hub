@@ -12,8 +12,13 @@ const lessonSchema = new mongoose.Schema({
   videoUrl: { type: String }, // URL to video resource
   fileUrl: { type: String }, // URL to primary file resource (PDF, PPT, etc)
   duration: { type: Number }, // in minutes
-  type: { type: String, enum: ['video', 'book', 'ppt', 'pdf', 'image', 'article', 'quiz', 'challenge', 'project'], default: 'video' },
-  resources: [resourceSchema]
+  type: { type: String, enum: ['video', 'book', 'ppt', 'pdf', 'image', 'article', 'quiz', 'challenge', 'project', 'assignment'], default: 'video' },
+  resources: [resourceSchema],
+
+  // Assignment specific fields
+  isAssignment: { type: Boolean, default: false },
+  assignmentDescription: { type: String },
+  assignmentDeliverables: [{ type: String }] // e.g. ["GitHub URL", "PDF Report"]
 });
 
 const moduleSchema = new mongoose.Schema({

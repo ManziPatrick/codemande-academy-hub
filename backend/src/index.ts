@@ -5,7 +5,6 @@ import dotenv from 'dotenv';
 import { ApolloServer } from '@apollo/server';
 import { expressMiddleware } from '@apollo/server/express4';
 import { ApolloServerPluginDrainHttpServer } from '@apollo/server/plugin/drainHttpServer';
-import { Server } from 'socket.io';
 import bodyParser from 'body-parser';
 import jwt from 'jsonwebtoken';
 import { WebSocketServer } from 'ws';
@@ -16,9 +15,7 @@ import { Context } from 'graphql-ws';
 import connectDB from './config/db';
 import { typeDefs } from './graphql/typeDefs';
 import { resolvers } from './graphql/resolvers';
-import { socketHandler } from './socket';
 import { initKronos } from './jobs/cron';
-import { initNotificationService } from './services/notification.service';
 import blogRoutes from './routes/BlogRoutes';
 import blogCategoryRoutes from './routes/BlogCategoryRoutes';
 import uploadRoutes from './routes/UploadRoutes';
@@ -81,17 +78,6 @@ const startServer = async () => {
 
     await server.start();
 
-    // Socket.io Setup
-    const io = new Server(httpServer, {
-        cors: {
-            origin: "*",
-            methods: ["GET", "POST"]
-        }
-    });
-
-    socketHandler(io);
-    initNotificationService(io);
-
     // Middleware
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080'];
     app.use(cors({
@@ -122,7 +108,7 @@ const startServer = async () => {
         '/graphql',
         expressMiddleware(server, {
             context: async ({ req }: any) => {
-                return { user: req.user, io }; // Use user from middleware
+                return { user: req.user }; // Use user from middleware
             },
         }) as unknown as express.RequestHandler,
     );
@@ -136,9 +122,8 @@ const startServer = async () => {
 
     const PORT = process.env.PORT || 4000;
 
-    httpServer.listen(PORT, () => {
+    httpServer.listen(Number(PORT), () => {
         console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);
-        console.log(`🔌 Socket.io ready on port ${PORT}`);
     });
 };
 

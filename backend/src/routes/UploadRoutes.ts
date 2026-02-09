@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { uploadImage } from '../controllers/UploadController';
+import { uploadImage, uploadFile } from '../controllers/UploadController';
 import { requireAuth } from '../middleware/auth';
 
 const router = Router();
@@ -16,5 +16,6 @@ const upload = multer({
 
 // Protect the upload route
 router.post('/image', requireAuth, upload.single('image'), uploadImage);
+router.post('/file', requireAuth, upload.single('file'), uploadFile);
 
 export default router;

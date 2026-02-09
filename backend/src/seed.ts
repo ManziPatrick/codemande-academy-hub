@@ -442,6 +442,43 @@ const seedData = async () => {
       joinedAt: new Date()
     }).save();
 
+    console.log('🏗️ Creating Active Projects...');
+    await new Project({
+      userId: student1._id,
+      title: 'E-Commerce Frontend Refactor',
+      course: 'Full Stack Masterclass',
+      type: 'Individual',
+      status: 'in_progress',
+      progress: 35,
+      deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      description: 'Implementing modern state management and responsive design for the e-commerce client.',
+      mentors: [trainer1._id],
+      tasks: [
+        { title: 'Setup Project Boilerplate', completed: true },
+        { title: 'Redux Integration', completed: true },
+        { title: 'Product Dashboard UI', completed: false },
+        { title: 'Payment Gateway Integration', completed: false }
+      ]
+    }).save();
+
+    await new Project({
+      userId: student2._id,
+      title: 'AI Movie Recommender System',
+      course: 'Data Science Bootcamp',
+      type: 'Individual',
+      status: 'pending_review',
+      progress: 90,
+      deadline: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+      description: 'Building a collaborative filtering model using TensorFlow to suggest movies based on user history.',
+      mentors: [trainer2._id],
+      tasks: [
+        { title: 'Data Cleaning', completed: true },
+        { title: 'Model Training', completed: true },
+        { title: 'API Integration', completed: true },
+        { title: 'Final Documentation', completed: false }
+      ]
+    }).save();
+
     console.log('📤 Creating Submissions...');
     // Alice submits Milestone 1
     await new InternshipSubmission({

@@ -93,6 +93,7 @@ export const typeDefs = `#graphql
     lastPath: String
     createdAt: String
     updatedAt: String
+    bookings: [Booking]
   }
 
   type Message {
@@ -139,6 +140,9 @@ export const typeDefs = `#graphql
     duration: Int
     type: String
     resources: [Resource]
+    isAssignment: Boolean
+    assignmentDescription: String
+    assignmentDeliverables: [String]
   }
 
   type Module {
@@ -486,6 +490,21 @@ export const typeDefs = `#graphql
     coursePerformance: [CoursePerformance!]
   }
 
+  type AssignmentSubmission {
+    id: ID!
+    userId: ID!
+    user: User
+    courseId: ID!
+    course: Course
+    lessonId: String!
+    content: String! # URL or Text
+    status: String! # 'pending', 'reviewed', 'revision_requested'
+    grade: Int
+    feedback: String
+    createdAt: String!
+    updatedAt: String!
+  }
+
   type UploadSignature {
     signature: String!
     timestamp: Int!
@@ -544,6 +563,9 @@ export const typeDefs = `#graphql
 
     getCourseQuestions(courseId: ID!): [Question!]!
     getUploadSignature(folder: String): UploadSignature!
+    
+    # Assignments
+    getAssignmentSubmissions(courseId: ID, lessonId: String): [AssignmentSubmission]
   }
 
   type DailyDashboard {
@@ -584,6 +606,9 @@ export const typeDefs = `#graphql
     duration: Int
     type: String
     resources: [ResourceInput]
+    isAssignment: Boolean
+    assignmentDescription: String
+    assignmentDeliverables: [String]
   }
 
   input ModuleInput {
@@ -780,6 +805,7 @@ export const typeDefs = `#graphql
 
     # Projects
     createProject(
+      userId: ID
       title: String!
       course: String!
       type: String!
@@ -890,24 +916,26 @@ export const typeDefs = `#graphql
     promoteIntern(internshipIds: [ID!], targetStage: Int!): Boolean
     updateInternshipPayment(id: ID!, status: String!, paidAt: String): Internship
     payForCourse(courseId: ID!, amount: Float!, paymentMethod: String!): Course
+    enrollStudentInCourse(courseId: ID!, userId: ID!): Course
     addInternshipTask(internshipId: ID!, title: String!, priority: String): Internship
     addBatchTask(internshipIds: [ID!], stage: Int, cohort: String, title: String!, priority: String): Boolean
     updateTheme(primaryColor: String, mode: String, lightBg: String, darkBg: String): User
     updateInternshipTask(internshipId: ID!, taskId: ID!, status: String!): Internship
     updateTaskProgress(projectId: ID!, taskId: String!, completed: Boolean!): Project
     approveProjectTask(projectId: ID!, taskId: String!, approved: Boolean!, feedback: String): Project
+    gradeProject(id: ID!, grade: String!, feedback: String!): Project
     assignGroupProject(internshipIds: [ID!], title: String!, description: String!, repoUrl: String, deadline: String, mentorIds: [ID!]): Project
 
     # New Internship Module Mutations
-    createInternshipProgram(title: String!, description: String!, duration: String!, startDate: String!, endDate: String!, applicationDeadline: String!, eligibility: [String], rules: String, price: Float, currency: String): InternshipProgram
-    updateInternshipProgram(id: ID!, title: String, description: String, duration: String, startDate: String, endDate: String, applicationDeadline: String, eligibility: [String], rules: String, price: Float, currency: String, status: String): InternshipProgram
+    createInternshipProgram(title: String!, description: String!, duration: String!, startDate: String!, endDate: String!, applicationDeadline: String!, eligibility: [String], rules: String, price: Float, currency: String, image: String): InternshipProgram
+    updateInternshipProgram(id: ID!, title: String, description: String, duration: String, startDate: String, endDate: String, applicationDeadline: String, status: String, eligibility: [String], rules: String, price: Float, currency: String, image: String): InternshipProgram
     deleteInternshipProgram(id: ID!): Boolean
 
     applyToInternshipProgram(internshipProgramId: ID!, skills: [String]!, portfolioUrl: String, resumeUrl: String, availability: String!): InternshipApplication
     reviewInternshipApplication(id: ID!, status: String!, rejectionReason: String): InternshipApplication
 
-    createInternshipProject(internshipProgramId: ID!, title: String!, description: String!, requiredSkills: [String], minTeamSize: Int, maxTeamSize: Int): InternshipProject
-    updateInternshipProject(id: ID!, title: String, description: String, requiredSkills: [String], minTeamSize: Int, maxTeamSize: Int, status: String): InternshipProject
+    createInternshipProject(internshipProgramId: ID!, title: String!, description: String!, requiredSkills: [String], minTeamSize: Int, maxTeamSize: Int, documentation: DocumentationInput): InternshipProject
+    updateInternshipProject(id: ID!, title: String, description: String, requiredSkills: [String], minTeamSize: Int, maxTeamSize: Int, status: String, documentation: DocumentationInput): InternshipProject
     deleteInternshipProject(id: ID!): Boolean
 
     createInternshipTeam(name: String!, internshipProjectId: ID!, internshipProgramId: ID!, mentorId: ID): InternshipTeam
@@ -968,6 +996,7 @@ export const typeDefs = `#graphql
     requiredSkills: [String]
     teamSizeRange: TeamSizeRange
     milestones: [InternshipMilestone]
+    documentation: Documentation
     status: String!
     createdAt: String
   }
@@ -1066,6 +1095,7 @@ export const typeDefs = `#graphql
     internshipApplications(programId: ID, status: String): [InternshipApplication]
     myInternshipApplications: [InternshipApplication]
     internshipProject(id: ID!): InternshipProject
+    internshipProjects(programId: ID): [InternshipProject]
     internshipTeams(programId: ID): [InternshipTeam]
     myInternshipTeam: InternshipTeam
     internshipSubmissions(teamId: ID!): [InternshipSubmission]
@@ -1307,6 +1337,19 @@ export const typeDefs = `#graphql
     # Stripe Payment
     createStripePaymentIntent(programId: ID!): StripePaymentIntent
     subscribeToNewsletter(email: String!): Boolean
+
+    # Assignments
+    submitAssignment(
+      courseId: ID!
+      lessonId: String!
+      content: String!
+    ): AssignmentSubmission
+    
+    gradeAssignment(
+      submissionId: ID!
+      grade: Int!
+      feedback: String
+    ): AssignmentSubmission
   }
 
   type StripePaymentIntent {

@@ -12,11 +12,13 @@ const pubsub = new PubSub<any>();
 import { Booking } from '../models/Booking';
 import { Badge } from '../models/Badge';
 import { Config } from '../models/Config';
+import { AssignmentSubmission } from '../models/AssignmentSubmission';
 import { Project, IProject } from '../models/Project';
 import { Certificate } from '../models/Certificate';
 import { Internship } from '../models/Internship';
 import { CourseProgress } from '../models/CourseProgress';
 import { Payment } from '../models/Payment';
+import { pusher } from '../lib/pusher';
 import { InternshipProgram } from '../models/internship/InternshipProgram';
 import { InternshipApplication } from '../models/internship/InternshipApplication';
 import { InternshipProject } from '../models/internship/InternshipProject';
@@ -108,6 +110,40 @@ export const resolvers = {
 
     getResource: async (_: any, { id }: any) => {
       return await Resource.findById(id).populate('createdBy');
+    },
+
+    getAssignmentSubmissions: async (_: any, { courseId, lessonId }: any, context: any) => {
+      if (!context.user) throw new Error('Unauthorized');
+
+      const filter: any = {};
+      if (courseId) filter.courseId = courseId;
+      if (lessonId) filter.lessonId = lessonId;
+
+      // Filter by role
+      if (context.user.role === 'student') {
+        filter.userId = context.user.id;
+      } else if (context.user.role === 'trainer') {
+        // Fetch courses owned by this trainer
+        const myCourses = await Course.find({ instructor: context.user.id }).select('_id');
+        const myCourseIds = myCourses.map(c => c._id);
+
+        if (filter.courseId) {
+          // If a specific course is requested, verify ownership
+          const isMyCourse = myCourseIds.some(id => id.toString() === filter.courseId);
+          if (!isMyCourse) {
+            // For now, strict check. Or could just return empty []
+            throw new Error('You can only view submissions for your own courses');
+          }
+        } else {
+          // Default: show all submissions for my courses
+          filter.courseId = { $in: myCourseIds };
+        }
+      }
+
+      return await AssignmentSubmission.find(filter)
+        .populate('user')
+        .populate('course')
+        .sort({ createdAt: -1 });
     },
 
     getUploadSignature: (_: any, { folder }: { folder?: string }, context: any) => {
@@ -408,9 +444,26 @@ export const resolvers = {
     },
     myBookings: async (_: any, __: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      return await Booking.find({
+      let filter: any = {
         $or: [{ userId: context.user.id }, { mentorId: context.user.id }]
-      }).populate('userId mentorId').sort({ createdAt: -1 });
+      };
+
+      if (context.user.role === 'trainer') {
+        // Find courses taught by this trainer
+        const courses = await Course.find({ instructor: context.user.id });
+        const studentIds = courses.reduce((acc: any[], course: any) => {
+          return [...acc, ...course.studentsEnrolled];
+        }, []);
+
+        // Add condition: Request from my student AND (mentorId is me OR mentorId is null)
+        // We already have "mentorId is me" in the initial $or.
+        // So we add: { userId: { $in: studentIds }, mentorId: null }
+        if (studentIds.length > 0) {
+          filter.$or.push({ userId: { $in: studentIds }, mentorId: null });
+        }
+      }
+
+      return await Booking.find(filter).populate('userId mentorId').sort({ createdAt: -1 });
     },
 
     payments: async (_: any, __: any, context: any) => {
@@ -632,19 +685,38 @@ export const resolvers = {
       if (!context.user || (context.user.role !== 'super_admin' && context.user.role !== 'admin' && context.user.role !== 'trainer')) {
         throw new Error('Not authorized');
       }
-      return await Project.find().populate('userId').sort({ createdAt: -1 });
+      return await Project.find()
+        .populate('userId')
+        .populate('mentors')
+        .populate('team.userId')
+        .sort({ createdAt: -1 });
     },
     myProjects: async (_: any, __: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      return await Project.find({ userId: context.user.id }).populate('userId').sort({ createdAt: -1 });
+      return await Project.find({
+        $or: [
+          { userId: context.user.id },
+          { 'team.userId': context.user.id }
+        ]
+      })
+        .populate('userId')
+        .populate('mentors')
+        .populate('team.userId')
+        .sort({ createdAt: -1 });
     },
     project: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      const project = await Project.findById(id).populate('userId');
+      const project = await Project.findById(id)
+        .populate('userId')
+        .populate('mentors')
+        .populate('team.userId');
       if (!project) throw new Error('Project not found');
 
-      // Check if user owns the project or is admin/trainer
+      const isTeamMember = project.team?.some(member => member.userId?.toString() === context.user.id);
+
+      // Check if user owns the project, is a team member, or is admin/trainer
       if (project.userId.toString() !== context.user.id &&
+        !isTeamMember &&
         context.user.role !== 'super_admin' &&
         context.user.role !== 'admin' &&
         context.user.role !== 'trainer') {
@@ -815,6 +887,11 @@ export const resolvers = {
       return await InternshipApplication.find({ userId: context.user.id, isDeleted: false }).sort({ createdAt: -1 });
     },
     internshipProject: async (_: any, { id }: { id: string }) => await InternshipProject.findById(id),
+    internshipProjects: async (_: any, { programId }: { programId?: string }) => {
+      const query: any = { isDeleted: false };
+      if (programId) query.internshipProgramId = programId;
+      return await InternshipProject.find(query).sort({ createdAt: -1 });
+    },
     internshipTeams: async (_: any, { programId }: { programId?: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const query: any = { isDeleted: false };
@@ -971,12 +1048,70 @@ export const resolvers = {
       const resource = await Resource.findById(id);
       if (!resource) throw new Error('Resource not found');
 
+      // Only creator or admin can delete
       if (resource.createdBy.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
         throw new Error('Not authorized');
       }
 
       await Resource.findByIdAndDelete(id);
       return true;
+    },
+
+    submitAssignment: async (_: any, { courseId, lessonId, content }: any, context: any) => {
+      if (!context.user) throw new Error('Unauthorized');
+
+      // Check for existing submission to update or create new
+      let submission = await AssignmentSubmission.findOne({
+        userId: context.user.id,
+        courseId,
+        lessonId
+      });
+
+      if (submission) {
+        submission.content = content;
+        submission.status = 'pending';
+        // Reset grade/feedback on resubmission? Probably yes.
+        submission.grade = undefined;
+        submission.feedback = undefined;
+        await submission.save();
+      } else {
+        submission = await AssignmentSubmission.create({
+          userId: context.user.id,
+          courseId,
+          lessonId,
+          content,
+          status: 'pending'
+        });
+      }
+
+      // Log activity
+      await logActivity(context.user.id, 'SUBMIT_ASSIGNMENT', 'AssignmentSubmission', submission.id, `Submitted assignment for lesson ${lessonId} in course ${courseId}`);
+
+      return await submission.populate(['user', 'course']);
+    },
+
+    gradeAssignment: async (_: any, { submissionId, grade, feedback }: any, context: any) => {
+      if (!context.user || !['trainer', 'mentor', 'admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Unauthorized');
+      }
+
+      const submission = await AssignmentSubmission.findById(submissionId);
+      if (!submission) throw new Error('Submission not found');
+
+      submission.grade = grade;
+      submission.feedback = feedback;
+      submission.status = 'reviewed';
+      await submission.save();
+
+      // Notify student
+      await sendNotification(submission.userId.toString(), {
+        type: 'ASSIGNMENT_GRADED',
+        title: 'Assignment Graded',
+        message: `Your assignment for course ${submission.courseId} has been graded: ${grade}/100`,
+        link: `/portal/student/courses/${submission.courseId}`
+      });
+
+      return await submission.populate(['user', 'course']);
     },
 
     chatWithAI: async (_: any, { message }: { message: string }, context: any) => {
@@ -1049,6 +1184,67 @@ export const resolvers = {
         {
           $setOnInsert: {
             userId: user.id,
+            courseId: course.id,
+            totalTimeSpent: 0,
+            overallProgress: 0,
+            status: 'active',
+            lessons: []
+          }
+        },
+        { upsert: true, new: true }
+      );
+
+      return await course.populate('instructor studentsEnrolled');
+    },
+
+    enrollStudentInCourse: async (_: any, { courseId, userId }: { courseId: string; userId: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const course = await Course.findById(courseId);
+      if (!course) throw new Error('Course not found');
+
+      // Permission Check: Admin, Super Admin, or Course Instructor
+      const isAdmin = context.user.role === 'admin' || context.user.role === 'super_admin';
+      const isInstructor = course.instructor?.toString() === context.user.id;
+
+      if (!isAdmin && !isInstructor) {
+        throw new Error('Not authorized to enroll students in this course');
+      }
+
+      const student = await User.findById(userId);
+      if (!student) throw new Error('Student not found');
+
+      // Enroll student in Course
+      if (!course.studentsEnrolled.some((s: any) => s.toString() === student.id)) {
+        course.studentsEnrolled.push(student.id as any);
+        await course.save();
+      }
+
+      // Add course to student's enrolledCourses
+      if (!student.enrolledCourses.some((c: any) => c.toString() === courseId)) {
+        student.enrolledCourses.push(courseId as any);
+        await student.save();
+
+        // Optional: Record payment if needed, but for trainer enrollment we mark as 'Admin Enrolled'
+        await new Payment({
+          userId: student.id,
+          courseId: course.id,
+          amount: course.price || 0,
+          currency: 'RWF',
+          status: 'completed',
+          paymentMethod: 'Admin/Trainer Enrolled',
+          transactionId: `TXN-ADM-${Math.random().toString(36).substring(7).toUpperCase()}`,
+          type: 'Course Enrollment',
+          itemTitle: course.title
+        }).save();
+      }
+
+      // Initialize Course Progress (Idempotent)
+      await CourseProgress.findOneAndUpdate(
+        { userId: student.id, courseId: course.id },
+        {
+          $setOnInsert: {
+            userId: student.id,
             courseId: course.id,
             totalTimeSpent: 0,
             overallProgress: 0,
@@ -1310,10 +1506,24 @@ export const resolvers = {
       // Populate sender for return
       await message.populate('sender');
 
-      // Emit to receiver's room
-      context.io.to(receiverId).emit('receive_message', message);
-      // Also emit to sender (if they have multiple tabs open)
-      context.io.to(senderId).emit('receive_message', message);
+      // Emit to receiver's room via Pusher (minimal payload)
+      const minimalMessage = {
+        id: message._id,
+        conversationId: message.conversationId,
+        content: message.content,
+        createdAt: message.createdAt,
+        sender: {
+          id: (message.sender as any)._id,
+          username: (message.sender as any).username,
+        }
+      };
+
+      try {
+        await pusher.trigger(`user-${receiverId}`, 'receive_message', minimalMessage);
+        await pusher.trigger(`user-${senderId}`, 'receive_message', minimalMessage);
+      } catch (e) {
+        console.error('Pusher message error:', e);
+      }
 
       // Publish to GraphQL Subscriptions
       pubsub.publish('MESSAGE_ADDED', { messageAdded: message });
@@ -1512,6 +1722,30 @@ export const resolvers = {
       if ((user as any).activityLog.length > 200) (user as any).activityLog.shift();
 
       await user.save();
+
+      // Notify relevant trainers/instructors
+      if (context.user.role === 'student') {
+        try {
+          // Import Course inside for scoping if needed, but it should be available in the file
+          const enrolledCourses = await Course.find({ studentsEnrolled: context.user.id });
+          const instructorIds = [...new Set(enrolledCourses.map((c: any) => c.instructor.toString()))];
+
+          instructorIds.forEach(async (id: string) => {
+            try {
+              await pusher.trigger(`user-${id}`, 'student_activity', {
+                studentId: context.user.id,
+                studentName: (user as any).fullName || (user as any).username,
+                action,
+                details,
+                timestamp: now
+              });
+            } catch (e) { console.error(e); }
+          });
+        } catch (err) {
+          console.error("Error emitting student activity:", err);
+        }
+      }
+
       return user;
     },
     createQuestion: async (_: any, args: any, context: any) => {
@@ -1643,17 +1877,24 @@ export const resolvers = {
     },
 
     // Projects Mutations
-    createProject: async (_: any, { mentorIds, ...args }: any, context: any) => {
+    createProject: async (_: any, { userId, mentorIds, ...args }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
+
+      // If userId is provided, ensure the creator is an admin or trainer
+      let targetUserId = context.user.id;
+      if (userId && (context.user.role === 'admin' || context.user.role === 'super_admin' || context.user.role === 'trainer')) {
+        targetUserId = userId;
+      }
+
       const project = new Project({
         ...args,
-        userId: context.user.id,
+        userId: targetUserId,
         mentors: mentorIds || [context.user.id],
         status: 'in_progress',
         progress: 0,
       });
       await project.save();
-      return await project.populate('userId');
+      return await project.populate(['userId', 'mentors', 'team.userId']);
     },
     updateProject: async (_: any, { id, mentorIds, ...args }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -1680,7 +1921,7 @@ export const resolvers = {
         await internship.save();
       }
 
-      return await project.populate('userId');
+      return await project.populate(['userId', 'mentors', 'team.userId']);
     },
     deleteProject: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -1702,7 +1943,10 @@ export const resolvers = {
       const project = await Project.findById(id);
       if (!project) throw new Error('Project not found');
 
-      if (project.userId.toString() !== context.user.id) {
+      const isTeamMember = project.team?.some(member => member.userId?.toString() === context.user.id);
+
+      if (project.userId.toString() !== context.user.id && !isTeamMember &&
+        context.user.role !== 'super_admin' && context.user.role !== 'admin' && context.user.role !== 'trainer') {
         throw new Error('Not authorized');
       }
 
@@ -1711,7 +1955,26 @@ export const resolvers = {
       project.submittedAt = new Date();
       (project as any).submissionUrl = submissionUrl;
       await project.save();
-      return await project.populate('userId');
+      return await project.populate(['userId', 'mentors', 'team.userId']);
+    },
+    gradeProject: async (_: any, { id, grade, feedback }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      // Only trainers and admins can grade
+      if (context.user.role !== 'trainer' && context.user.role !== 'admin' && context.user.role !== 'super_admin') {
+        throw new Error('Not authorized to grade projects');
+      }
+
+      const project = await Project.findById(id);
+      if (!project) throw new Error('Project not found');
+
+      project.grade = grade;
+      project.feedback = feedback;
+      project.status = 'completed';
+      project.progress = 100;
+
+      await project.save();
+      return await project.populate(['userId', 'mentors', 'team.userId']);
     },
 
     autoGroupStudents: async (_: any, { courseId, projectTitle, description, deadline }: any, context: any) => {
@@ -1768,14 +2031,27 @@ export const resolvers = {
       const booking = new Booking({
         userId: context.user.id,
         ...args,
-        status: 'pending'
+        status: (context.user.role === 'trainer' || context.user.role === 'admin') ? 'confirmed' : 'pending'
       });
 
       await booking.save();
 
-      // Notify mentor via socket
-      if (context.io && args.mentorId) {
-        context.io.to(args.mentorId).emit('new_booking', booking);
+      // Notify mentor via Pusher (minimal payload)
+      if (args.mentorId) {
+        const minimalBooking = {
+          id: booking._id,
+          userId: booking.userId,
+          mentorId: booking.mentorId,
+          type: booking.type,
+          status: booking.status,
+          date: booking.date,
+          time: booking.time
+        };
+        try {
+          await pusher.trigger(`user-${args.mentorId}`, 'new_booking', minimalBooking);
+        } catch (e) {
+          console.error('Pusher booking error:', e);
+        }
       }
       return booking;
     },
@@ -1797,11 +2073,32 @@ export const resolvers = {
 
       booking.status = status;
       if (meetingLink) booking.meetingLink = meetingLink;
+
+      // If a trainer confirms an unassigned booking, they become the mentor
+      if (context.user.role === 'trainer' && !booking.mentorId && status === 'confirmed') {
+        booking.mentorId = context.user.id;
+      }
+
       await booking.save();
 
-      // Notify user
-      if (context.io) {
-        context.io.to(booking.userId.toString()).emit('booking_updated', booking);
+      // Notify relevant parties (minimal payload)
+      const minimalBooking = {
+        id: booking._id,
+        userId: booking.userId,
+        mentorId: booking.mentorId,
+        status: booking.status,
+        meetingLink: booking.meetingLink
+      };
+
+      try {
+        if (booking.userId.toString() !== context.user.id) {
+          await pusher.trigger(`user-${booking.userId.toString()}`, 'booking_updated', minimalBooking);
+        }
+        if (booking.mentorId && booking.mentorId.toString() !== context.user.id) {
+          await pusher.trigger(`user-${booking.mentorId.toString()}`, 'booking_updated', minimalBooking);
+        }
+      } catch (e) {
+        console.error('Pusher booking update error:', e);
       }
 
       return booking;
@@ -2318,6 +2615,15 @@ export const resolvers = {
       const task = project.tasks?.find((t: any) => t.id === taskId || t._id.toString() === taskId);
       if (!task) throw new Error('Task not found');
 
+      const isTeamMember = project.team?.some(member => member.userId?.toString() === context.user.id);
+
+      if (project.userId.toString() !== context.user.id && !isTeamMember &&
+        context.user.role !== 'super_admin' &&
+        context.user.role !== 'admin' &&
+        context.user.role !== 'trainer') {
+        throw new Error('Not authorized');
+      }
+
       task.completed = completed;
 
       // Calculate progress based on completed tasks
@@ -2460,9 +2766,10 @@ export const resolvers = {
 
     createInternshipProject: async (_: any, args: any, context: any) => {
       if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
-      const { minTeamSize, maxTeamSize, ...rest } = args;
+      const { minTeamSize, maxTeamSize, documentation, ...rest } = args;
       const project = new InternshipProject({
         ...rest,
+        documentation,
         teamSizeRange: { min: minTeamSize, max: maxTeamSize }
       });
       await project.save();
@@ -2470,7 +2777,7 @@ export const resolvers = {
       return project;
     },
 
-    updateInternshipProject: async (_: any, { id, minTeamSize, maxTeamSize, ...args }: any, context: any) => {
+    updateInternshipProject: async (_: any, { id, minTeamSize, maxTeamSize, documentation, ...args }: any, context: any) => {
       if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
       const updateData: any = { ...args };
       if (minTeamSize !== undefined || maxTeamSize !== undefined) {
@@ -2478,6 +2785,9 @@ export const resolvers = {
           min: minTeamSize,
           max: maxTeamSize
         };
+      }
+      if (documentation) {
+        updateData.documentation = documentation;
       }
       const project = await InternshipProject.findByIdAndUpdate(id, updateData, { new: true });
       if (!project) throw new Error('Project not found');
@@ -3152,6 +3462,44 @@ export const resolvers = {
       return 0;
     },
     fullName: (parent: any) => parent.fullName || parent.username,
+    enrolledCourses: async (parent: any) => {
+      if (parent.enrolledCourses && parent.enrolledCourses.length > 0 && (parent.enrolledCourses[0] as any).title) return parent.enrolledCourses;
+      const user = await User.findById(parent.id || parent._id).populate('enrolledCourses');
+      return user?.enrolledCourses || [];
+    },
+    badges: async (parent: any) => {
+      if (parent.badges && parent.badges.length > 0 && (parent.badges[0] as any).badgeId && (parent.badges[0] as any).badgeId.title) return parent.badges;
+      const user = await User.findById(parent.id || parent._id).populate('badges.badgeId');
+      return user?.badges || [];
+    },
+    bookings: async (parent: any) => {
+      return await Booking.find({ userId: parent.id || parent._id }).populate('mentorId').sort({ createdAt: -1 });
+    },
+    completedLessons: async (parent: any) => {
+      // Fetch progress from CourseProgress model for accuracy
+      const progressDocs = await CourseProgress.find({ userId: parent.id || parent._id });
+
+      const completed: any[] = [];
+      progressDocs.forEach((doc: any) => {
+        if (doc.lessons) {
+          doc.lessons.forEach((lesson: any) => {
+            if (lesson.completed) {
+              completed.push({
+                courseId: doc.courseId.toString(),
+                lessonId: lesson.lessonId
+              });
+            }
+          });
+        }
+      });
+
+      // Fallback to User model's completedLessons if CourseProgress is empty but User has data
+      if (completed.length === 0 && parent.completedLessons && parent.completedLessons.length > 0) {
+        return parent.completedLessons;
+      }
+
+      return completed;
+    },
     studentProfile: async (parent: any) => await StudentProfile.findOne({ userId: parent.id || parent._id })
   },
   Booking: {
@@ -3167,6 +3515,10 @@ export const resolvers = {
   },
   Project: {
     id: (parent: any) => parent.id || parent._id || parent.toString(),
+    userId: (parent: any) => {
+      if (!parent.userId) return null;
+      return (parent.userId as any)._id || parent.userId;
+    },
     user: async (parent: any) => {
       if (parent.userId && (parent.userId as any).username) return parent.userId;
       return await User.findById(parent.userId);
@@ -3177,6 +3529,10 @@ export const resolvers = {
     }
   },
   TeamMember: {
+    userId: (parent: any) => {
+      if (!parent.userId) return null;
+      return (parent.userId as any)._id || parent.userId;
+    },
     user: async (parent: any) => {
       if (!parent.userId) return null;
       if ((parent.userId as any).username) return parent.userId;
@@ -3185,6 +3541,10 @@ export const resolvers = {
   },
   Certificate: {
     id: (parent: any) => parent.id || parent._id || parent.toString(),
+    userId: (parent: any) => {
+      if (!parent.userId) return null;
+      return (parent.userId as any)._id || parent.userId;
+    },
     user: async (parent: any) => {
       if (parent.userId && (parent.userId as any).username) return parent.userId;
       return await User.findById(parent.userId);
@@ -3302,6 +3662,10 @@ export const resolvers = {
     team: async (parent: any) => await InternshipTeam.findById(parent.teamId),
     trainer: async (parent: any) => await User.findById(parent.trainerId),
     revokedByUser: async (parent: any) => parent.revokedBy ? await User.findById(parent.revokedBy) : null,
+  },
+  AssignmentSubmission: {
+    user: async (parent: any) => await User.findById(parent.userId),
+    course: async (parent: any) => await Course.findById(parent.courseId),
   },
   Subscription: {
     messageAdded: {

@@ -10,6 +10,9 @@ export interface IInternshipProject extends Document {
     max: number;
   };
   status: 'draft' | 'published' | 'archived';
+  documentation?: {
+    links?: Array<{ title: string; url: string }>;
+  };
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -27,11 +30,14 @@ const InternshipProjectSchema: Schema = new Schema(
       min: { type: Number, default: 1 },
       max: { type: Number, default: 10 }
     },
-    status: { 
-      type: String, 
-      enum: ['draft', 'published', 'archived'], 
-      default: 'draft', 
-      index: true 
+    status: {
+      type: String,
+      enum: ['draft', 'published', 'archived'],
+      default: 'draft',
+      index: true
+    },
+    documentation: {
+      links: [{ title: String, url: String }],
     },
     isDeleted: { type: Boolean, default: false, index: true },
   },

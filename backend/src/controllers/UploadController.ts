@@ -53,3 +53,35 @@ export const uploadImage = async (req: Request, res: Response) => {
         res.status(500).json({ message: `Cloudinary error: ${error.message || 'Unknown error'}` });
     }
 };
+
+export const uploadFile = async (req: Request, res: Response) => {
+    try {
+        console.log('--- Upload File Signal Received ---');
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        const result = await new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                {
+                    folder: 'academy_hub_projects',
+                    resource_type: 'auto' // Important for non-image files
+                },
+                (error, result) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                }
+            );
+            uploadStream.end(req.file?.buffer);
+        });
+
+        res.json({
+            url: (result as any).secure_url,
+            originalname: req.file.originalname,
+            size: req.file.size
+        });
+    } catch (error: any) {
+        console.error('File Upload Error:', error);
+        res.status(500).json({ message: `Upload error: ${error.message || 'Unknown error'}` });
+    }
+};
