@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 interface AuthAwareLinkProps {
   children: React.ReactNode;
   variant?: "gold" | "heroOutline" | "outline" | "default" | "ghost";
-  size?: "sm" | "lg" | "default" | "icon";
+  size?: "sm" | "lg" | "xl" | "default" | "icon";
   className?: string;
   /** If true, this is an enrollment/apply action that should go to portal */
   isEnrollAction?: boolean;

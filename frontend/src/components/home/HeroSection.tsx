@@ -43,14 +43,14 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className="flex flex-col items-center lg:items-start"
+            className="flex flex-col items-center lg:items-start text-center lg:text-left"
           >
             {/* Unique Highlight Badge */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/20 backdrop-blur-md mb-6"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/5 border border-accent/10 backdrop-blur-md mb-6 sm:mb-8"
             >
               <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-accent">
@@ -75,60 +75,60 @@ export function HeroSection() {
               <span className="italic text-accent ml-1 sm:ml-3">&</span>{" "}
               <span className="italic font-light">Innovation</span>
             </h1>
-          </motion.div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-            className="text-base sm:text-xl text-muted-foreground/90 mb-10 max-w-xl leading-relaxed text-center lg:text-left font-light"
-          >
-            Building high-impact skills. Creating limitless opportunities. Delivering real-world solutions through expert mentorship and hands-on practice.
-          </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+              className="text-sm sm:text-xl text-muted-foreground/90 mb-8 sm:mb-12 max-w-xl leading-relaxed font-light"
+            >
+              Building high-impact skills. Creating limitless opportunities. Delivering real-world solutions through expert mentorship and hands-on practice.
+            </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-            className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start w-full sm:w-auto"
-          >
-            <AuthAwareLink variant="gold" size="xl" className="w-full sm:w-auto shadow-premium hover:-translate-y-1">
-              Explore Programs
-            </AuthAwareLink>
-            <AuthAwareLink variant="heroOutline" size="xl" className="w-full sm:w-auto hover:bg-white/5 backdrop-blur-sm border-2">
-              Get Started
-            </AuthAwareLink>
-          </motion.div>
-
-          {/* Unique Visual Element: Floating Tech Cards */}
-          <div className="hidden lg:block absolute -right-20 top-1/2 -translate-y-1/2 w-96 h-96 pointer-events-none">
             <motion.div
-              animate={{ y: [0, -20, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-0 right-10 p-5 glass-card rounded-2xl shadow-premium border border-white/40"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+              className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center lg:justify-start w-full sm:w-auto pb-12 sm:pb-0"
+            >
+              <AuthAwareLink variant="gold" size="xl" className="w-full sm:w-auto shadow-premium hover:-translate-y-1 h-12 sm:h-14">
+                Explore Programs
+              </AuthAwareLink>
+              <AuthAwareLink variant="heroOutline" size="xl" className="w-full sm:w-auto hover:bg-white/5 backdrop-blur-sm border-2 h-12 sm:h-14">
+                Get Started
+              </AuthAwareLink>
+            </motion.div>
+          </motion.div>
+
+          {/* Unique Visual Element: Floating Tech Cards - Only on XL screens */}
+          <div className="hidden xl:block absolute -right-20 top-1/2 -translate-y-1/2 w-96 h-96 pointer-events-none">
+            <motion.div
+              animate={{ y: [0, -15, 0], x: [0, 5, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-10 right-10 p-5 glass-card rounded-2xl shadow-premium border border-white/20 backdrop-blur-2xl"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                  <span className="text-accent text-lg">💡</span>
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
+                  💡
                 </div>
                 <div>
-                  <p className="text-[10px] text-accent font-bold uppercase tracking-wider">Applied AI</p>
+                  <p className="text-[10px] text-accent font-bold uppercase tracking-widest">Applied AI</p>
                   <p className="text-sm font-semibold">New Curriculum Live</p>
                 </div>
               </div>
             </motion.div>
 
             <motion.div
-              animate={{ y: [0, 20, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              className="absolute bottom-20 -left-10 p-5 glass-card rounded-2xl shadow-premium border border-white/40"
+              animate={{ y: [0, 15, 0], x: [0, -5, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+              className="absolute bottom-20 -left-10 p-5 glass-card rounded-2xl shadow-premium border border-white/20 backdrop-blur-2xl"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
-                  <span className="text-blue-500 text-lg">⚙️</span>
+                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500">
+                  ⚙️
                 </div>
                 <div>
-                  <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider">Backend Systems</p>
+                  <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Backend Systems</p>
                   <p className="text-sm font-semibold">Scalable Node.js</p>
                 </div>
               </div>

@@ -58,7 +58,7 @@ export function Header() {
           <Link to="/" className="flex items-center gap-2">
             <div className="flex items-center">
               {branding.logoUrl ? (
-                <img src={branding.logoUrl} alt={branding.siteName} className="h-8 lg:h-10 w-auto" />
+                <img src={branding.logoUrl} alt={branding.siteName} className="h-7 sm:h-8 lg:h-10 w-auto transition-all" />
               ) : (
                 <>
                   <span className="text-accent text-2xl font-bold">≪</span>
@@ -70,8 +70,8 @@ export function Header() {
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-6">
+          {/* Desktop Navigation - Hidden under 1280px (xl) */}
+          <nav className="hidden xl:flex items-center gap-6">
             {navLinks.map((link) => (
               <Link
                 key={link.name}
@@ -90,8 +90,8 @@ export function Header() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
 
-            {/* Auth Buttons - Desktop Only */}
-            <div className="hidden lg:flex items-center gap-3">
+            {/* Auth Buttons - Desktop Only (Hidden under 1280px) */}
+            <div className="hidden xl:flex items-center gap-3">
               {isAuthenticated ? (
                 <>
                   <Link to="/portal/student">
@@ -129,7 +129,7 @@ export function Header() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden text-card-foreground p-2 ml-1"
+              className="xl:hidden text-card-foreground p-2 ml-1"
               aria-label="Toggle menu"
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -145,7 +145,7 @@ export function Header() {
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.3 }}
-          className="lg:hidden bg-card border-t border-card-foreground/10"
+          className="xl:hidden bg-card border-t border-card-foreground/10"
         >
           <nav className="container mx-auto px-4 py-4 flex flex-col gap-3">
             {navLinks.map((link) => (
