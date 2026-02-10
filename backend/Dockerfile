@@ -1,23 +1,33 @@
-# Use Node.js LTS (Long Term Support) image
-FROM node:18-alpine
+FROM node:22-alpine
 
-# Create app directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
+# Copy package files
+COPY package.json package-lock.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
-# Copy the rest of the application code
+# Copy source code
 COPY . .
 
-# Build the TypeScript application
+# Build the TypeScript code
 RUN npm run build
 
-# Expose the port the app runs on
+# Environment variables
+ENV HOST=::
+ENV PORT=4000
+ENV NODE_ENV=production
+
 EXPOSE 4000
 
-# Start the application
-CMD ["npm", "start"]
+# Run all seeds and start the application
+CMD echo "Starting seeding process..." && \
+    node dist/seed.js && echo "Main seed completed" && \
+    node dist/seedInternship.js && echo "Internship seed completed" && \
+    node dist/seedBlogs.js && echo "Blogs seed completed" && \
+    node dist/seedTestUsers.js && echo "Test users seed completed" && \
+    node dist/seedAICourses.js && echo "AI courses seed completed" && \
+    node dist/seedPublicTeam.js && echo "Team seed completed" && \
+    echo "All seeds completed! Starting application..." && \
+    node dist/index.js
