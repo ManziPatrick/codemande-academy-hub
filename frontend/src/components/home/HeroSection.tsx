@@ -100,40 +100,6 @@ export function HeroSection() {
             </motion.div>
           </motion.div>
 
-          {/* Unique Visual Element: Floating Tech Cards - Only on XL screens */}
-          <div className="hidden xl:block absolute -right-20 top-1/2 -translate-y-1/2 w-96 h-96 pointer-events-none">
-            <motion.div
-              animate={{ y: [0, -15, 0], x: [0, 5, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute top-10 right-10 p-5 glass-card rounded-2xl shadow-premium border border-white/20 backdrop-blur-2xl"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent">
-                  💡
-                </div>
-                <div>
-                  <p className="text-[10px] text-accent font-bold uppercase tracking-widest">Applied AI</p>
-                  <p className="text-sm font-semibold">New Curriculum Live</p>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              animate={{ y: [0, 15, 0], x: [0, -5, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-              className="absolute bottom-20 -left-10 p-5 glass-card rounded-2xl shadow-premium border border-white/20 backdrop-blur-2xl"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500">
-                  ⚙️
-                </div>
-                <div>
-                  <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Backend Systems</p>
-                  <p className="text-sm font-semibold">Scalable Node.js</p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
         </div>
       </div>
     </section>
