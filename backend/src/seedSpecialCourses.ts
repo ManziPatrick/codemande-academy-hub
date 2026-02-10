@@ -315,10 +315,10 @@ const seedSpecialCourses = async () => {
             }
         ];
 
-        // Wipe existing versions to ensure NO DUPLICATION and FRESH CONTENT
-        const courseTitles = coursesData.map(c => c.title);
-        await Course.deleteMany({ title: { $in: courseTitles } });
-        console.log('🗑️ Cleaned up existing versions of specialized courses.');
+        // Fully wipe existing courses and their projects to ensure NO legacy hardcoded seeds remain
+        await Course.deleteMany({});
+        await Project.deleteMany({});
+        console.log('🗑️ Legacy courses and projects hardcoded seeds deleted successfully.');
 
         for (const c of coursesData) {
             const course = new Course(c);
