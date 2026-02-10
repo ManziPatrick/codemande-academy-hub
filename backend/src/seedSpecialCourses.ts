@@ -135,46 +135,58 @@ const seedSpecialCourses = async () => {
             },
             {
                 title: 'Data Science Bootcamp',
-                description: 'End-to-end data training for modern analysts. Master the Python data stack (NumPy, Pandas, Scikit-Learn) and move from raw CSVs to deployable machine learning models that solve business problems.',
+                description: 'End-to-end data training for modern analysts. Master the Python data stack (NumPy, Pandas, Scikit-Learn) and move from raw CSVs to deployable machine learning models that solve business problems. This course focuses on real-world datasets and production-grade ML pipelines.',
                 instructor: trainer._id,
                 price: 49.99,
-                category: 'Data Engineering',
+                category: 'Data Science',
                 level: 'Beginner',
-                thumbnail: 'https://images.unsplash.com/photo-1551288049-nebda4ff7141?auto=format&fit=crop&q=80&w=2000',
+                thumbnail: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=2000',
                 status: 'published',
                 modules: [
                     {
-                        title: 'Module 1: The Python Power Stack',
-                        description: 'Core libraries for high-performance data manipulation.',
+                        title: 'Module 1: Professional Python Data Stack',
+                        description: 'Engineering high-performance data transformation pipelines.',
                         lessons: [
                             {
-                                title: 'Pandas Mastery for Complex Datasets',
-                                duration: 55,
+                                title: 'Pandas Vectorization & Memory Optimization',
+                                duration: 60,
                                 type: 'video',
                                 content: renderRichContent(
-                                    'High-Performance Data Wrangling',
-                                    'Master vectorization and complex groupby operations to process millions of rows of data with local computing resources.',
-                                    ['Multi-indexing and pivot table mastery', 'Efficient time-series analysis', 'Memory optimization for large CSVs'],
-                                    'Clean and normalize a messy 100k-row e-commerce dataset, handling missing values and outlier detection via Z-scores.',
-                                    [{ name: 'Pandas Documentation', url: 'https://pandas.pydata.org/docs/' }]
+                                    'High-Performance Data Engineering',
+                                    'Stop using loops. Master vectorization techniques in Pandas and NumPy to process millions of records in seconds. Learn memory management for large-scale datasets.',
+                                    ['Vectorized string operations and mathematical functions', 'Effective use of dtypes for memory reduction', 'Parallel processing with Dask for massive datasets'],
+                                    'Optimize a legacy data script processing 5 million rows, reducing execution time from 10 minutes to under 30 seconds.',
+                                    [{ name: 'Pandas Optimization Guide', url: 'https://pandas.pydata.org/pandas-docs/stable/user_guide/enhancingperf.html' }]
+                                )
+                            },
+                            {
+                                title: 'EDA: Beyond Basic Charting',
+                                duration: 45,
+                                type: 'video',
+                                content: renderRichContent(
+                                    'Statistical Storytelling',
+                                    'Use Seaborn and Plotly to uncover hidden correlations. Master feature importance analysis before ever touching a model.',
+                                    ['Correlation heatmaps and pair plots', 'Handling imbalanced classes with SMOTE', 'Automated EDA tools'],
+                                    'Perform a deep multivariate analysis on a financial fraud dataset to identify top predictive indicators of fraudulent activity.',
+                                    [{ name: 'Seaborn Documentation', url: 'https://seaborn.pydata.org/' }]
                                 )
                             }
                         ]
                     },
                     {
-                        title: 'Module 2: Applied Machine Learning',
-                        description: 'Moving from descriptive statistics to predictive power.',
+                        title: 'Module 2: Production Machine Learning',
+                        description: 'Building, evaluating, and deploying models that stick.',
                         lessons: [
                             {
-                                title: 'Predictive Modeling with Scikit-Learn',
-                                duration: 120,
+                                title: 'Scikit-Learn Pipelines & Tuning',
+                                duration: 90,
                                 type: 'video',
                                 content: renderRichContent(
-                                    'Building Your First Regressor',
-                                    'Learn the pipeline of feature engineering, model selection (Linear Regression vs RF), and evaluation metrics (RMSE, R2).',
-                                    ['Cross-validation strategies', 'GridSearchCV for hyperparameter tuning', 'Feature importance analysis'],
-                                    'Develop a housing price prediction model with at least 85% accuracy using a real-world real estate dataset.',
-                                    [{ name: 'Scikit-Learn Guide', url: 'https://scikit-learn.org/stable/modules/linear_model.html' }]
+                                    'ML Lifecycle Management',
+                                    'Learn to use Sklearn Pipelines to prevent data leakage. Master GridSearchCV and RandomizedSearchCV for hyperparameter optimization.',
+                                    ['Building robust transformation pipelines', 'Cross-validation for reliable performance metrics', 'Saving models with Joblib/Pickle'],
+                                    'Build a complete end-to-end pipeline for predicting customer churn, including preprocessing, model selection, and hyperparameter tuning.',
+                                    [{ name: 'Scikit-Learn Pipelines', url: 'https://scikit-learn.org/stable/modules/compose.html' }]
                                 )
                             }
                         ]
@@ -213,28 +225,58 @@ const seedSpecialCourses = async () => {
             },
             {
                 title: 'Prompt Engineering for Software Developers',
-                description: 'The definitive guide to the "New Programming". Learn to build AI agents, implement RAG (Retrieval Augmented Generation), and secure your LLM-powered applications against prompt injection.',
+                description: 'The definitive guide to the "New Programming". Master advanced techniques for LLM integration, from Chain-of-Thought reasoning to defensive prompting and RAG architecture. Built by developers, for developers.',
                 instructor: trainer._id,
                 price: 0,
                 category: 'AI Engineering',
                 level: 'Intermediate',
-                thumbnail: 'https://images.unsplash.com/photo-1620712943543-bcc4628c6bb5?auto=format&fit=crop&q=80&w=2000',
+                thumbnail: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&q=80&w=2000',
                 status: 'published',
                 modules: [
                     {
-                        title: 'Module 1: LLM System Architecture',
-                        description: 'Integrating models into production code.',
+                        title: 'Module 1: Advanced Prompting Patterns',
+                        description: 'Moving beyond simple instructions to structured AI control.',
                         lessons: [
                             {
-                                title: 'Retrieval Augmented Generation (RAG)',
-                                duration: 80,
+                                title: 'Programmatic Reasoning with CoT & ReAct',
+                                duration: 60,
                                 type: 'video',
                                 content: renderRichContent(
-                                    'Grounding AI in Reality',
-                                    'Build systems that talk to your own data. Learn about Vector Databases (Pinecone, Chroma) and Semantic Chunking.',
-                                    ['Embedding generation and similarity search', 'Context window management', 'Hallucination prevention strategies'],
-                                    'Build a "Chat with My Docs" CLI tool that indexes a folder of PDFs and answers questions based ONLY on those docs.',
-                                    [{ name: 'LangChain Documentation', url: 'https://python.langchain.com/docs/get_started/introduction' }]
+                                    'Enforcing Logical Continuity',
+                                    'Master Chain-of-Thought (CoT) and ReAct patterns to make LLMs "think" before they act, significantly reducing hallucinations in complex tasks.',
+                                    ['Few-shot vs. Zero-shot reasoning templates', 'Implementing ReAct (Reason + Act) loop pattern', 'Techniques for structured JSON output enforcement'],
+                                    'Create a specialized SQL-generating agent that reasoning through schema relationships before outputting the final query.',
+                                    [{ name: 'Prompt Engineering Guide', url: 'https://www.promptingguide.ai/' }, { name: 'ReAct Pattern Paper', url: 'https://arxiv.org/abs/2210.03629' }]
+                                )
+                            },
+                            {
+                                title: 'Defensive Prompting & Security',
+                                duration: 45,
+                                type: 'video',
+                                content: renderRichContent(
+                                    'Securing the AI Layer',
+                                    'Protect your applications from prompt injection, jailbreaking, and data leakage. Learn to build "Dual-LLM" validation patterns.',
+                                    ['Sanitizing user inputs for LLM safety', 'Implementing system-level instruction guards', 'Detection of adversarial prompt patterns'],
+                                    'Build a "Secure Gateway" that validates and sanitizes incoming user prompts before they reach your core proprietary prompt template.',
+                                    [{ name: 'OWASP for LLMs', url: 'https://owasp.org/www-project-top-10-for-large-language-model-applications/' }]
+                                )
+                            }
+                        ]
+                    },
+                    {
+                        title: 'Module 2: RAG & AI Agent Desktop',
+                        description: 'Building practical tools with external data.',
+                        lessons: [
+                            {
+                                title: 'RAG Architecture with LangChain',
+                                duration: 75,
+                                type: 'video',
+                                content: renderRichContent(
+                                    'Connecting LLMs to Private Data',
+                                    'Deep dive into the Retrieval Augmented Generation (RAG) pipeline: Loaders, Splitters, Embeddings, and Vector Stores.',
+                                    ['Efficient semantic search within vector databases', 'Context window optimization and reranking', 'Hybrid search (Keyword + Vector) implementation'],
+                                    'Develop a local "Documentation Expert" that can answer technical questions about a specific internal codebase.',
+                                    [{ name: 'LangChain RAG Documentation', url: 'https://python.langchain.com/docs/use_cases/question_answering/' }]
                                 )
                             }
                         ]
