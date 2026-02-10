@@ -1,11 +1,11 @@
 import { motion } from "framer-motion";
-import { 
-  GraduationCap, 
-  Briefcase, 
-  Building2, 
-  Heart, 
-  Rocket, 
-  Landmark 
+import {
+  GraduationCap,
+  Briefcase,
+  Building2,
+  Heart,
+  Rocket,
+  Landmark
 } from "lucide-react";
 
 const audiences = [
@@ -55,7 +55,7 @@ export function WhoWeServe() {
         </div>
 
         {/* Audience Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 sm:gap-6">
           {audiences.map((audience, index) => (
             <motion.div
               key={audience.title}
@@ -65,14 +65,14 @@ export function WhoWeServe() {
               transition={{ duration: 0.4, delay: index * 0.1 }}
               className="group"
             >
-              <div className="bg-card rounded-lg p-6 text-center h-full shadow-card hover:shadow-card-hover transition-all duration-300 group-hover:-translate-y-1">
-                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-background/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
+              <div className="bg-card rounded-xl p-5 sm:p-6 text-center h-full shadow-sm hover:shadow-card-hover border border-border/30 transition-all duration-300 group-hover:-translate-y-1">
+                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-accent/10 flex items-center justify-center group-hover:bg-accent/20 transition-colors">
                   <audience.icon className="w-6 h-6 text-accent" strokeWidth={1.5} />
                 </div>
-                <h3 className="font-heading font-semibold text-card-foreground text-sm mb-1">
+                <h3 className="font-heading font-semibold text-card-foreground text-xs sm:text-sm mb-1 line-clamp-2">
                   {audience.title}
                 </h3>
-                <p className="text-xs text-card-foreground/60">
+                <p className="text-[10px] sm:text-xs text-card-foreground/60 leading-tight">
                   {audience.description}
                 </p>
               </div>

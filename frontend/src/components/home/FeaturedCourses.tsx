@@ -6,7 +6,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-    Flashlight,
     Sparkles,
     TrendingUp,
     ArrowRight,
@@ -15,6 +14,7 @@ import {
     Loader2
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ImageWithSkeleton } from "@/components/ui/image-skeleton";
 
 export function FeaturedCourses() {
     const [activeTab, setActiveTab] = useState<"latest" | "sale">("latest");
@@ -105,10 +105,11 @@ export function FeaturedCourses() {
                                     <Card className="group relative bg-card/40 border-border/50 backdrop-blur-md hover:border-accent/50 transition-all duration-500 hover:shadow-[0_0_30px_rgba(255,184,0,0.1)] overflow-hidden h-full flex flex-col">
                                         {/* Course Image Header */}
                                         <div className="relative h-48 overflow-hidden">
-                                            <img
+                                            <ImageWithSkeleton
                                                 src={course.thumbnail || "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80"}
                                                 alt={course.title}
                                                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                                containerClassName="w-full h-full"
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent opacity-60" />
 

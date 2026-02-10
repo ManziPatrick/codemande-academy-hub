@@ -6,6 +6,10 @@ interface ImageWithSkeletonProps {
   alt: string;
   className?: string;
   containerClassName?: string;
+  loading?: "lazy" | "eager";
+  srcSet?: string;
+  sizes?: string;
+  fetchPriority?: "high" | "low" | "auto";
 }
 
 export function ImageWithSkeleton({
@@ -13,6 +17,10 @@ export function ImageWithSkeleton({
   alt,
   className,
   containerClassName,
+  loading = "lazy",
+  srcSet,
+  sizes,
+  fetchPriority = "auto",
 }: ImageWithSkeletonProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -25,11 +33,16 @@ export function ImageWithSkeleton({
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-foreground/5 to-transparent skeleton-shimmer" />
         </div>
       )}
-      
+
       {/* Actual image */}
       <img
         src={src}
         alt={alt}
+        loading={loading}
+        srcSet={srcSet}
+        sizes={sizes}
+        //@ts-ignore - fetchPriority is supported in modern browsers but maybe not in current @types/react
+        fetchpriority={fetchPriority}
         className={cn(
           "transition-opacity duration-500",
           isLoaded ? "opacity-100" : "opacity-0",
@@ -38,7 +51,7 @@ export function ImageWithSkeleton({
         onLoad={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
       />
-      
+
       {/* Error fallback */}
       {hasError && (
         <div className="absolute inset-0 bg-muted flex items-center justify-center">

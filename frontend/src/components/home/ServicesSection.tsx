@@ -38,7 +38,7 @@ export function ServicesSection() {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {services.map((service, index) => (
             <motion.div
               key={service.title}
@@ -48,12 +48,12 @@ export function ServicesSection() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className="group"
             >
-              <div className="bg-card rounded-lg overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 h-full">
+              <div className="bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-card-hover border border-border/30 transition-all duration-300 h-full flex flex-col">
                 {/* Icon area with circuit pattern */}
-                <div className="relative h-40 bg-gradient-to-br from-card via-card to-accent/10 flex items-center justify-center">
+                <div className="relative h-40 bg-gradient-to-br from-card via-card to-accent/5 flex items-center justify-center overflow-hidden">
                   {/* Circuit decoration */}
                   <svg
-                    className="absolute inset-0 w-full h-full opacity-20"
+                    className="absolute inset-0 w-full h-full opacity-30"
                     viewBox="0 0 200 160"
                   >
                     <path
@@ -66,18 +66,18 @@ export function ServicesSection() {
                     <circle cx="60" cy="60" r="3" className="fill-accent" />
                     <circle cx="120" cy="80" r="3" className="fill-accent" />
                   </svg>
-                  
-                  <div className="relative w-16 h-16 rounded-full bg-background/10 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+
+                  <div className="relative w-16 h-16 rounded-full bg-accent/10 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
                     <service.icon className="w-8 h-8 text-accent" strokeWidth={1.5} />
                   </div>
                 </div>
 
                 {/* Content */}
-                <div className="p-6">
-                  <h3 className="font-heading text-lg font-semibold text-card-foreground mb-2">
+                <div className="p-6 flex-1 flex flex-col">
+                  <h3 className="font-heading text-lg font-semibold text-card-foreground mb-3 leading-tight">
                     {service.title}
                   </h3>
-                  <p className="text-sm text-card-foreground/70 leading-relaxed">
+                  <p className="text-sm text-card-foreground/70 leading-relaxed mb-4">
                     {service.description}
                   </p>
                 </div>

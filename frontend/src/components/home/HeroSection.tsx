@@ -13,6 +13,8 @@ export function HeroSection() {
         <ImageWithSkeleton
           src={heroImage}
           alt="CODEMANDE training session"
+          loading="eager"
+          fetchPriority="high"
           className="w-full h-full object-cover object-center"
           containerClassName="w-full h-full"
         />
@@ -42,11 +44,11 @@ export function HeroSection() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-            <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-medium text-foreground leading-tight mb-6">
+            <h1 className="font-heading text-3xl xs:text-4xl md:text-5xl lg:text-6xl font-medium text-foreground leading-[1.1] mb-5 sm:mb-6">
               Empowering Africa
               <br />
               <span className="text-foreground">Through Technology</span>
-              <span className="italic text-accent ml-2">&</span>{" "}
+              <span className="italic text-accent ml-1 sm:ml-2 line-height-1">&</span>{" "}
               <span className="italic">Innovation</span>
             </h1>
           </motion.div>
@@ -55,7 +57,7 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
-            className="text-lg text-muted-foreground mb-8 max-w-xl leading-relaxed"
+            className="text-sm sm:text-lg text-muted-foreground mb-8 max-w-xl leading-relaxed"
           >
             Building skills. Creating opportunities. Delivering real-world solutions through expert training and mentorship.
           </motion.p>
@@ -64,12 +66,12 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
-            className="flex flex-col sm:flex-row gap-4"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4"
           >
-            <AuthAwareLink variant="gold" size="lg">
+            <AuthAwareLink variant="gold" size="lg" className="h-12 sm:h-auto">
               Explore Programs
             </AuthAwareLink>
-            <AuthAwareLink variant="heroOutline" size="lg">
+            <AuthAwareLink variant="heroOutline" size="lg" className="h-12 sm:h-auto">
               Get Started
             </AuthAwareLink>
           </motion.div>

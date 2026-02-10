@@ -1,11 +1,9 @@
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import AICourse from './models/AICourse';
 import { User } from './models/User';
+import connectDB from './config/db';
 
 dotenv.config();
-
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/codemande';
 
 const createLessons = (title: string, count: number) => {
     return Array.from({ length: count }, (_, i) => ({
@@ -17,6 +15,50 @@ const createLessons = (title: string, count: number) => {
 };
 
 const courses = (trainerId: any) => [
+    {
+        title: "Applied AI for Real Applications",
+        department: "EDUCATION",
+        duration: "6 Weeks",
+        level: "Beginner to Intermediate",
+        price: 50000, // Admin can set this, using 50k as a placeholder
+        instructor: trainerId,
+        thumbnail: "https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=2000&auto=format&fit=crop",
+        description: "Focus on AI as a practical tool for building modern applications. Learn prompt engineering, AI assistant integration, and how to build AI-powered education and productivity systems.",
+        modules: [
+            {
+                title: "AI Foundations & Prompt Engineering",
+                lessons: [
+                    { title: "AI in Web Apps: The Big Picture", duration: 30, type: "video", content: "Understanding how LLMs integrate into modern SaaS architectures." },
+                    { title: "Mastering Prompt Engineering", duration: 45, type: "video", content: "Advanced techniques for reliable AI outputs (Few-shot, Chain-of-Thought)." }
+                ]
+            },
+            {
+                title: "Building AI Assistants",
+                lessons: [
+                    { title: "AI Assistants in Platforms", duration: 60, type: "video", content: "Integrating OpenAI and Anthropic APIs into your dashboard." },
+                    { title: "AI for Productivity & Education", duration: 60, type: "video", content: "Building tools that explain complex tasks and generate learning content." }
+                ]
+            },
+            {
+                title: "AI Feedback & Evaluation Systems",
+                lessons: [
+                    { title: "AI Submission Reviewer", duration: 90, type: "video", content: "Building systems that provide instant feedback on student assignments." },
+                    { title: "AI Progress Tracking", duration: 45, type: "video", content: "Using AI to analyze learning trends and recommend focus areas." }
+                ]
+            }
+        ],
+        keyModules: [
+            "AI Assistant for Learning Platforms",
+            "AI Task Explainer",
+            "AI Submission Reviewer",
+            "AI Progress Tracking",
+            "AI Chatbot for Support",
+            "AI Recommendation Engine"
+        ],
+        additionalModulesCount: 6,
+        slug: "applied-ai-real-apps",
+        featured: true
+    },
     // --- GENERAL ---
     {
         title: "AI Fundamentals & Practical Applications",
@@ -324,7 +366,7 @@ const courses = (trainerId: any) => [
 
 const seedAICourses = async () => {
     try {
-        await mongoose.connect(MONGODB_URI);
+        await connectDB();
         console.log('MongoDB Connected for seeding AICourses');
 
         const trainer = await User.findOne({ role: 'trainer' });

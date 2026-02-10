@@ -13,7 +13,7 @@ const seedAssignments = async () => {
         console.log('🚀 Starting Assignment Submissions Seeding...');
 
         const students = await User.find({ role: 'student' }).limit(3);
-        const course = await Course.findOne({ title: 'React JS: Practical Zero to Scale' });
+        const course = await Course.findOne({ title: 'React JS – Practical Frontend Engineering' });
 
         if (students.length === 0 || !course) {
             console.error('❌ Missing students or course. Run seedReactCourse first.');
@@ -27,9 +27,6 @@ const seedAssignments = async () => {
         for (const module of course.modules) {
             const assignment = module.lessons.find((l: any) => l.isAssignment);
             if (assignment) {
-                // In a real app we'd have stable IDs, but here we might use title or index
-                // For this seed, we'll just mock it or use the title as ID if the schema permits
-                // The schema expects lessonId as String.
                 assignmentLessonId = assignment.title;
                 assignmentLessonTitle = assignment.title;
                 break;
@@ -43,7 +40,7 @@ const seedAssignments = async () => {
                 userId: students[0]._id,
                 courseId: course._id,
                 lessonId: assignmentLessonTitle,
-                content: 'https://github.com/student1/react-counter-app',
+                content: 'https://classroom.github.com/a/9fCNLdqc/submission/1',
                 status: 'pending',
                 createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2) // 2 days ago
             },
@@ -51,7 +48,7 @@ const seedAssignments = async () => {
                 userId: students[1]._id,
                 courseId: course._id,
                 lessonId: assignmentLessonTitle,
-                content: 'Here is my submission: https://github.com/student2/counter-app. I added extra animations!',
+                content: 'Submitted via GitHub Classroom: https://classroom.github.com/a/9fCNLdqc/submission/2',
                 status: 'pending',
                 createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5) // 5 hours ago
             },
@@ -59,10 +56,10 @@ const seedAssignments = async () => {
                 userId: students[2]._id,
                 courseId: course._id,
                 lessonId: assignmentLessonTitle,
-                content: 'https://github.com/student3/react-assignment',
+                content: 'https://classroom.github.com/a/9fCNLdqc/submission/3',
                 status: 'reviewed',
                 grade: 85,
-                feedback: 'Good work, but clean up the useEffect dependency array.',
+                feedback: 'Good work on the Invoice Generator logic!',
                 createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5) // 5 days ago
             }
         ];

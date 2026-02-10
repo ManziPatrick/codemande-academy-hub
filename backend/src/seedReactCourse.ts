@@ -58,153 +58,156 @@ const seedReactCourse = async () => {
         console.log('🚀 Starting React Course Seeding...');
 
         const trainer = await User.findOne({ role: 'trainer' });
-        const students = await User.find({ role: 'student' }).limit(5);
-
         if (!trainer) {
             console.error('❌ No trainer found');
             process.exit(1);
         }
 
         /**
-         * COURSE
+         * COURSE: React JS – Practical Frontend Engineering
          */
         const courseData = {
-            title: 'React JS: Practical Zero to Scale',
+            title: 'React JS – Practical Frontend Engineering',
             description:
-                'A hands-on React.js course focused on building real applications. No theory overload — you learn by building projects from day one.',
+                'Master React JS by building production-grade interfaces. This course is 80% practical, moving from fundamentals to advanced state management and performance optimization. You will build cloneable, portfolio-ready projects that simulate real-world engineering tasks.',
             instructor: trainer._id,
-            price: 150000,
-            discountPrice: 120000,
+            price: 0,
+            discountPrice: 0,
             category: 'Web Development',
-            level: 'Beginner → Advanced',
-            thumbnail:
-                'https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=2070&auto=format&fit=crop',
+            level: 'Beginner',
+            thumbnail: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=2070&auto=format&fit=crop',
             status: 'published',
             modules: [
-                /**
-                 * MODULE 1
-                 */
                 {
-                    title: 'React Foundations (Build First)',
-                    description: 'Learn React by building small components immediately.',
-                    lessons: createRichLessons('Foundations', [
+                    title: 'Module 1: Fundamentals (Components, JSX, Props, State)',
+                    description: 'The building blocks of React. Understand how to think in components and manage local data.',
+                    lessons: createRichLessons('Fundamentals', [
                         {
-                            title: 'React Project Setup (Vite)',
-                            description:
-                                'Set up a modern React project using Vite and understand the folder structure.',
-                            build: [
-                                'Create a Vite + React project',
-                                'Clean default files',
-                                'Run development server',
-                            ],
-                            resources: [
-                                {
-                                    title: 'Vite Docs',
-                                    url: 'https://vitejs.dev/guide/',
-                                },
-                            ],
+                            title: 'The Component Architecture',
+                            description: 'Learn why React uses components and how to break down a UI into reusable pieces.',
+                            build: ['Button component', 'Card component', 'Nav bar layout'],
+                            resources: [{ title: 'Thinking in React', url: 'https://react.dev/learn/thinking-in-react' }]
                         },
                         {
-                            title: 'Components & JSX',
-                            description:
-                                'Learn how to create reusable components and render dynamic UI using JSX.',
-                            build: [
-                                'Create Header, Footer, and Card components',
-                                'Pass props to components',
-                            ],
-                            resources: [
-                                {
-                                    title: 'React Components',
-                                    url: 'https://react.dev/learn/your-first-component',
-                                },
-                            ],
+                            title: 'JSX and Dynamic Rendering',
+                            description: 'Master JSX syntax and how to render lists and conditional content.',
+                            build: ['Dynamic user list', 'Conditional alert system'],
+                            resources: [{ title: 'Writing Markup with JSX', url: 'https://react.dev/learn/writing-markup-with-jsx' }]
                         },
                         {
-                            title: 'State & Events',
-                            description:
-                                'Learn how to handle user interaction using state and events.',
-                            build: [
-                                'Counter app',
-                                'Toggle dark/light mode',
-                            ],
+                            title: 'Mini Project: Invoice Generator (UI)',
+                            description: 'Build the structure of an invoice generator using props and basic state.',
+                            build: ['Invoice header', 'Line items table', 'Total calculator'],
                             isAssignment: true,
-                            assignmentDescription:
-                                'Build a counter with increment, decrement, and reset.',
-                            assignmentDeliverables: ['GitHub Repository Link'],
-                        },
-                    ]),
+                            assignmentDescription: 'Create a reusable Invoice Table component that accepts an array of items via props.',
+                            assignmentDeliverables: ['GitHub Repository Link']
+                        }
+                    ])
                 },
-
-                /**
-                 * MODULE 2
-                 */
                 {
-                    title: 'Hooks & Data Handling',
-                    description: 'Work with real data and side effects.',
+                    title: 'Module 2: Hooks (useState, useEffect, Custom Hooks)',
+                    description: 'Logic and side effects. Learn how to handle component lifecycles and reuse logic.',
                     lessons: createRichLessons('Hooks', [
                         {
-                            title: 'useEffect & API Calls',
-                            description:
-                                'Fetch data from APIs and handle loading & error states.',
-                            build: [
-                                'Fetch users from public API',
-                                'Display loading and error UI',
-                            ],
-                            resources: [
-                                {
-                                    title: 'JSONPlaceholder',
-                                    url: 'https://jsonplaceholder.typicode.com/',
-                                },
-                            ],
+                            title: 'State Management with useState',
+                            description: 'Deep dive into complex state objects and functional updates.',
+                            build: ['Multi-step form state', 'Toggleable sidebar'],
+                            resources: [{ title: 'useState Hook', url: 'https://react.dev/reference/react/useState' }]
                         },
                         {
-                            title: 'Custom Hooks',
-                            description:
-                                'Create reusable logic using custom hooks.',
-                            build: ['Create useFetch hook'],
+                            title: 'Side Effects with useEffect',
+                            description: 'Handling data fetching, subscriptions, and manual DOM changes.',
+                            build: ['Live clock component', 'Window resize listener'],
+                            resources: [{ title: 'useEffect Hook', url: 'https://react.dev/reference/react/useEffect' }]
+                        },
+                        {
+                            title: 'Mini Project: Crypto Tracker',
+                            description: 'Fetch live cryptocurrency prices and display them in a dashboard.',
+                            build: ['Live price feed', 'Search/Filter coins', 'Refresh mechanism'],
                             isAssignment: true,
-                            assignmentDescription:
-                                'Create a reusable useFetch hook and document it.',
-                            assignmentDeliverables: ['GitHub Link', 'README.md'],
-                        },
-                    ]),
+                            assignmentDescription: 'Implement a custom useCrypto hook to fetch and cache coin data.',
+                            assignmentDeliverables: ['GitHub Repository Link', 'useCrypto.js file']
+                        }
+                    ])
                 },
-
-                /**
-                 * MODULE 3
-                 */
                 {
-                    title: 'Routing & State at Scale',
-                    description:
-                        'Build multi-page applications with global state.',
-                    lessons: createRichLessons('Advanced', [
+                    title: 'Module 3: Routing & Navigation',
+                    description: 'Building multi-page applications with React Router.',
+                    lessons: createRichLessons('Routing', [
                         {
-                            title: 'React Router',
-                            description:
-                                'Create multi-page navigation using React Router.',
-                            build: [
-                                'Home, About, Details pages',
-                                'Dynamic routes',
-                            ],
-                            resources: [
-                                {
-                                    title: 'React Router Docs',
-                                    url: 'https://reactrouter.com/en/main',
-                                },
-                            ],
+                            title: 'React Router Setup',
+                            description: 'Configuring CreateBrowserRouter and dynamic routes.',
+                            build: ['App navigation shell', 'Dynamic user profiles'],
+                            resources: [{ title: 'React Router Docs', url: 'https://reactrouter.com/' }]
                         },
                         {
-                            title: 'Global State (Context / Zustand)',
-                            description:
-                                'Manage application-wide state cleanly.',
-                            build: [
-                                'Auth context',
-                                'Theme context',
-                            ],
-                        },
-                    ]),
+                            title: 'Mini Project: Hotel Room Booking System',
+                            description: 'Build a multi-page booking platform with route guards.',
+                            build: ['Room listings page', 'Booking details page', 'Protected checkout'],
+                            isAssignment: true,
+                            assignmentDescription: 'Implement a search feature that updates URL query parameters.',
+                            assignmentDeliverables: ['GitHub Repository Link']
+                        }
+                    ])
                 },
-            ],
+                {
+                    title: 'Module 4: Forms & Validation',
+                    description: 'Handling user input professionally with React Hook Form and Zod.',
+                    lessons: createRichLessons('Forms', [
+                        {
+                            title: 'Controlled vs Uncontrolled Components',
+                            description: 'Understanding manual form handling vs libraries.',
+                            build: ['Basic contact form', 'Form status indicators']
+                        },
+                        {
+                            title: 'Validation with Zod',
+                            description: 'Defining schemas and handling errors gracefully.',
+                            build: ['Secure login form', 'Complex registration flow'],
+                            isAssignment: true,
+                            assignmentDescription: 'Build a registration form with password strength validation.',
+                            assignmentDeliverables: ['GitHub Repository Link']
+                        }
+                    ])
+                },
+                {
+                    title: 'Module 5: API Integration & Data Fetching',
+                    description: 'Connecting to backends using Axios and TanStack Query.',
+                    lessons: createRichLessons('API', [
+                        {
+                            title: 'Axios Configuration',
+                            description: 'Setting up interceptors and base instances.',
+                            build: ['Global API client', 'Error handling wrapper']
+                        },
+                        {
+                            title: 'Mini Project: News Application with Voice Control',
+                            description: 'Integrate a news API and add voice navigation features.',
+                            build: ['News grid', 'Alan AI integration', 'Category filters'],
+                            isAssignment: true,
+                            assignmentDescription: 'Connect your app to the NewsAPI and implement pagination.',
+                            assignmentDeliverables: ['GitHub Repository Link']
+                        }
+                    ])
+                },
+                {
+                    title: 'Module 6: State Management (Zustand & Context)',
+                    description: 'Managing global state without the boilerplate of Redux.',
+                    lessons: createRichLessons('State', [
+                        {
+                            title: 'Global State with Zustand',
+                            description: 'Centralizing app-wide data efficiently.',
+                            build: ['Cart state for E-commerce', 'User auth store']
+                        },
+                        {
+                            title: 'Mini Project: Real-time Chat Application',
+                            description: 'Build a chat UI that updates instantly using global state.',
+                            build: ['Message feed', 'Online users list', 'Settings toggle'],
+                            isAssignment: true,
+                            assignmentDescription: 'Create a Zustand store to manage chat messages and room state.',
+                            assignmentDeliverables: ['GitHub Repository Link']
+                        }
+                    ])
+                }
+            ]
         };
 
         const course = await Course.findOneAndUpdate(
@@ -213,87 +216,63 @@ const seedReactCourse = async () => {
             { upsert: true, new: true }
         );
 
-        console.log('✅ Course created:', course.title);
+        console.log('✅ React Course created:', course.title);
 
         /**
-         * PROJECTS (Progressive)
+         * PROJECTS
          */
         const projectTemplates = [
             {
-                title: 'Mini Project: Star Wars Characters App',
-                description:
-                    'Build a React app that fetches and displays Star Wars characters using SWAPI.',
+                title: 'Real-time Chat Application',
+                description: 'A production-ready chat interface with room management and instant messaging UI.',
                 course: course.title,
                 type: 'Individual',
                 status: 'in_progress',
                 mentors: [trainer._id],
                 documentation: {
                     links: [
-                        {
-                            title: 'SWAPI',
-                            url: 'https://swapi.dev/',
-                        },
-                        {
-                            title: 'Starter Repo',
-                            url: 'https://github.com/react-academy/starwars-starter',
-                        },
-                    ],
-                },
+                        { title: 'Project Overview', url: 'https://classroom.github.com/a/9fCNLdqc' },
+                        { title: 'Zustand Docs', url: 'https://docs.pmnd.rs/zustand' }
+                    ]
+                }
             },
             {
-                title: 'Personal Portfolio Website',
-                description:
-                    'Create a professional portfolio using React and animations.',
+                title: 'News Application with Voice Control',
+                description: 'Modern news aggregator with voice command integration for hands-free browsing.',
                 course: course.title,
                 type: 'Individual',
                 status: 'in_progress',
                 mentors: [trainer._id],
                 documentation: {
                     links: [
-                        {
-                            title: 'Figma Design',
-                            url: 'https://figma.com/file/react-portfolio-template',
-                        },
-                    ],
-                },
+                        { title: 'Project Overview', url: 'https://classroom.github.com/a/9fCNLdqc' },
+                        { title: 'Alan AI Docs', url: 'https://alan.app/docs/' }
+                    ]
+                }
             },
             {
-                title: 'Capstone: Analytics Dashboard',
-                description:
-                    'A team-based dashboard with charts, authentication, and role-based access.',
+                title: 'Corona Tracker Dashboard',
+                description: 'A data-heavy dashboard with charts and maps visualizing global health data.',
                 course: course.title,
-                type: 'Team Project',
+                type: 'Individual',
                 status: 'in_progress',
                 mentors: [trainer._id],
                 documentation: {
                     links: [
-                        {
-                            title: 'API Docs',
-                            url: 'https://api.react-academy.com',
-                        },
-                    ],
-                },
-            },
+                        { title: 'Project Overview', url: 'https://classroom.github.com/a/9fCNLdqc' },
+                        { title: 'Chart.js Docs', url: 'https://www.chartjs.org/' }
+                    ]
+                }
+            }
         ];
 
-        // Clear existing projects for this course to avoid duplicates if re-running
         await Project.deleteMany({ course: course.title });
 
         for (const p of projectTemplates) {
-            if (students.length > 0) {
-                await new Project({
-                    ...p,
-                    userId: students[0]._id,
-                    team:
-                        p.type === 'Team Project'
-                            ? students.map((s) => ({
-                                userId: s._id,
-                                name: s.username,
-                                role: 'Developer',
-                            }))
-                            : [],
-                }).save();
-            }
+            await new Project({
+                ...p,
+                userId: trainer._id // Template projects assigned to trainer initially
+            }).save();
         }
 
         console.log('🎉 React Course & Projects Seeded Successfully!');

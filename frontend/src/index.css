@@ -99,7 +99,8 @@
 
   html {
     scroll-behavior: smooth;
-    overflow-y: auto;
+    overflow-x: hidden;
+    width: 100%;
   }
 
   /* Global Scrollbar */
@@ -123,6 +124,9 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-body);
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
   }
 
   h1,
