@@ -10,6 +10,18 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
+interface ExplainTaskData {
+    explainTask: {
+        content: string;
+    };
+}
+
+interface ReviewSubmissionData {
+    reviewSubmission: {
+        content: string;
+    };
+}
+
 interface AIHelperProps {
     type: "explain" | "review";
     taskTitle: string;
@@ -21,11 +33,11 @@ export function AIHelper({ type, taskTitle, description, submissionContent }: AI
     const [open, setOpen] = useState(false);
     const [result, setResult] = useState("");
 
-    const [explain, { loading: explaining }] = useMutation(EXPLAIN_TASK, {
+    const [explain, { loading: explaining }] = useMutation<ExplainTaskData>(EXPLAIN_TASK, {
         onCompleted: (data) => setResult(data.explainTask.content),
     });
 
-    const [review, { loading: reviewing }] = useMutation(REVIEW_SUBMISSION, {
+    const [review, { loading: reviewing }] = useMutation<ReviewSubmissionData>(REVIEW_SUBMISSION, {
         onCompleted: (data) => setResult(data.reviewSubmission.content),
     });
 

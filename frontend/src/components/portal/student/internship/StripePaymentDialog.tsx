@@ -19,16 +19,25 @@ import { Button } from "@/components/ui/button";
 import { Loader2, ShieldCheck, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
+interface CreateStripePaymentIntentData {
+  createStripePaymentIntent: {
+    clientSecret: string;
+    paymentIntentId: string;
+    paymentId: string;
+    publishableKey: string;
+  };
+}
+
 // Checkout Form Component
-function CheckoutForm({ 
+function CheckoutForm({
   paymentId,
-  paymentIntentId, 
-  programId, 
-  onSuccess, 
-  onCancel 
-}: { 
+  paymentIntentId,
+  programId,
+  onSuccess,
+  onCancel
+}: {
   paymentId: string;
-  paymentIntentId: string; 
+  paymentIntentId: string;
   programId: string;
   onSuccess: () => void;
   onCancel: () => void;
@@ -90,18 +99,18 @@ function CheckoutForm({
         </div>
       )}
       <div className="flex gap-3">
-        <Button 
-          type="button" 
-          variant="outline" 
-          className="flex-1" 
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
           onClick={onCancel}
           disabled={isProcessing}
         >
           Cancel
         </Button>
-        <Button 
-          type="submit" 
-          className="flex-1 gap-2" 
+        <Button
+          type="submit"
+          className="flex-1 gap-2"
           disabled={!stripe || isProcessing}
         >
           {isProcessing ? (
@@ -125,16 +134,16 @@ function CheckoutForm({
 }
 
 // Main Dialog Component
-export function StripePaymentDialog({ 
-  open, 
-  onOpenChange, 
+export function StripePaymentDialog({
+  open,
+  onOpenChange,
   programId,
   programTitle,
   amount,
   currency = "RWF",
   onSuccess
-}: { 
-  open: boolean; 
+}: {
+  open: boolean;
   onOpenChange: (open: boolean) => void;
   programId: string;
   programTitle: string;
@@ -147,7 +156,7 @@ export function StripePaymentDialog({
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [paymentId, setPaymentId] = useState<string | null>(null);
 
-  const [createIntent, { loading }] = useMutation(CREATE_STRIPE_PAYMENT_INTENT, {
+  const [createIntent, { loading }] = useMutation<CreateStripePaymentIntentData>(CREATE_STRIPE_PAYMENT_INTENT, {
     onCompleted: (data) => {
       setClientSecret(data.createStripePaymentIntent.clientSecret);
       setPaymentIntentId(data.createStripePaymentIntent.paymentIntentId);
@@ -197,9 +206,9 @@ export function StripePaymentDialog({
               <p className="text-sm text-muted-foreground">Initializing secure checkout...</p>
             </div>
           ) : (
-            <Elements 
-              stripe={stripePromise} 
-              options={{ 
+            <Elements
+              stripe={stripePromise}
+              options={{
                 clientSecret,
                 appearance: {
                   theme: 'night',
@@ -209,9 +218,9 @@ export function StripePaymentDialog({
                 }
               }}
             >
-              <CheckoutForm 
+              <CheckoutForm
                 paymentId={paymentId!}
-                paymentIntentId={paymentIntentId!} 
+                paymentIntentId={paymentIntentId!}
                 programId={programId}
                 onSuccess={() => onSuccess && onSuccess()}
                 onCancel={() => onOpenChange(false)}

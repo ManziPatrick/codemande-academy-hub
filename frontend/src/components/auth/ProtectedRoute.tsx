@@ -33,8 +33,9 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       trainer: "/portal/trainer",
       admin: "/portal/admin",
       super_admin: "/portal/super-admin",
+      mentor: "/portal/trainer", // Mentors use trainer portal
     };
-    
+
     return <Navigate to={roleRedirects[user.role]} replace />;
   }
 
