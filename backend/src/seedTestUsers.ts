@@ -2,10 +2,9 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { User } from './models/User';
+import connectDB from './config/db';
 
 dotenv.config();
-
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/codemande';
 
 const testUsers = [
     {
@@ -54,7 +53,7 @@ const testUsers = [
 
 async function seedTestUsers() {
     try {
-        await mongoose.connect(MONGODB_URI);
+        await connectDB();
         console.log('✅ Connected to MongoDB');
 
         // Clear existing test users

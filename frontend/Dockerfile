@@ -22,8 +22,11 @@ COPY . .
 # Build application
 RUN npm run build
 
-# Remove development dependencies
-RUN npm prune --omit=dev
+# Install serve to serve static files
+RUN npm install -g serve
+
+# Remove development dependencies and dev node_modules (save space)
+RUN npm prune --omit=dev && rm -rf node_modules
 
 # Environment variables
 ENV HOST=::
@@ -31,4 +34,5 @@ ENV HOST=::
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 8080
 
-CMD [ "npm", "start" ]
+# Serve the built static files instead of running dev server
+CMD [ "serve", "-s", "dist", "-l", "8080" ]
