@@ -28,6 +28,16 @@ const DELETE_QUESTION = gql`
   }
 `;
 
+interface CourseQuestionsData {
+    getCourseQuestions: Array<{
+        id: string;
+        questionText: string;
+        options: string[];
+        correctOptionIndex: number;
+        explanation?: string;
+    }>;
+}
+
 interface QuestionManagerDialogProps {
     isOpen: boolean;
     onClose: () => void;
@@ -39,7 +49,7 @@ export function QuestionManagerDialog({ isOpen, onClose, course }: QuestionManag
     const [editingQuestion, setEditingQuestion] = useState<any>(null);
     const [deletingQuestion, setDeletingQuestion] = useState<any>(null);
 
-    const { data, loading, refetch } = useQuery(GET_COURSE_QUESTIONS, {
+    const { data, loading, refetch } = useQuery<CourseQuestionsData>(GET_COURSE_QUESTIONS, {
         variables: { courseId: course?.id },
         skip: !course?.id,
         fetchPolicy: "network-only"

@@ -19,6 +19,16 @@ const GET_UPLOAD_SIGNATURE = gql`
   }
 `;
 
+interface UploadSignatureData {
+    getUploadSignature: {
+        signature: string;
+        timestamp: number;
+        folder: string;
+        cloudName: string;
+        apiKey: string;
+    };
+}
+
 interface FileUploadProps {
     onUploadComplete: (url: string, fileType: string) => void;
     folder?: string;
@@ -43,7 +53,7 @@ export function FileUpload({
     const [preview, setPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { refetch: getSignature } = useQuery(GET_UPLOAD_SIGNATURE, {
+    const { refetch: getSignature } = useQuery<UploadSignatureData>(GET_UPLOAD_SIGNATURE, {
         variables: { folder },
         skip: true,
     });

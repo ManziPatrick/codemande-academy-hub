@@ -18,9 +18,21 @@ const GOOGLE_LOGIN = gql`
   }
 `;
 
+interface GoogleLoginData {
+    googleLogin: {
+        token: string;
+        user: {
+            id: string;
+            username: string;
+            email: string;
+            role: string;
+        };
+    };
+}
+
 export function GoogleOneTap() {
     const { user, loginWithToken } = useAuth();
-    const [googleLogin] = useMutation(GOOGLE_LOGIN);
+    const [googleLogin] = useMutation<GoogleLoginData>(GOOGLE_LOGIN);
 
     useEffect(() => {
         if (user) return; // Don't show if already logged in

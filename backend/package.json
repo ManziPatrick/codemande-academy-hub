@@ -13,7 +13,8 @@
     "seed:blogs": "ts-node src/seedBlogs.ts",
     "seed:users": "ts-node src/seedTestUsers.ts",
     "seed:ai-courses": "ts-node src/seedAICourses.ts",
-    "seed:team": "ts-node src/seedPublicTeam.ts"
+    "seed:team": "ts-node src/seedPublicTeam.ts",
+    "seed:special-courses": "ts-node src/seedSpecialCourses.ts"
   },
   "keywords": [],
   "author": "",
