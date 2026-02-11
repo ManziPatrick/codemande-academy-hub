@@ -27,7 +27,6 @@ CMD echo "Starting seeding process..." && \
     node dist/seedInternship.js && echo "✅ Internship seed completed" && \
     node dist/seedBlogs.js && echo "✅ Blogs seed completed" && \
     node dist/seedTestUsers.js && echo "✅ Test users seed completed" && \
-    node dist/seedAICourses.js && echo "✅ AI courses seed completed" && \
     node dist/seedPublicTeam.js && echo "✅ Team seed completed" && \
     echo "🚀 All seeds completed! Starting application..." && \
     node dist/index.js

@@ -37,20 +37,16 @@ RUN npm ci --include=dev
 # Copy application code
 COPY . .
 
-# Build application (environment variables will be baked into the JS)
+# Build application (though npm start won't use these files)
 RUN npm run build
-
-# Install serve to serve static files
-RUN npm install -g serve
-
-# Remove development dependencies and dev node_modules (save space)
-RUN npm prune --omit=dev && rm -rf node_modules
 
 # Environment variables
 ENV HOST=::
+# Increase Node.js memory limit to prevent OOM errors
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 8080
 
-# Serve the built static files instead of running dev server
-CMD [ "serve", "-s", "dist", "-l", "8080" ]
+# Run the dev server with increased memory
+CMD [ "npm", "start" ]
