@@ -37,16 +37,21 @@ RUN npm ci --include=dev
 # Copy application code
 COPY . .
 
-# Build application
+# Build application (env vars baked into JS)
 RUN npm run build
+
+# Install a lightweight static file server
+RUN npm install -g sirv-cli
+
+# Remove dev dependencies and node_modules to save space & memory
+RUN npm prune --omit=dev
+RUN rm -rf node_modules
 
 # Environment variables
 ENV HOST=::
-# Increase Node.js memory limit to prevent OOM errors
-ENV NODE_OPTIONS="--max-old-space-size=2048"
 
-# Start the server by default, this can be overwritten at runtime
+# Start the server by default
 EXPOSE 8080
 
-# Run the dev server with increased memory
-CMD [ "npm", "start" ]
+# Serve static files (uses ~10MB RAM vs 200MB+ for dev server)
+CMD [ "sirv", "dist", "--host", "::", "--port", "8080", "--single" ]

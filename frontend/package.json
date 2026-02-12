@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "vite --host",
+    "start": "vite preview --host :: --port 8080",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:dev": "vite build --mode development",
