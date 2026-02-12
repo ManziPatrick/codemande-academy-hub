@@ -37,7 +37,7 @@ RUN npm ci --include=dev
 # Copy application code
 COPY . .
 
-# Build application (though npm start won't use these files)
+# Build application
 RUN npm run build
 
 # Environment variables
