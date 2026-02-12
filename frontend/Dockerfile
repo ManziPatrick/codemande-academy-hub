@@ -40,12 +40,8 @@ COPY . .
 # Build application (env vars baked into JS)
 RUN npm run build
 
-# Install a lightweight static file server
-RUN npm install -g sirv-cli
-
-# Remove dev dependencies and node_modules to save space & memory
+# Remove dev dependencies to save space (keep node_modules for vite preview)
 RUN npm prune --omit=dev
-RUN rm -rf node_modules
 
 # Environment variables
 ENV HOST=::
@@ -53,5 +49,5 @@ ENV HOST=::
 # Start the server by default
 EXPOSE 8080
 
-# Serve static files (uses ~10MB RAM vs 200MB+ for dev server)
-CMD [ "sirv", "dist", "--host", "::", "--port", "8080", "--single" ]
+# Use vite preview (built-in, lightweight, serves pre-built files)
+CMD [ "npm", "start" ]
