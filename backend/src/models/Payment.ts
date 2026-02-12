@@ -11,6 +11,8 @@ export interface IPayment extends Document {
   transactionId: string;
   type: string; // 'Course Enrollment', 'Internship Fee'
   itemTitle: string;
+  proofOfPaymentUrl?: string;
+  adminNotes?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,16 +24,18 @@ const PaymentSchema: Schema = new Schema(
     internshipId: { type: Schema.Types.ObjectId, ref: 'Internship' },
     amount: { type: Number, required: true },
     currency: { type: String, default: 'RWF' },
-    status: { 
-      type: String, 
-      required: true, 
+    status: {
+      type: String,
+      required: true,
       enum: ['pending', 'completed', 'failed', 'refunded'],
-      default: 'pending' 
+      default: 'pending'
     },
     paymentMethod: { type: String },
     transactionId: { type: String, unique: true },
     type: { type: String, required: true }, // 'Course Enrollment', 'Internship Fee'
     itemTitle: { type: String, required: true },
+    proofOfPaymentUrl: { type: String },
+    adminNotes: { type: String },
   },
   { timestamps: true }
 );

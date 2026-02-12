@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from "@apollo/client/react";
-import { CREATE_PROJECT } from '@/lib/graphql/mutations';
+import { CREATE_PROJECT, ASSIGN_PROJECT_TO_USERS } from '@/lib/graphql/mutations';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { GET_ALL_PROJECTS, GET_USERS, GET_COURSES } from '@/lib/graphql/queries';
-import { Link as LinkIcon, Plus, Trash2, Book, Box, Layout } from 'lucide-react';
+import { Link as LinkIcon, Plus, Trash2, Book, Box, Layout, X, Check, Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface CreateProjectDialogProps {
     open: boolean;
@@ -23,8 +24,9 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
         description: '',
         course: '',
         type: 'Individual',
-        userId: '',
+        userIds: [] as string[],
         deadline: '',
+        templateId: '',
     });
     const [toolboxLinks, setToolboxLinks] = useState<{ title: string; url: string }[]>([]);
 
@@ -48,7 +50,7 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
 
     const [createProject, { loading }] = useMutation(CREATE_PROJECT, {
         onCompleted: () => {
-            toast.success('Project assigned successfully');
+            toast.success('Project(s) assigned successfully');
             onOpenChange(false);
             refetch?.();
             setFormData({
@@ -56,8 +58,28 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
                 description: '',
                 course: '',
                 type: 'Individual',
-                userId: '',
+                userIds: [],
                 deadline: '',
+                templateId: '',
+            });
+            setToolboxLinks([]);
+        },
+        onError: (err) => toast.error(err.message)
+    });
+
+    const [assignProjectToUsers, { loading: batchLoading }] = useMutation(ASSIGN_PROJECT_TO_USERS, {
+        onCompleted: () => {
+            toast.success('Batch assignment successful');
+            onOpenChange(false);
+            refetch?.();
+            setFormData({
+                title: '',
+                description: '',
+                course: '',
+                type: 'Individual',
+                userIds: [],
+                deadline: '',
+                templateId: '',
             });
             setToolboxLinks([]);
         },
@@ -66,20 +88,43 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!formData.title || !formData.userId || !formData.course) {
-            toast.error('Title, Student, and Course are required');
+        if (!formData.title || formData.userIds.length === 0 || !formData.course) {
+            toast.error('Title, Student(s), and Course are required');
             return;
         }
 
-        createProject({
-            variables: {
-                ...formData,
-                mentorIds: trainers.slice(0, 1).map(t => t.id), // Default to first trainer for now
-                documentation: {
-                    links: toolboxLinks
+        if (formData.templateId) {
+            assignProjectToUsers({
+                variables: {
+                    projectId: formData.templateId,
+                    userIds: formData.userIds,
+                    type: formData.type,
+                    deadline: formData.deadline || null
                 }
+            });
+        } else {
+            // If multiple users selected but no template, we might need a loop or the backend to handle it.
+            // For now, let's assume if it's not a template, we only allow one user or use a loop.
+            if (formData.userIds.length > 1) {
+                toast.error('Batch assignment is currently supported only using project templates. Please select a template or assign individually.');
+                return;
             }
-        });
+
+            createProject({
+                variables: {
+                    title: formData.title,
+                    description: formData.description,
+                    course: formData.course,
+                    type: formData.type,
+                    userId: formData.userIds[0],
+                    deadline: formData.deadline,
+                    mentorIds: trainers.slice(0, 1).map(t => t.id),
+                    documentation: {
+                        links: toolboxLinks
+                    }
+                }
+            });
+        }
     };
 
     const handleAddLink = () => {
@@ -102,31 +147,85 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
             setFormData({
                 ...formData,
                 title: template.title,
-                description: template.description
+                description: template.description,
+                templateId: template.id
             });
         }
     };
 
+    const handleAddUser = (id: string) => {
+        if (!formData.userIds.includes(id)) {
+            setFormData({
+                ...formData,
+                userIds: [...formData.userIds, id]
+            });
+        }
+    };
+
+    const handleRemoveUser = (id: string) => {
+        setFormData({
+            ...formData,
+            userIds: formData.userIds.filter(userId => userId !== id)
+        });
+    };
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={onOpenChange} >
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle>Assign New Project</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="userId">Assign To Student</Label>
-                        <Select
-                            value={formData.userId}
-                            onValueChange={(val) => setFormData({ ...formData, userId: val })}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a student" />
+                    <div className="space-y-3">
+                        <Label className="flex items-center justify-between">
+                            Assign To Students
+                            <span className="text-[10px] text-muted-foreground">{formData.userIds.length} selected</span>
+                        </Label>
+
+                        <div className="flex flex-wrap gap-1.5 min-h-[40px] p-2 rounded-lg border border-dashed border-border/50 bg-muted/5 mb-2">
+                            {formData.userIds.length === 0 ? (
+                                <p className="text-[10px] text-muted-foreground italic m-auto">No students selected</p>
+                            ) : (
+                                formData.userIds.map(id => {
+                                    const student = students.find(s => s.id === id);
+                                    return (
+                                        <Badge key={id} variant="secondary" className="px-1.5 py-0.5 text-[10px] gap-1 bg-accent/10 border-accent/20 text-accent">
+                                            {student?.username || student?.email || id}
+                                            <X className="w-3 h-3 cursor-pointer hover:text-destructive transition-colors" onClick={() => handleRemoveUser(id)} />
+                                        </Badge>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        <Select onValueChange={handleAddUser}>
+                            <SelectTrigger className="h-9">
+                                <SelectValue placeholder="Add students..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {students.map((s: any) => (
-                                    <SelectItem key={s.id} value={s.id}>{s.fullName || s.username} ({s.email})</SelectItem>
+                                <div className="p-2 border-b border-border/50">
+                                    <div className="relative">
+                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search students..."
+                                            className="h-8 pl-8 text-xs bg-muted/20"
+                                        // Optional: Add local search state here
+                                        />
+                                    </div>
+                                </div>
+                                {students.filter(s => !formData.userIds.includes(s.id)).slice(0, 10).map((s: any) => (
+                                    <SelectItem key={s.id} value={s.id}>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{s.fullName || s.username}</span>
+                                            <span className="text-[10px] text-muted-foreground">{s.email}</span>
+                                        </div>
+                                    </SelectItem>
                                 ))}
+                                {students.filter(s => !formData.userIds.includes(s.id)).length > 10 && (
+                                    <div className="p-2 text-[10px] text-center text-muted-foreground border-t border-border/50">
+                                        And {students.filter(s => !formData.userIds.includes(s.id)).length - 10} more...
+                                    </div>
+                                )}
                             </SelectContent>
                         </Select>
                     </div>
@@ -273,12 +372,12 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
 
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button type="submit" disabled={loading} className="bg-accent hover:bg-accent/90">
-                            {loading ? 'Assigning...' : 'Assign Project'}
+                        <Button type="submit" disabled={loading || batchLoading} className="bg-accent hover:bg-accent/90">
+                            {(loading || batchLoading) ? 'Assigning...' : 'Assign Project'}
                         </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }

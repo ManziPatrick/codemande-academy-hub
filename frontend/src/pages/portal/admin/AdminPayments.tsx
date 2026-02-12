@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useQuery } from "@apollo/client/react"; // Assuming Apollo Client
 import { GET_PAYMENTS } from "@/lib/graphql/queries";
+import { VerifyPaymentDialog } from "@/components/portal/dialogs";
+
 
 
 const statusColors: Record<string, string> = {
@@ -40,25 +42,44 @@ const statusIcons: Record<string, React.ElementType> = {
 
 export default function AdminPayments() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [verifyingPayment, setVerifyingPayment] = useState<any | null>(null);
   const { data, loading } = useQuery(GET_PAYMENTS);
+
 
   const payments = (data as any)?.payments || [];
 
   // Calculate stats
   const totalRevenue = payments
-      .filter((p: any) => p.status === 'completed' || p.status === 'paid')
-      .reduce((acc: number, curr: any) => acc + curr.amount, 0);
-  
+    .filter((p: any) => p.status === 'completed' || p.status === 'paid')
+    .reduce((acc: number, curr: any) => acc + curr.amount, 0);
+
+  const now = new Date();
+  const thisMonthRevenue = payments
+    .filter((p: any) => {
+      const pDate = new Date(p.date);
+      return (p.status === 'completed' || p.status === 'paid') &&
+        pDate.getMonth() === now.getMonth() &&
+        pDate.getFullYear() === now.getFullYear();
+    })
+    .reduce((acc: number, curr: any) => acc + curr.amount, 0);
+
+  const pendingPayments = payments.filter((p: any) => p.status === 'pending');
+  const pendingValue = pendingPayments.reduce((acc: number, curr: any) => acc + curr.amount, 0);
+
+  const internshipRevenue = payments
+    .filter((p: any) => (p.status === 'completed' || p.status === 'paid') && p.type === 'Internship Fee')
+    .reduce((acc: number, curr: any) => acc + curr.amount, 0);
+
   const paymentStats = [
-    { label: "Total Revenue", value: `${totalRevenue.toLocaleString()} RWF`, change: "+18%", trend: "up", icon: DollarSign },
-    { label: "This Month", value: "450K RWF", change: "+12%", trend: "up", icon: TrendingUp }, // Placeholder for now
-    { label: "Pending", value: "85K RWF", change: "8 payments", trend: "neutral", icon: Clock }, // Placeholder
-    { label: "Internship Fees", value: "900K RWF", change: "+25%", trend: "up", icon: CreditCard }, // Placeholder
+    { label: "Total Revenue", value: `${totalRevenue.toLocaleString()} RWF`, change: "Overall", trend: "up", icon: DollarSign },
+    { label: "This Month", value: `${thisMonthRevenue.toLocaleString()} RWF`, change: "Current Period", trend: "up", icon: TrendingUp },
+    { label: "Pending", value: `${pendingValue.toLocaleString()} RWF`, change: `${pendingPayments.length} payments`, trend: "neutral", icon: Clock },
+    { label: "Internship Fees", value: `${internshipRevenue.toLocaleString()} RWF`, change: "Total", trend: "up", icon: CreditCard },
   ];
 
-  const filteredPayments = payments.filter((payment: any) => 
-    payment.studentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    payment.itemTitle.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPayments = payments.filter((payment: any) =>
+    (payment.studentName?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+    (payment.itemTitle?.toLowerCase() || "").includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -98,12 +119,7 @@ export default function AdminPayments() {
                   <div>
                     <p className="text-xs text-card-foreground/60 mb-1">{stat.label}</p>
                     <p className="text-2xl font-bold text-card-foreground">{stat.value}</p>
-                    <div className={`flex items-center gap-1 mt-1 text-xs ${
-                      stat.trend === "up" ? "text-green-400" : 
-                      stat.trend === "down" ? "text-red-400" : "text-card-foreground/60"
-                    }`}>
-                      {stat.trend === "up" && <ArrowUpRight className="w-3 h-3" />}
-                      {stat.trend === "down" && <ArrowDownRight className="w-3 h-3" />}
+                    <div className={`flex items-center gap-1 mt-1 text-xs text-card-foreground/60`}>
                       {stat.change}
                     </div>
                   </div>
@@ -158,37 +174,56 @@ export default function AdminPayments() {
                           <th className="text-center p-4 text-sm font-medium text-card-foreground/70">Date</th>
                           <th className="text-center p-4 text-sm font-medium text-card-foreground/70">Status</th>
                           <th className="text-center p-4 text-sm font-medium text-card-foreground/70">Method</th>
+                          <th className="text-right p-4 text-sm font-medium text-card-foreground/70">Action</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredPayments.length === 0 ? (
-                            <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No payments found.</td></tr>
+                          <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No payments found.</td></tr>
                         ) : (
-                        filteredPayments.map((payment: any) => {
-                          const StatusIcon = statusIcons[payment.status] || Clock;
-                          return (
-                            <tr key={payment.id} className="border-b border-border/30 hover:bg-background/50">
-                              <td className="p-4">
-                                <p className="font-medium text-card-foreground">{payment.studentName}</p>
-                              </td>
-                              <td className="p-4">
-                                <Badge variant="secondary">{payment.type}</Badge>
-                              </td>
-                              <td className="p-4 text-sm text-card-foreground/70">{payment.itemTitle}</td>
-                              <td className="p-4 text-right">
-                                <span className="font-medium text-accent">{payment.amount.toLocaleString()} {payment.currency}</span>
-                              </td>
-                              <td className="p-4 text-center text-sm text-card-foreground/70">{new Date(payment.date).toLocaleDateString()}</td>
-                              <td className="p-4 text-center">
-                                <Badge className={statusColors[payment.status] || "bg-gray-500/20 text-gray-400"}>
-                                  <StatusIcon className="w-3 h-3 mr-1" />
-                                  {payment.status}
-                                </Badge>
-                              </td>
-                              <td className="p-4 text-center text-sm text-card-foreground/70">{payment.method}</td>
-                            </tr>
-                          );
-                        }))}
+                          filteredPayments.map((payment: any) => {
+                            const StatusIcon = statusIcons[payment.status] || Clock;
+                            return (
+                              <tr key={payment.id} className="border-b border-border/30 hover:bg-background/50">
+                                <td className="p-4">
+                                  <p className="font-medium text-card-foreground">{payment.studentName}</p>
+                                </td>
+                                <td className="p-4">
+                                  <Badge variant="secondary">{payment.type}</Badge>
+                                </td>
+                                <td className="p-4 text-sm text-card-foreground/70">{payment.itemTitle}</td>
+                                <td className="p-4 text-right">
+                                  <span className="font-medium text-accent">{payment.amount.toLocaleString()} {payment.currency}</span>
+                                </td>
+                                <td className="p-4 text-center text-sm text-card-foreground/70">{new Date(payment.date).toLocaleDateString()}</td>
+                                <td className="p-4 text-center">
+                                  <Badge className={statusColors[payment.status] || "bg-gray-500/20 text-gray-400"}>
+                                    <StatusIcon className="w-3 h-3 mr-1" />
+                                    {payment.status}
+                                  </Badge>
+                                </td>
+                                <td className="p-4 text-center text-sm text-card-foreground/70">{payment.method}</td>
+                                <td className="p-4 text-right">
+                                  <div className="flex justify-end gap-2">
+                                    {payment.status === 'pending' && (
+                                      <Button
+                                        variant="gold"
+                                        size="sm"
+                                        className="h-8 text-xs font-bold"
+                                        onClick={() => setVerifyingPayment(payment)}
+                                      >
+                                        Verify
+                                      </Button>
+                                    )}
+                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                      <Download className="w-4 h-4" />
+                                    </Button>
+                                  </div>
+                                </td>
+                              </tr>
+
+                            );
+                          }))}
                       </tbody>
                     </table>
                   </div>
@@ -213,36 +248,49 @@ export default function AdminPayments() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {payments.filter((p: any) => p.status === 'pending').length === 0 ? (
-                      <div className="text-center py-6 text-muted-foreground">No pending payments.</div>
+                    <div className="text-center py-6 text-muted-foreground">No pending payments.</div>
                   ) : (
-                  payments.filter((p: any) => p.status === 'pending').map((payment: any) => (
-                    <div
-                      key={payment.id}
-                      className="flex items-center justify-between p-4 bg-background/50 rounded-lg border border-border/30"
-                    >
-                      <div>
-                        <h4 className="font-medium text-card-foreground">{payment.studentName}</h4>
-                        <p className="text-sm text-card-foreground/60">{payment.type} - {payment.itemTitle}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-accent">{payment.amount.toLocaleString()} {payment.currency}</p>
-                        <div className="flex items-center gap-1 text-xs mt-1 text-card-foreground/60">
-                          <Calendar className="w-3 h-3" />
-                          <span>Date: {new Date(payment.date).toLocaleDateString()}</span>
+                    payments.filter((p: any) => p.status === 'pending').map((payment: any) => (
+                      <div
+                        key={payment.id}
+                        className="flex items-center justify-between p-4 bg-background/50 rounded-lg border border-border/30"
+                      >
+                        <div>
+                          <h4 className="font-medium text-card-foreground">{payment.studentName}</h4>
+                          <p className="text-sm text-card-foreground/60">{payment.type} - {payment.itemTitle}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium text-accent">{payment.amount.toLocaleString()} {payment.currency}</p>
+                          <div className="flex items-center gap-1 text-xs mt-1 text-card-foreground/60">
+                            <Calendar className="w-3 h-3" />
+                            <span>Date: {new Date(payment.date).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm">Send Reminder</Button>
+                          <Button
+                            variant="gold"
+                            size="sm"
+                            onClick={() => setVerifyingPayment(payment)}
+                          >
+                            Verify Payment
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm">Send Reminder</Button>
-                        <Button variant="gold" size="sm">Mark Paid</Button>
-                      </div>
-                    </div>
-                  )))}
+                    )))}
                 </CardContent>
               </Card>
             </motion.div>
           </TabsContent>
         </Tabs>
+
+        <VerifyPaymentDialog
+          open={!!verifyingPayment}
+          onOpenChange={(open) => !open && setVerifyingPayment(null)}
+          payment={verifyingPayment}
+        />
       </div>
+
     </PortalLayout>
   );
 }

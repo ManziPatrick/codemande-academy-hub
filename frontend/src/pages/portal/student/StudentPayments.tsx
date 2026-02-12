@@ -13,11 +13,13 @@ import {
   Calendar,
   Receipt,
   Search,
+  Upload,
 } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
 import { GET_MY_PAYMENTS } from "@/lib/graphql/queries";
 import { Input } from "@/components/ui/input";
-import { ViewReceiptDialog } from "@/components/portal/dialogs";
+import { ViewReceiptDialog, SubmitProofDialog } from "@/components/portal/dialogs";
+
 
 const statusColors: Record<string, string> = {
   completed: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -34,11 +36,13 @@ const statusIcons: Record<string, React.ElementType> = {
 export default function StudentPayments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPayment, setSelectedPayment] = useState<any | null>(null);
+  const [proofPayment, setProofPayment] = useState<any | null>(null);
+
   const { data, loading } = useQuery(GET_MY_PAYMENTS);
 
   const payments = (data as any)?.myPayments || [];
 
-  const filteredPayments = payments.filter((payment: any) => 
+  const filteredPayments = payments.filter((payment: any) =>
     payment.itemTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
     payment.type.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -145,15 +149,28 @@ export default function StudentPayments() {
                               </Badge>
                             </td>
                             <td className="p-4 text-right">
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 text-xs font-bold hover:bg-gold/10 hover:text-gold"
-                                onClick={() => setSelectedPayment(payment)}
-                              >
-                                <Download className="w-3.5 h-3.5 mr-1.5" />
-                                Receipt
-                              </Button>
+                              <div className="flex justify-end gap-2">
+                                {payment.status === 'pending' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 text-[10px] font-bold border-accent/30 text-accent hover:bg-accent/10"
+                                    onClick={() => setProofPayment(payment)}
+                                  >
+                                    <Upload className="w-3.5 h-3.5 mr-1" />
+                                    Submit Proof
+                                  </Button>
+                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 text-xs font-bold hover:bg-gold/10 hover:text-gold"
+                                  onClick={() => setSelectedPayment(payment)}
+                                >
+                                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                                  Receipt
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -186,33 +203,33 @@ export default function StudentPayments() {
                   <Badge variant="outline" className="border-accent/30 text-accent font-bold text-[10px]">Active</Badge>
                 </div>
                 <Button variant="outline" className="w-full mt-4 h-10 font-bold border-dashed hover:border-accent">
-                   Update Payment Method
+                  Update Payment Method
                 </Button>
               </CardContent>
             </Card>
 
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-                <CardHeader>
-                    <CardTitle className="text-lg font-heading flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-accent" />
-                        Next Billing
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-muted-foreground">Upcoming Installment</span>
-                            <span className="font-bold">None</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-muted-foreground">Current Outstanding</span>
-                            <span className="font-bold text-accent">0 RWF</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border/30 italic">
-                            You're all caught up! No pending payments for your current enrollments.
-                        </p>
-                    </div>
-                </CardContent>
+              <CardHeader>
+                <CardTitle className="text-lg font-heading flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-accent" />
+                  Next Billing
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Upcoming Installment</span>
+                    <span className="font-bold">None</span>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">Current Outstanding</span>
+                    <span className="font-bold text-accent">0 RWF</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border/30 italic">
+                    You're all caught up! No pending payments for your current enrollments.
+                  </p>
+                </div>
+              </CardContent>
             </Card>
           </div>
         </div>
@@ -222,6 +239,12 @@ export default function StudentPayments() {
         onOpenChange={(open) => !open && setSelectedPayment(null)}
         payment={selectedPayment}
       />
+      <SubmitProofDialog
+        open={!!proofPayment}
+        onOpenChange={(open) => !open && setProofPayment(null)}
+        payment={proofPayment}
+      />
+
     </PortalLayout>
   );
 }

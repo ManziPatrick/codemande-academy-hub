@@ -15,6 +15,12 @@ const lessonSchema = new mongoose.Schema({
   type: { type: String, enum: ['video', 'book', 'ppt', 'pdf', 'image', 'article', 'quiz', 'challenge', 'project', 'assignment'], default: 'video' },
   resources: [resourceSchema],
 
+  // TVET specific fields
+  performanceCriteria: [{ type: String }],
+  competenceElement: { type: String },
+  assessmentCriteria: [{ type: String }],
+  githubClassroomLink: { type: String },
+
   // Assignment specific fields
   isAssignment: { type: Boolean, default: false },
   assignmentDescription: { type: String },
@@ -24,7 +30,9 @@ const lessonSchema = new mongoose.Schema({
 const moduleSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String },
-  lessons: [lessonSchema]
+  lessons: [lessonSchema],
+  learningOutcome: { type: String },
+  hoursAllocated: { type: Number }
 });
 
 const courseSchema = new mongoose.Schema({
@@ -42,7 +50,23 @@ const courseSchema = new mongoose.Schema({
   // Configuration & limits
   maxStudents: { type: Number }, // If null, unlimited
   status: { type: String, enum: ['draft', 'published', 'archived'], default: 'published' },
-  isDeleted: { type: Boolean, default: false }
+  isDeleted: { type: Boolean, default: false },
+
+  // TVET / Rwanda Special fields
+  githubClassroom: { type: String },
+  curriculumMetadata: {
+    sector: { type: String },
+    trade: { type: String },
+    moduleType: { type: String },
+    curriculum: { type: String },
+    credits: { type: Number },
+    learningHours: { type: Number },
+    issueDate: { type: String },
+    version: { type: String },
+    rqfLevel: { type: String },
+    competencyBased: { type: Boolean, default: true },
+    tvetCode: { type: String }
+  }
 }, { timestamps: true });
 
 export const Course = mongoose.model('Course', courseSchema);

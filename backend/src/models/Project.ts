@@ -52,6 +52,18 @@ export interface IProject extends Document {
   };
   submissionUrl?: string;
   conversationId?: mongoose.Types.ObjectId | string;
+  startDate?: Date;
+  endDate?: Date;
+  skills?: string[];
+  parentProject?: mongoose.Types.ObjectId;
+  assessmentRubric?: {
+    criteria: Array<{
+      name: string;
+      marks: number;
+      achieved: boolean;
+      feedback?: string;
+    }>;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -124,6 +136,20 @@ const ProjectSchema: Schema = new Schema(
     description: { type: String, required: true },
     submissionUrl: { type: String },
     mentors: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    startDate: { type: Date },
+    endDate: { type: Date },
+    skills: [String],
+    parentProject: { type: Schema.Types.ObjectId, ref: 'Project' },
+    assessmentRubric: {
+      criteria: [
+        {
+          name: { type: String },
+          marks: { type: Number },
+          achieved: { type: Boolean, default: false },
+          feedback: { type: String }
+        }
+      ]
+    }
   },
   { timestamps: true }
 );

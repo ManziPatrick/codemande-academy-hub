@@ -348,6 +348,8 @@ export const GET_MY_PAYMENTS = gql`
       date
       status
       method
+      proofOfPaymentUrl
+      adminNotes
     }
   }
 `;
@@ -904,15 +906,16 @@ export const GET_PAYMENTS = gql`
   query GetPayments {
     payments {
       id
+      studentName
       amount
       currency
       itemTitle
       type
       status
       date
-      user {
-        username
-      }
+      method
+      proofOfPaymentUrl
+      adminNotes
     }
   }
 `;

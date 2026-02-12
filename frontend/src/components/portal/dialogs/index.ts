@@ -28,6 +28,9 @@ export { AddModuleDialog } from "./AddModuleDialog";
 export { StartLiveSessionDialog } from "./StartLiveSessionDialog";
 export { ManageQuestionsDialog } from "./ManageQuestionsDialog";
 export { GradeStudentDialog } from "./GradeStudentDialog";
+export { VerifyPaymentDialog } from "./VerifyPaymentDialog";
+export { SubmitProofDialog } from "./SubmitProofDialog";
+
 export { ViewReceiptDialog } from "./ViewReceiptDialog";
 export { ViewCertificateDialog } from "./ViewCertificateDialog";
 export { ProjectDetailsDialog } from "./ProjectDetailsDialog";

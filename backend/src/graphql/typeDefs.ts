@@ -237,6 +237,8 @@ export const typeDefs = `#graphql
     date: String!
     status: String!
     method: String
+    proofOfPaymentUrl: String
+    adminNotes: String
   }
 
   type Booking {
@@ -798,6 +800,12 @@ export const typeDefs = `#graphql
 
     awardBadgeToBatch(userIds: [ID!]!, badgeId: ID!): Boolean
     submitGrade(userId: ID!, courseId: ID!, lessonId: String, score: Int!, feedback: String): User
+
+    # Payment Verification
+    submitPaymentProof(paymentId: ID!, proofUrl: String!): PaymentTransaction
+    approvePayment(paymentId: ID!, adminNotes: String): PaymentTransaction
+    rejectPayment(paymentId: ID!, adminNotes: String!): PaymentTransaction
+
     promoteStudent(userId: ID!, academicStatus: String!, level: Int): User
     
     updateBadge(id: ID!, title: String, description: String, icon: String, category: String): Badge
@@ -916,7 +924,7 @@ export const typeDefs = `#graphql
     applyForInternship(internshipId: ID!): Internship
     promoteIntern(internshipIds: [ID!], targetStage: Int!): Boolean
     updateInternshipPayment(id: ID!, status: String!, paidAt: String): Internship
-    payForCourse(courseId: ID!, amount: Float!, paymentMethod: String!): Course
+    payForCourse(courseId: ID!, amount: Float!, paymentMethod: String!): PaymentTransaction
     enrollStudentInCourse(courseId: ID!, userId: ID!): Course
     addInternshipTask(internshipId: ID!, title: String!, priority: String): Internship
     addBatchTask(internshipIds: [ID!], stage: Int, cohort: String, title: String!, priority: String): Boolean
@@ -926,6 +934,7 @@ export const typeDefs = `#graphql
     approveProjectTask(projectId: ID!, taskId: String!, approved: Boolean!, feedback: String): Project
     gradeProject(id: ID!, grade: String!, feedback: String!): Project
     assignGroupProject(internshipIds: [ID!], title: String!, description: String!, repoUrl: String, deadline: String, mentorIds: [ID!]): Project
+    assignProjectToUsers(projectId: ID!, userIds: [ID!]!, type: String!, deadline: String): [Project]
 
     # New Internship Module Mutations
     createInternshipProgram(title: String!, description: String!, duration: String!, startDate: String!, endDate: String!, applicationDeadline: String!, eligibility: [String], rules: String, price: Float, currency: String, image: String): InternshipProgram

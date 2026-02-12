@@ -488,7 +488,9 @@ export const resolvers = {
         currency: p.currency,
         date: p.createdAt.toISOString(),
         status: p.status,
-        method: p.paymentMethod || 'Mobile Money'
+        method: p.paymentMethod || 'Mobile Money',
+        proofOfPaymentUrl: p.proofOfPaymentUrl,
+        adminNotes: p.adminNotes
       }));
 
       // 2. Get Internship Payments (Legacy fallback/sync)
@@ -543,7 +545,9 @@ export const resolvers = {
         currency: p.currency,
         date: p.createdAt.toISOString(),
         status: p.status,
-        method: p.paymentMethod
+        method: p.paymentMethod,
+        proofOfPaymentUrl: p.proofOfPaymentUrl,
+        adminNotes: p.adminNotes
       }));
     },
     configs: async (_: any, __: any, context: any) => {
@@ -2411,6 +2415,75 @@ export const resolvers = {
       return newProject;
     },
 
+    assignProjectToUsers: async (_: any, { projectId, userIds, type, deadline }: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      const sourceProject = await Project.findById(projectId);
+      if (!sourceProject) throw new Error('Source project template not found');
+
+      const users = await User.find({ _id: { $in: userIds } });
+      if (!users || users.length === 0) throw new Error('No users found');
+
+      const createdProjects = [];
+
+      if (type === 'Individual') {
+        for (const user of users) {
+          const newProject = new Project({
+            userId: user._id,
+            title: sourceProject.title,
+            description: sourceProject.description,
+            course: sourceProject.course,
+            type: 'Individual',
+            status: 'in_progress',
+            progress: 0,
+            deadline: deadline ? new Date(deadline) : sourceProject.deadline,
+            tasks: (sourceProject.tasks || []).map((t: any) => ({ ...t, completed: false, approved: false, feedback: '' })),
+            mentors: sourceProject.mentors,
+            documentation: sourceProject.documentation,
+            milestones: sourceProject.milestones?.map((m: any) => ({
+              ...m.toObject(),
+              completed: false,
+              submissions: []
+            })),
+          });
+          await newProject.save();
+          createdProjects.push(newProject);
+        }
+      } else if (type === 'Team Project') {
+        const team = users.map(u => ({
+          userId: u._id,
+          name: u.username,
+          role: 'Member'
+        }));
+
+        const newProject = new Project({
+          userId: context.user.id,
+          title: sourceProject.title,
+          description: sourceProject.description,
+          course: sourceProject.course,
+          type: 'Team Project',
+          status: 'in_progress',
+          progress: 0,
+          deadline: deadline ? new Date(deadline) : sourceProject.deadline,
+          tasks: (sourceProject.tasks || []).map((t: any) => ({ ...t, completed: false, approved: false, feedback: '' })),
+          team: team,
+          mentors: sourceProject.mentors,
+          documentation: sourceProject.documentation,
+          milestones: sourceProject.milestones?.map((m: any) => ({
+            ...m.toObject(),
+            completed: false,
+            submissions: []
+          })),
+        });
+        await newProject.save();
+        createdProjects.push(newProject);
+      }
+
+      return await Project.populate(createdProjects, 'userId mentors team.userId');
+    },
+
     sendMessageToProject: async (_: any, { projectId, content }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
 
@@ -2542,13 +2615,24 @@ export const resolvers = {
         throw new Error('Already enrolled in this course');
       }
 
-      // Record Payment
+      // Check if there is already a pending payment for this course
+      const existingPayment = await Payment.findOne({
+        userId: user.id,
+        courseId: course.id,
+        status: 'pending'
+      });
+
+      if (existingPayment) {
+        return await course.populate('instructor studentsEnrolled');
+      }
+
+      // Record Payment as PENDING
       const payment = new Payment({
         userId: user.id,
         courseId: course.id,
         amount,
         currency: 'RWF',
-        status: 'completed',
+        status: 'pending',
         paymentMethod,
         transactionId: `TXN-${Math.random().toString(36).substring(7).toUpperCase()}`,
         type: 'Course Enrollment',
@@ -2556,23 +2640,172 @@ export const resolvers = {
       });
       await payment.save();
 
-      // Update User
-      user.enrolledCourses.push(course.id as any);
       (user as any).activityLog.push({
-        action: 'COURSE_PAYMENT',
-        details: `Paid ${amount} for ${course.title} via ${paymentMethod}`,
+        action: 'COURSE_PAYMENT_INITIATED',
+        details: `Initiated payment of ${amount} for ${course.title} via ${paymentMethod}`,
         timestamp: new Date()
       });
       await user.save();
 
-      // Update Course
-      const alreadyHasStudent = course.studentsEnrolled.some((s: any) => s.toString() === user.id);
-      if (!alreadyHasStudent) {
-        course.studentsEnrolled.push(user.id as any);
-        await course.save();
+      return {
+        id: payment.id,
+        studentName: user.username,
+        type: payment.type,
+        itemTitle: payment.itemTitle,
+        amount: payment.amount,
+        currency: payment.currency,
+        date: payment.createdAt.toISOString(),
+        status: payment.status,
+        method: payment.paymentMethod,
+        proofOfPaymentUrl: payment.proofOfPaymentUrl,
+        adminNotes: payment.adminNotes
+      };
+    },
+
+    submitPaymentProof: async (_: any, { paymentId, proofUrl }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const payment = await Payment.findById(paymentId);
+      if (!payment) throw new Error('Payment record not found');
+
+      if (payment.userId.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Not authorized');
       }
 
-      return await course.populate('instructor studentsEnrolled');
+      payment.proofOfPaymentUrl = proofUrl;
+      await payment.save();
+
+      const user = await User.findById(payment.userId);
+      if (user) {
+        (user as any).activityLog.push({
+          action: 'PAYMENT_PROOF_SUBMITTED',
+          details: `Submitted proof for ${payment.itemTitle}`,
+          timestamp: new Date()
+        });
+        await user.save();
+      }
+
+      return {
+        id: payment.id,
+        studentName: user?.username || 'Unknown',
+        type: payment.type,
+        itemTitle: payment.itemTitle,
+        amount: payment.amount,
+        currency: payment.currency,
+        date: payment.createdAt.toISOString(),
+        status: payment.status,
+        method: payment.paymentMethod,
+        proofOfPaymentUrl: payment.proofOfPaymentUrl,
+        adminNotes: payment.adminNotes
+      };
+    },
+
+    approvePayment: async (_: any, { paymentId, adminNotes }: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      const payment = await Payment.findById(paymentId);
+      if (!payment) throw new Error('Payment not found');
+
+      if (payment.status === 'completed') throw new Error('Payment already approved');
+      if (!payment.proofOfPaymentUrl) throw new Error('Cannot approve payment without proof of payment');
+
+      payment.status = 'completed';
+      if (adminNotes) payment.adminNotes = adminNotes;
+      await payment.save();
+
+      // Grant Access
+      const user = await User.findById(payment.userId);
+      if (!user) throw new Error('User not found');
+
+      if (payment.type === 'Course Enrollment' && payment.courseId) {
+        const course = await Course.findById(payment.courseId);
+        if (course) {
+          // Add to user
+          if (!user.enrolledCourses.some((id: any) => id.toString() === course.id)) {
+            user.enrolledCourses.push(course.id as any);
+          }
+          // Add to course
+          if (!course.studentsEnrolled.some((id: any) => id.toString() === user.id)) {
+            course.studentsEnrolled.push(user.id as any);
+            await course.save();
+          }
+
+          (user as any).activityLog.push({
+            action: 'PAYMENT_APPROVED',
+            details: `Admin approved payment for ${course.title}. Access granted.`,
+            timestamp: new Date()
+          });
+          await user.save();
+
+          // Initialize Course Progress
+          await CourseProgress.findOneAndUpdate(
+            { userId: user.id, courseId: course.id },
+            {
+              $setOnInsert: {
+                userId: user.id,
+                courseId: course.id,
+                lessons: [],
+                status: 'in_progress',
+                lastAccessed: new Date()
+              }
+            },
+            { upsert: true }
+          );
+        }
+      }
+
+      return {
+        id: payment.id,
+        studentName: user?.username || 'Unknown',
+        type: payment.type,
+        itemTitle: payment.itemTitle,
+        amount: payment.amount,
+        currency: payment.currency,
+        date: payment.createdAt.toISOString(),
+        status: payment.status,
+        method: payment.paymentMethod,
+        proofOfPaymentUrl: payment.proofOfPaymentUrl,
+        adminNotes: payment.adminNotes
+      };
+    },
+
+    rejectPayment: async (_: any, { paymentId, adminNotes }: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      const payment = await Payment.findById(paymentId);
+      if (!payment) throw new Error('Payment not found');
+
+      payment.status = 'failed';
+      payment.adminNotes = adminNotes;
+      await payment.save();
+
+      const user = await User.findById(payment.userId);
+      if (user) {
+        (user as any).activityLog.push({
+          action: 'PAYMENT_REJECTED',
+          details: `Admin rejected payment for ${payment.itemTitle}. Reason: ${adminNotes}`,
+          timestamp: new Date()
+        });
+        await user.save();
+      }
+
+      return {
+        id: payment.id,
+        studentName: user?.username || 'Unknown',
+        type: payment.type,
+        itemTitle: payment.itemTitle,
+        amount: payment.amount,
+        currency: payment.currency,
+        date: payment.createdAt.toISOString(),
+        status: payment.status,
+        method: payment.paymentMethod,
+        proofOfPaymentUrl: payment.proofOfPaymentUrl,
+        adminNotes: payment.adminNotes
+      };
     },
 
     updateTheme: async (_: any, { primaryColor, mode, lightBg, darkBg }: any, context: any) => {

@@ -621,9 +621,9 @@ export const PAY_FOR_COURSE = gql`
   mutation PayForCourse($courseId: ID!, $amount: Float!, $paymentMethod: String!) {
     payForCourse(courseId: $courseId, amount: $amount, paymentMethod: $paymentMethod) {
       id
-      studentsEnrolled {
-        id
-      }
+      status
+      amount
+      currency
     }
   }
 `;
@@ -1155,6 +1155,37 @@ export const GRADE_ASSIGNMENT = gql`
     }
   }
 `;
+
+export const REJECT_PAYMENT = gql`
+  mutation RejectPayment($paymentId: ID!, $adminNotes: String!) {
+    rejectPayment(paymentId: $paymentId, adminNotes: $adminNotes) {
+      id
+      status
+      adminNotes
+    }
+  }
+`;
+
+export const APPROVE_PAYMENT = gql`
+  mutation ApprovePayment($paymentId: ID!, $adminNotes: String) {
+    approvePayment(paymentId: $paymentId, adminNotes: $adminNotes) {
+      id
+      status
+      adminNotes
+    }
+  }
+`;
+
+export const SUBMIT_PAYMENT_PROOF = gql`
+  mutation SubmitPaymentProof($paymentId: ID!, $proofUrl: String!) {
+    submitPaymentProof(paymentId: $paymentId, proofUrl: $proofUrl) {
+      id
+      status
+      proofOfPaymentUrl
+    }
+  }
+`;
+
 export const MARK_NOTIFICATION_READ = gql`
   mutation MarkNotificationRead($id: ID!) {
     markNotificationRead(id: $id) {
@@ -1167,5 +1198,15 @@ export const MARK_NOTIFICATION_READ = gql`
 export const MARK_ALL_NOTIFICATIONS_READ = gql`
   mutation MarkAllNotificationsRead {
     markAllNotificationsRead
+  }
+`;
+
+export const ASSIGN_PROJECT_TO_USERS = gql`
+  mutation AssignProjectToUsers($projectId: ID!, $userIds: [ID!]!, $type: String!, $deadline: String) {
+    assignProjectToUsers(projectId: $projectId, userIds: $userIds, type: $type, deadline: $deadline) {
+      id
+      title
+      status
+    }
   }
 `;
