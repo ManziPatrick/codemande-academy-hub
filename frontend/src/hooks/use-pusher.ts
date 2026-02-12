@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import Pusher from 'pusher-js';
 import { useAuth } from '@/contexts/AuthContext';
+import { env } from '@/lib/env';
 
-const PUSHER_KEY = import.meta.env.VITE_PUSHER_KEY;
-const PUSHER_CLUSTER = import.meta.env.VITE_PUSHER_CLUSTER;
+const PUSHER_KEY = env.PUSHER_KEY;
+const PUSHER_CLUSTER = env.PUSHER_CLUSTER;
 
 export function usePusher() {
     const { user } = useAuth();

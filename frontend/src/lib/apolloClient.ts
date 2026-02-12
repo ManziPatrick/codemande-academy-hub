@@ -3,13 +3,14 @@ import { setContext } from '@apollo/client/link/context';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
 import { createClient } from 'graphql-ws';
+import { env } from './env';
 
 const httpLink = createHttpLink({
-  uri: import.meta.env.VITE_API_URL || 'http://localhost:4000/graphql',
+  uri: env.API_URL || 'http://localhost:4000/graphql',
 });
 
 const wsLink = new GraphQLWsLink(createClient({
-  url: import.meta.env.VITE_WS_URL || 'ws://localhost:4000/graphql',
+  url: env.WS_URL || 'ws://localhost:4000/graphql',
   connectionParams: () => {
     const token = localStorage.getItem('codemande_token');
     return {

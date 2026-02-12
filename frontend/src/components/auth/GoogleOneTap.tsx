@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import { toast } from 'sonner';
+import { env } from '@/lib/env';
 
 const GOOGLE_LOGIN = gql`
   mutation GoogleLogin($idToken: String!) {
@@ -61,7 +62,7 @@ export function GoogleOneTap() {
             }
 
             (window as any).google.accounts.id.initialize({
-                client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+                client_id: env.GOOGLE_CLIENT_ID,
                 callback: handleCredentialResponse,
                 cancel_on_tap_outside: false,
                 auto_select: false,

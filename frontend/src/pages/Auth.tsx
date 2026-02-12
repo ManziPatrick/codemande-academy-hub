@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, ArrowLeft, GraduationCap, BookOpen, Users, Award } from "lucide-react";
+import { env } from "@/lib/env";
 
 type AuthMode = "login" | "signup";
 
@@ -81,7 +82,7 @@ export default function Auth() {
     setIsLoading(true);
 
     try {
-      const graphqlUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000/graphql';
+      const graphqlUrl = env.API_URL || 'http://localhost:4000/graphql';
 
       const response = await fetch(graphqlUrl, {
         method: 'POST',
