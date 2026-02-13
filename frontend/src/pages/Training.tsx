@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
 import { Code, Database, Wifi, Clock, Users, Award, CheckCircle, BookOpen, Target, Briefcase, Calendar, ArrowRight, Brain, Shield, Building2, Stethoscope, GraduationCap, Landmark, ShoppingBag, Factory, BarChart, ChevronRight } from "lucide-react";
-import heroImage from "@/assets/hero-training.jpg";
+import heroImage from "@/assets/hero-training.webp";
 import aboutImage from "@/assets/about-training.jpg";
 import { useEffect, useState } from "react";
 import { useQuery } from "@apollo/client/react";

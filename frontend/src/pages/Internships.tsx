@@ -4,9 +4,13 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
+import testimonialEmmanuel from "@/assets/testimonial-emmanuel.webp";
+import testimonialMarie from "@/assets/testimonial-marie.webp";
+import testimonialJean from "@/assets/testimonial-jean.webp";
+import testimonialSarah from "@/assets/testimonial-sarah.webp";
 import { Briefcase, Code, Database, Wifi, Award, FolderOpen, Users, Clock, CheckCircle, ArrowRight, Target, Calendar, Globe } from "lucide-react";
-import internshipImage from "@/assets/internship-work.jpg";
-import heroImage from "@/assets/hero-training.jpg";
+import internshipImage from "@/assets/internship-work.webp";
+import heroImage from "@/assets/hero-training.webp";
 
 const internships = [
   {

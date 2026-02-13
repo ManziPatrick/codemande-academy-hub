@@ -5,64 +5,64 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
 import { Code, Database, Wifi, ExternalLink, CheckCircle, Users, Calendar } from "lucide-react";
-import heroImage from "@/assets/hero-training.jpg";
+import heroImage from "@/assets/hero-training.webp";
 import internshipImage from "@/assets/internship-work.jpg";
 
 const projects = [
-  { 
-    icon: Code, 
-    title: "E-Commerce Platform", 
-    category: "Software Development", 
+  {
+    icon: Code,
+    title: "E-Commerce Platform",
+    category: "Software Development",
     description: "Full-stack web application for online retail with payment integration",
     details: "Built a comprehensive e-commerce solution for a local retailer, featuring product catalog, cart functionality, M-Pesa and card payment integration, order management, and admin dashboard.",
     technologies: ["React", "Node.js", "MongoDB", "Stripe", "M-Pesa API"],
     client: "Local Retail Business",
     duration: "4 months"
   },
-  { 
-    icon: Database, 
-    title: "Business Analytics Dashboard", 
-    category: "Data Science", 
+  {
+    icon: Database,
+    title: "Business Analytics Dashboard",
+    category: "Data Science",
     description: "Real-time business intelligence and data visualization platform",
     details: "Developed an interactive analytics dashboard that aggregates data from multiple sources, providing real-time insights on sales, inventory, and customer behavior with predictive forecasting.",
     technologies: ["Python", "Tableau", "PostgreSQL", "Apache Airflow"],
     client: "Financial Services Company",
     duration: "3 months"
   },
-  { 
-    icon: Wifi, 
-    title: "Smart Agriculture System", 
-    category: "IoT", 
+  {
+    icon: Wifi,
+    title: "Smart Agriculture System",
+    category: "IoT",
     description: "Sensor-based farm monitoring and automated irrigation solution",
     details: "Implemented an IoT solution for a commercial farm featuring soil moisture sensors, weather monitoring, automated irrigation control, and a mobile app for remote monitoring and alerts.",
     technologies: ["Arduino", "Raspberry Pi", "MQTT", "React Native", "AWS IoT"],
     client: "Agricultural Cooperative",
     duration: "5 months"
   },
-  { 
-    icon: Code, 
-    title: "Mobile Banking Application", 
-    category: "Software Development", 
+  {
+    icon: Code,
+    title: "Mobile Banking Application",
+    category: "Software Development",
     description: "Secure mobile financial services application with biometric auth",
     details: "Developed a secure mobile banking app enabling account management, fund transfers, bill payments, and mobile money integration with biometric authentication and encryption.",
     technologies: ["React Native", "Node.js", "PostgreSQL", "AWS", "Biometric SDK"],
     client: "Microfinance Institution",
     duration: "6 months"
   },
-  { 
-    icon: Database, 
-    title: "Predictive Maintenance AI", 
-    category: "AI/ML", 
+  {
+    icon: Database,
+    title: "Predictive Maintenance AI",
+    category: "AI/ML",
     description: "Machine learning model for industrial equipment monitoring",
     details: "Built a predictive maintenance system using sensor data and machine learning to predict equipment failures before they occur, reducing downtime and maintenance costs by 40%.",
     technologies: ["Python", "TensorFlow", "Scikit-learn", "IoT Sensors", "Azure ML"],
     client: "Manufacturing Company",
     duration: "4 months"
   },
-  { 
-    icon: Wifi, 
-    title: "Smart Building Controller", 
-    category: "IoT", 
+  {
+    icon: Wifi,
+    title: "Smart Building Controller",
+    category: "IoT",
     description: "Home and office automation with energy management",
     details: "Designed and deployed a smart building system with automated lighting, HVAC control, security monitoring, and energy usage optimization through a centralized control interface.",
     technologies: ["ESP32", "Home Assistant", "MQTT", "Node-RED", "React"],
@@ -100,7 +100,7 @@ const Projects = () => {
                 Projects & Portfolio
               </h1>
               <p className="text-card-foreground/80 max-w-2xl mx-auto text-lg">
-                Real solutions developed by our teams for clients across software development, 
+                Real solutions developed by our teams for clients across software development,
                 data science, AI, and IoT. Each project showcases our commitment to quality and innovation.
               </p>
             </motion.div>
@@ -172,7 +172,7 @@ const Projects = () => {
                       {project.title}
                     </h3>
                     <p className="text-sm text-card-foreground/70 mb-4">{project.details}</p>
-                    
+
                     <div className="flex flex-wrap gap-1 mb-4">
                       {project.technologies.map((tech) => (
                         <span key={tech} className="text-xs bg-background px-2 py-1 rounded text-muted-foreground">
@@ -180,7 +180,7 @@ const Projects = () => {
                         </span>
                       ))}
                     </div>
-                    
+
                     <div className="flex items-center justify-between text-xs text-card-foreground/60 pt-4 border-t border-border/30">
                       <span className="flex items-center gap-1">
                         <Users className="w-3 h-3" /> {project.client}
@@ -205,9 +205,9 @@ const Projects = () => {
               viewport={{ once: true }}
               className="relative h-64 lg:h-80 rounded-xl overflow-hidden group"
             >
-              <img 
-                src={internshipImage} 
-                alt="Our team at work" 
+              <img
+                src={internshipImage}
+                alt="Our team at work"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-card/90 to-card/40 flex items-center">
@@ -216,7 +216,7 @@ const Projects = () => {
                     Building Solutions That Matter
                   </h3>
                   <p className="text-card-foreground/80">
-                    Every project is an opportunity to solve real problems and create lasting impact 
+                    Every project is an opportunity to solve real problems and create lasting impact
                     for our clients and their communities.
                   </p>
                 </div>
@@ -277,7 +277,7 @@ const Projects = () => {
                 Have a Project in Mind?
               </h2>
               <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-                Let's discuss how we can help bring your ideas to life with our technology expertise 
+                Let's discuss how we can help bring your ideas to life with our technology expertise
                 and experienced development team.
               </p>
               <div className="flex flex-wrap justify-center gap-4">

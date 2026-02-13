@@ -5,13 +5,13 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
 import { Code, Database, Wifi, Briefcase, BookOpen, Building2, CheckCircle, Users, Award, Zap, ArrowRight, Globe, Cpu, BarChart3 } from "lucide-react";
-import heroImage from "@/assets/hero-training.jpg";
+import heroImage from "@/assets/hero-training.webp";
 import internshipImage from "@/assets/internship-work.jpg";
 
 const trainingServices = [
-  { 
-    icon: Code, 
-    title: "Software Development Training", 
+  {
+    icon: Code,
+    title: "Software Development Training",
     description: "Comprehensive web and mobile development programs",
     details: [
       "Frontend: HTML, CSS, JavaScript, React, Vue.js",
@@ -23,9 +23,9 @@ const trainingServices = [
     duration: "3-6 months",
     level: "Beginner to Advanced"
   },
-  { 
-    icon: Database, 
-    title: "Data Science & AI Training", 
+  {
+    icon: Database,
+    title: "Data Science & AI Training",
     description: "Master data analysis and machine learning fundamentals",
     details: [
       "Python for Data Science",
@@ -37,9 +37,9 @@ const trainingServices = [
     duration: "4-6 months",
     level: "Intermediate to Advanced"
   },
-  { 
-    icon: Wifi, 
-    title: "IoT & Smart Systems Training", 
+  {
+    icon: Wifi,
+    title: "IoT & Smart Systems Training",
     description: "Build connected devices and automation solutions",
     details: [
       "Arduino & Raspberry Pi programming",
@@ -51,9 +51,9 @@ const trainingServices = [
     duration: "3-4 months",
     level: "Beginner to Intermediate"
   },
-  { 
-    icon: BookOpen, 
-    title: "Digital Skills & Literacy", 
+  {
+    icon: BookOpen,
+    title: "Digital Skills & Literacy",
     description: "Essential digital competencies for the modern workplace",
     details: [
       "Microsoft Office Suite mastery",
@@ -68,9 +68,9 @@ const trainingServices = [
 ];
 
 const techServices = [
-  { 
-    icon: Code, 
-    title: "Custom Software Development", 
+  {
+    icon: Code,
+    title: "Custom Software Development",
     description: "Tailored software solutions for your business needs",
     offerings: [
       "Web application development",
@@ -81,9 +81,9 @@ const techServices = [
       "CRM & ERP systems"
     ]
   },
-  { 
-    icon: Database, 
-    title: "Data & AI Solutions", 
+  {
+    icon: Database,
+    title: "Data & AI Solutions",
     description: "Transform your data into actionable insights",
     offerings: [
       "Business intelligence dashboards",
@@ -94,9 +94,9 @@ const techServices = [
       "AI chatbots & virtual assistants"
     ]
   },
-  { 
-    icon: Wifi, 
-    title: "IoT Solutions", 
+  {
+    icon: Wifi,
+    title: "IoT Solutions",
     description: "Smart connected systems for industry and agriculture",
     offerings: [
       "Smart farming solutions",
@@ -107,9 +107,9 @@ const techServices = [
       "Fleet management systems"
     ]
   },
-  { 
-    icon: Building2, 
-    title: "IT Consultancy", 
+  {
+    icon: Building2,
+    title: "IT Consultancy",
     description: "Strategic technology advisory for digital transformation",
     offerings: [
       "Digital transformation strategy",
@@ -169,7 +169,7 @@ const Services = () => {
                 Comprehensive Technology Training & Solutions
               </h1>
               <p className="text-card-foreground/80 max-w-3xl mx-auto text-lg leading-relaxed">
-                From foundational digital skills to advanced AI and IoT solutions, we provide 
+                From foundational digital skills to advanced AI and IoT solutions, we provide
                 end-to-end technology education and services for individuals, businesses, and institutions.
               </p>
               <div className="flex flex-wrap justify-center gap-4 mt-8">
@@ -198,7 +198,7 @@ const Services = () => {
                 Training & Education Programs
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Industry-ready programs designed to transform beginners into job-ready professionals 
+                Industry-ready programs designed to transform beginners into job-ready professionals
                 with practical skills and recognized certifications.
               </p>
             </motion.div>
@@ -259,9 +259,9 @@ const Services = () => {
               viewport={{ once: true }}
               className="relative h-64 lg:h-80 rounded-xl overflow-hidden group"
             >
-              <img 
-                src={internshipImage} 
-                alt="Students in training" 
+              <img
+                src={internshipImage}
+                alt="Students in training"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-card/90 to-card/40 flex items-center">
@@ -270,7 +270,7 @@ const Services = () => {
                     Learn by Doing
                   </h3>
                   <p className="text-card-foreground/80">
-                    Our hands-on approach ensures you build real projects and gain practical experience 
+                    Our hands-on approach ensures you build real projects and gain practical experience
                     that employers value.
                   </p>
                 </div>
@@ -293,7 +293,7 @@ const Services = () => {
                 Technology Services & Solutions
               </h2>
               <p className="text-card-foreground/80 max-w-2xl mx-auto">
-                End-to-end technology solutions to help your business innovate, automate, 
+                End-to-end technology solutions to help your business innovate, automate,
                 and thrive in the digital economy.
               </p>
             </motion.div>
@@ -412,7 +412,7 @@ const Services = () => {
                 Ready to Get Started?
               </h2>
               <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-                Whether you're an individual looking to upskill or an organization seeking technology solutions, 
+                Whether you're an individual looking to upskill or an organization seeking technology solutions,
                 we're here to help you succeed.
               </p>
               <div className="flex flex-wrap justify-center gap-4">

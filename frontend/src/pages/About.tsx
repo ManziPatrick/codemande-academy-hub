@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Target, Lightbulb, Shield, Award, Users, Heart, CheckCircle, Globe, BookOpen, Zap, Briefcase, GraduationCap, Laptop, Cpu, TrendingUp } from "lucide-react";
 import aboutImage from "@/assets/about-training.jpg";
-import heroImage from "@/assets/hero-training.jpg";
+import heroImage from "@/assets/hero-training.webp";
 import { Helmet } from "react-helmet-async";
 
 const values = [

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Mail, MapPin, Phone, Clock, MessageSquare, Users, Briefcase, GraduationCap, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import heroImage from "@/assets/hero-training.jpg";
+import heroImage from "@/assets/hero-training.webp";
 import { supabase } from "@/integrations/supabase/client";
 
 const contactInfo = [

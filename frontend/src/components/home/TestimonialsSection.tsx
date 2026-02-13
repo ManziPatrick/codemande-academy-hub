@@ -2,9 +2,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import { ImageWithSkeleton } from "@/components/ui/image-skeleton";
-import testimonialEmmanuel from "@/assets/testimonial-emmanuel.jpg";
-import testimonialMarie from "@/assets/testimonial-marie.jpg";
-import testimonialJean from "@/assets/testimonial-jean.jpg";
+import testimonialEmmanuel from "@/assets/testimonial-emmanuel.webp";
+import testimonialMarie from "@/assets/testimonial-marie.webp";
+import testimonialJean from "@/assets/testimonial-jean.webp";
 
 const testimonials = [
   {
@@ -83,14 +83,14 @@ export function TestimonialsSection() {
                 >
                   <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
                     {/* Avatar with hover effect */}
-                    <motion.div 
+                    <motion.div
                       className="flex-shrink-0"
                       whileHover={{ scale: 1.05 }}
                       transition={{ duration: 0.3 }}
                     >
                       <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden border-3 border-accent/30 shadow-lg group">
-                        <ImageWithSkeleton 
-                          src={currentTestimonial.image} 
+                        <ImageWithSkeleton
+                          src={currentTestimonial.image}
                           alt={currentTestimonial.author}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                           containerClassName="w-full h-full"
@@ -142,11 +142,10 @@ export function TestimonialsSection() {
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  index === currentIndex
+                className={`h-2 rounded-full transition-all duration-300 ${index === currentIndex
                     ? "bg-accent w-8"
                     : "bg-foreground/20 hover:bg-foreground/40 w-2"
-                }`}
+                  }`}
                 aria-label={`Go to testimonial ${index + 1}`}
               />
             ))}
@@ -159,14 +158,13 @@ export function TestimonialsSection() {
                 key={testimonial.id}
                 onClick={() => setCurrentIndex(index)}
                 whileHover={{ scale: 1.1, y: -4 }}
-                className={`w-12 h-12 rounded-full overflow-hidden transition-all duration-300 ${
-                  index === currentIndex 
-                    ? "ring-2 ring-accent ring-offset-2 ring-offset-background" 
+                className={`w-12 h-12 rounded-full overflow-hidden transition-all duration-300 ${index === currentIndex
+                    ? "ring-2 ring-accent ring-offset-2 ring-offset-background"
                     : "opacity-50 hover:opacity-100"
-                }`}
+                  }`}
               >
-                <img 
-                  src={testimonial.image} 
+                <img
+                  src={testimonial.image}
                   alt={testimonial.author}
                   className="w-full h-full object-cover"
                 />

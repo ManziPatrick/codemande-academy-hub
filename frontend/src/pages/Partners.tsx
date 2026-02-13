@@ -2,15 +2,19 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import testimonialEmmanuel from "@/assets/testimonial-emmanuel.webp";
+import testimonialMarie from "@/assets/testimonial-marie.webp";
+import testimonialJean from "@/assets/testimonial-jean.webp";
+import testimonialSarah from "@/assets/testimonial-sarah.webp";
 import { Button } from "@/components/ui/button";
 import { Building2, GraduationCap, Landmark, Heart, CheckCircle, Handshake, Users, Globe, Award, ArrowRight } from "lucide-react";
-import heroImage from "@/assets/hero-training.jpg";
-import aboutImage from "@/assets/about-training.jpg";
+import heroImage from "@/assets/hero-training.webp";
+import aboutImage from "@/assets/about-training.webp";
 
 const partnerTypes = [
-  { 
-    icon: Building2, 
-    title: "Businesses & Startups", 
+  {
+    icon: Building2,
+    title: "Businesses & Startups",
     description: "Technology solutions, custom software, and corporate training programs",
     benefits: [
       "Custom software development",
@@ -19,9 +23,9 @@ const partnerTypes = [
       "Intern pipeline access"
     ]
   },
-  { 
-    icon: GraduationCap, 
-    title: "Educational Institutions", 
+  {
+    icon: GraduationCap,
+    title: "Educational Institutions",
     description: "Academic partnerships, curriculum development, and guest lectures",
     benefits: [
       "Joint certification programs",
@@ -30,9 +34,9 @@ const partnerTypes = [
       "Lab & resource sharing"
     ]
   },
-  { 
-    icon: Landmark, 
-    title: "Government Agencies", 
+  {
+    icon: Landmark,
+    title: "Government Agencies",
     description: "Digital transformation initiatives and public sector training",
     benefits: [
       "Digital skills programs",
@@ -41,9 +45,9 @@ const partnerTypes = [
       "Technology advisory"
     ]
   },
-  { 
-    icon: Heart, 
-    title: "NGOs & Development Orgs", 
+  {
+    icon: Heart,
+    title: "NGOs & Development Orgs",
     description: "Skills development programs and technology for social impact",
     benefits: [
       "Sponsored training cohorts",
@@ -107,7 +111,7 @@ const Partners = () => {
                 Partners & Clients
               </h1>
               <p className="text-card-foreground/80 max-w-2xl mx-auto text-lg">
-                Collaboration for impact. We work with institutions, businesses, and organizations 
+                Collaboration for impact. We work with institutions, businesses, and organizations
                 to deliver quality training and technology solutions that drive Africa's digital transformation.
               </p>
               <div className="flex flex-wrap justify-center gap-4 mt-8">
@@ -160,7 +164,7 @@ const Partners = () => {
                 Partnership Opportunities
               </h2>
               <p className="text-card-foreground/80 max-w-2xl mx-auto">
-                We collaborate with diverse organizations to create tailored solutions that address 
+                We collaborate with diverse organizations to create tailored solutions that address
                 specific needs and maximize impact.
               </p>
             </motion.div>
@@ -206,9 +210,9 @@ const Partners = () => {
               viewport={{ once: true }}
               className="relative h-64 lg:h-80 rounded-xl overflow-hidden group"
             >
-              <img 
-                src={aboutImage} 
-                alt="Partnership meeting" 
+              <img
+                src={aboutImage}
+                alt="Partnership meeting"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-card/90 to-card/40 flex items-center">
@@ -217,7 +221,7 @@ const Partners = () => {
                     Collaboration Drives Innovation
                   </h3>
                   <p className="text-card-foreground/80">
-                    We believe in the power of partnerships to create solutions that neither 
+                    We believe in the power of partnerships to create solutions that neither
                     party could achieve alone.
                   </p>
                 </div>
@@ -311,7 +315,7 @@ const Partners = () => {
                 Ready to Partner With Us?
               </h2>
               <p className="text-muted-foreground mb-6">
-                Join us in building Africa's digital future. Whether you're looking for talent, 
+                Join us in building Africa's digital future. Whether you're looking for talent,
                 training, or technology solutions, we'd love to explore how we can work together.
               </p>
               <div className="flex flex-wrap justify-center gap-4">

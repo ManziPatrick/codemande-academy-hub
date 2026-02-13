@@ -2,7 +2,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { Calendar, ArrowRight, Clock, User, Tag, Search, Loader2 } from "lucide-react";
-import heroImage from "@/assets/hero-training.jpg";
+import heroImage from "@/assets/hero-training.webp";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";

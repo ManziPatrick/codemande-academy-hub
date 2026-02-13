@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ImageWithSkeleton } from "@/components/ui/image-skeleton";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
-import heroImage from "@/assets/hero-training.jpg";
+import heroImage from "@/assets/hero-training.webp";
 
 export function HeroSection() {
   return (
