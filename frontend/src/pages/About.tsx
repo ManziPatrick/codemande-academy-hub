@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Target, Lightbulb, Shield, Award, Users, Heart, CheckCircle, Globe, BookOpen, Zap, Briefcase, GraduationCap, Laptop, Cpu, TrendingUp } from "lucide-react";
-import aboutImage from "@/assets/about-training.jpg";
+import aboutImage from "@/assets/about-training.webp";
+import aboutImageMobile from "@/assets/about-training-mobile.webp";
 import heroImage from "@/assets/hero-training.webp";
+import heroImageMobile from "@/assets/hero-training-mobile.webp";
 import { Helmet } from "react-helmet-async";
 
 const values = [
@@ -99,7 +101,14 @@ const About = () => {
         {/* Hero Section */}
         <section className="py-16 lg:py-24 bg-card relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
-            <img src={heroImage} alt="" className="w-full h-full object-cover" />
+            <img
+              src={heroImage}
+              srcSet={`${heroImageMobile} 600w, ${heroImage} 1280w`}
+              sizes="100vw"
+              alt=""
+              className="w-full h-full object-cover"
+              loading="eager"
+            />
           </div>
           <div className="container mx-auto px-4 lg:px-8 relative z-10">
             <motion.div
@@ -164,8 +173,11 @@ const About = () => {
                 <div className="aspect-[4/3] rounded-xl overflow-hidden shadow-card group">
                   <img
                     src={aboutImage}
+                    srcSet={`${aboutImageMobile} 600w, ${aboutImage} 1280w`}
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                     alt="CODEMANDE training session"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-card/60 to-transparent" />
                 </div>

@@ -10,7 +10,9 @@ import testimonialJean from "@/assets/testimonial-jean.webp";
 import testimonialSarah from "@/assets/testimonial-sarah.webp";
 import { Briefcase, Code, Database, Wifi, Award, FolderOpen, Users, Clock, CheckCircle, ArrowRight, Target, Calendar, Globe } from "lucide-react";
 import internshipImage from "@/assets/internship-work.webp";
+import internshipImageMobile from "@/assets/internship-work-mobile.webp";
 import heroImage from "@/assets/hero-training.webp";
+import heroImageMobile from "@/assets/hero-training-mobile.webp";
 
 const internships = [
   {
@@ -81,7 +83,14 @@ const Internships = () => {
         {/* Hero */}
         <section className="py-16 lg:py-24 bg-card relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
-            <img src={heroImage} alt="" className="w-full h-full object-cover" />
+            <img
+              src={heroImage}
+              srcSet={`${heroImageMobile} 600w, ${heroImage} 1280w`}
+              sizes="100vw"
+              alt=""
+              className="w-full h-full object-cover"
+              loading="eager"
+            />
           </div>
           <div className="container mx-auto px-4 lg:px-8 relative z-10 text-center">
             <motion.div
@@ -158,8 +167,11 @@ const Internships = () => {
             >
               <img
                 src={internshipImage}
+                srcSet={`${internshipImageMobile} 600w, ${internshipImage} 1280w`}
+                sizes="(max-width: 1024px) 100vw, 80vw"
                 alt="Interns collaborating on a project"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/40 to-transparent flex items-end">
                 <div className="p-8 lg:p-12 max-w-2xl">

@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
 import { Code, Database, Wifi, ExternalLink, CheckCircle, Users, Calendar } from "lucide-react";
 import heroImage from "@/assets/hero-training.webp";
-import internshipImage from "@/assets/internship-work.jpg";
+import heroImageMobile from "@/assets/hero-training-mobile.webp";
+import internshipImage from "@/assets/internship-work.webp";
+import internshipImageMobile from "@/assets/internship-work-mobile.webp";
 
 const projects = [
   {
@@ -86,7 +88,14 @@ const Projects = () => {
         {/* Hero */}
         <section className="py-16 lg:py-24 bg-card relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
-            <img src={heroImage} alt="" className="w-full h-full object-cover" />
+            <img
+              src={heroImage}
+              srcSet={`${heroImageMobile} 600w, ${heroImage} 1280w`}
+              sizes="100vw"
+              alt=""
+              className="w-full h-full object-cover"
+              loading="eager"
+            />
           </div>
           <div className="container mx-auto px-4 lg:px-8 relative z-10 text-center">
             <motion.div
@@ -207,8 +216,11 @@ const Projects = () => {
             >
               <img
                 src={internshipImage}
+                srcSet={`${internshipImageMobile} 600w, ${internshipImage} 1280w`}
+                sizes="(max-width: 1024px) 100vw, 80vw"
                 alt="Our team at work"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-card/90 to-card/40 flex items-center">
                 <div className="px-8 lg:px-12 max-w-xl">

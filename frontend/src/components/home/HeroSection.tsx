@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ImageWithSkeleton } from "@/components/ui/image-skeleton";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
 import heroImage from "@/assets/hero-training.webp";
+import heroImageMobile from "@/assets/hero-training-mobile.webp";
 
 export function HeroSection() {
   return (
@@ -12,6 +13,8 @@ export function HeroSection() {
       <div className="absolute inset-0 z-0">
         <ImageWithSkeleton
           src={heroImage}
+          srcSet={`${heroImageMobile} 600w, ${heroImage} 1920w`}
+          sizes="(max-width: 600px) 100vw, 100vw"
           alt="CODEMANDE training session"
           loading="eager"
           fetchPriority="high"

@@ -8,6 +8,7 @@ import { Mail, MapPin, Phone, Clock, MessageSquare, Users, Briefcase, Graduation
 import { useState } from "react";
 import { toast } from "sonner";
 import heroImage from "@/assets/hero-training.webp";
+import heroImageMobile from "@/assets/hero-training-mobile.webp";
 import { supabase } from "@/integrations/supabase/client";
 
 const contactInfo = [
@@ -75,7 +76,14 @@ const Contact = () => {
         {/* Hero */}
         <section className="py-16 lg:py-24 bg-card relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
-            <img src={heroImage} alt="" className="w-full h-full object-cover" />
+            <img
+              src={heroImage}
+              srcSet={`${heroImageMobile} 600w, ${heroImage} 1280w`}
+              sizes="100vw"
+              alt=""
+              className="w-full h-full object-cover"
+              loading="eager"
+            />
           </div>
           <div className="container mx-auto px-4 lg:px-8 relative z-10 text-center">
             <motion.div

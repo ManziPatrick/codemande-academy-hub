@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
 import { Code, Database, Wifi, Clock, Users, Award, CheckCircle, BookOpen, Target, Briefcase, Calendar, ArrowRight, Brain, Shield, Building2, Stethoscope, GraduationCap, Landmark, ShoppingBag, Factory, BarChart, ChevronRight } from "lucide-react";
 import heroImage from "@/assets/hero-training.webp";
-import aboutImage from "@/assets/about-training.jpg";
+import heroImageMobile from "@/assets/hero-training-mobile.webp";
+import aboutImage from "@/assets/about-training.webp";
+import aboutImageMobile from "@/assets/about-training-mobile.webp";
 import { useEffect, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_COURSES } from "@/lib/graphql/queries";
@@ -103,7 +105,14 @@ const Training = () => {
         {/* Hero */}
         <section className="py-16 lg:py-24 bg-card relative overflow-hidden">
           <div className="absolute inset-0 opacity-10">
-            <img src={heroImage} alt="" className="w-full h-full object-cover" />
+            <img
+              src={heroImage}
+              srcSet={`${heroImageMobile} 600w, ${heroImage} 1280w`}
+              sizes="100vw"
+              alt=""
+              className="w-full h-full object-cover"
+              loading="eager"
+            />
           </div>
           <div className="container mx-auto px-4 lg:px-8 relative z-10 text-center">
             <motion.div
@@ -385,8 +394,11 @@ const Training = () => {
             >
               <img
                 src={aboutImage}
+                srcSet={`${aboutImageMobile} 600w, ${aboutImage} 1280w`}
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 alt="Training session at CODEMANDE"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-card/90 to-transparent flex items-center">
                 <div className="px-8 lg:px-12 max-w-lg">
