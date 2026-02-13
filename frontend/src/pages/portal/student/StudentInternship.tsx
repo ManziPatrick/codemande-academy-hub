@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeTracking } from "./components/TimeTracking";
-import { ApplyInternshipDialog, BookCallDialog, TeamChatDialog, ProjectDetailsDialog } from "@/components/portal/dialogs";
+import { ApplyInternshipDialog, BookCallDialog, TeamChatDialog, ProjectDetailsDialog, SubmitProofDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_MY_INTERNSHIP } from "@/lib/graphql/queries";
@@ -81,6 +81,7 @@ export default function StudentInternship() {
   const [activeProject, setActiveProject] = useState<any>(null);
   const [projectDetailsOpen, setProjectDetailsOpen] = useState(false);
   const [graduationOpen, setGraduationOpen] = useState(false);
+  const [proofDialogOpen, setProofDialogOpen] = useState(false);
 
   useEffect(() => {
     if (internship?.stage === "Graduated" || internship?.status === "graduated") {
@@ -199,26 +200,16 @@ export default function StudentInternship() {
                           <div className="flex-1 text-center md:text-left">
                             <h3 className="text-lg font-bold mb-1">Activation Required</h3>
                             <p className="text-sm text-muted-foreground mb-4 md:mb-0">
-                              Your application is registered! Please pay the one-time application fee of 20,000 RWF to activate your internship and start Stage 1.
+                              Your application is registered! Please upload proof of payment for the one-time application fee of 20,000 RWF. Once verified by admin, your internship will be activated and you can start Stage 1.
                             </p>
                           </div>
                           <Button
                             variant="gold"
                             size="lg"
                             className="shrink-0 shadow-lg shadow-gold/20"
-                            onClick={handlePay}
-                            disabled={isPaying}
+                            onClick={() => setProofDialogOpen(true)}
                           >
-                            {isPaying ? (
-                              <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                Processing...
-                              </>
-                            ) : (
-                              <>
-                                Pay Now <ArrowRight className="w-4 h-4 ml-2" />
-                              </>
-                            )}
+                            Upload Payment Proof <ArrowRight className="w-4 h-4 ml-2" />
                           </Button>
                         </div>
                       </CardContent>
@@ -586,6 +577,18 @@ export default function StudentInternship() {
         onOpenChange={setGraduationOpen}
         internship={internship}
       />
+      {internship?.payment && (
+        <SubmitProofDialog
+          open={proofDialogOpen}
+          onOpenChange={setProofDialogOpen}
+          payment={{
+            id: internship.payment.id || internship.id,
+            itemTitle: "Internship Application Fee",
+            amount: internship.payment.amount || 20000,
+            currency: internship.payment.currency || "RWF"
+          }}
+        />
+      )}
     </PortalLayout>
   );
 }

@@ -3273,11 +3273,12 @@ export const resolvers = {
     applyToInternshipWithValidation: async (_: any, args: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
 
-      // Check profile completion
-      const profile = await StudentProfile.findOne({ userId: context.user.id });
-      if (!profile || !profile.isComplete) {
-        throw new Error('PROFILE_INCOMPLETE: Please complete your student profile before applying. Required: school, education level, field of study, skills, and availability.');
-      }
+
+      // Profile completion check removed - users can fill missing fields in application form
+      // const profile = await StudentProfile.findOne({ userId: context.user.id });
+      // if (!profile || !profile.isComplete) {
+      //   throw new Error('PROFILE_INCOMPLETE: Please complete your student profile before applying. Required: school, education level, field of study, skills, and availability.');
+      // }
 
       // Check if already applied
       const existingApp = await InternshipApplication.findOne({

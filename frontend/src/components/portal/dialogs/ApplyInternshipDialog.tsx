@@ -18,13 +18,13 @@ interface ApplyInternshipDialogProps {
   onApply?: () => void;
 }
 
-export function ApplyInternshipDialog({ 
-  open, 
-  onOpenChange, 
-  onApply 
+export function ApplyInternshipDialog({
+  open,
+  onOpenChange,
+  onApply
 }: ApplyInternshipDialogProps) {
   const { user } = useAuth();
-  const [step, setStep] = useState<"info" | "payment" | "success">("info");
+  const [step, setStep] = useState<"info" | "success">("info");
   const [formData, setFormData] = useState({
     motivation: "",
     availability: "",
@@ -83,24 +83,24 @@ export function ApplyInternshipDialog({
           currency: "RWF",
           status: "pending"
         },
-        organization: "CODEMANDE Academy"
+        organization: "CODEMANDE Summer Tech Immersion 2026"
       }
     });
   };
 
   const handleClose = () => {
     setStep("info");
-    setFormData({ 
-      motivation: "", 
-      availability: "", 
-      portfolio: "", 
+    setFormData({
+      motivation: "",
+      availability: "",
+      portfolio: "",
       phone: "",
       isStudent: true,
       schoolName: "",
       level: "",
       languages: "",
       skills: "",
-      agreeToTerms: false 
+      agreeToTerms: false
     });
     onOpenChange(false);
   };
@@ -179,17 +179,17 @@ export function ApplyInternshipDialog({
                 <div className="space-y-4 pt-2">
                   <Label>Are you currently a student?</Label>
                   <div className="flex gap-4">
-                    <Button 
+                    <Button
                       type="button"
-                      variant={formData.isStudent ? "gold" : "outline"} 
+                      variant={formData.isStudent ? "gold" : "outline"}
                       className="flex-1"
                       onClick={() => setFormData({ ...formData, isStudent: true })}
                     >
                       Yes, I am
                     </Button>
-                    <Button 
+                    <Button
                       type="button"
-                      variant={!formData.isStudent ? "gold" : "outline"} 
+                      variant={!formData.isStudent ? "gold" : "outline"}
                       className="flex-1"
                       onClick={() => setFormData({ ...formData, isStudent: false })}
                     >
@@ -250,7 +250,7 @@ export function ApplyInternshipDialog({
                   <Checkbox
                     id="terms"
                     checked={formData.agreeToTerms}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={(checked) =>
                       setFormData({ ...formData, agreeToTerms: checked as boolean })
                     }
                   />
@@ -265,62 +265,20 @@ export function ApplyInternshipDialog({
               <Button variant="outline" className="flex-1" onClick={handleClose}>
                 Cancel
               </Button>
-              <Button 
-                variant="gold" 
-                className="flex-1" 
-                onClick={() => setStep("payment")}
-                disabled={!formData.motivation || !formData.availability || !formData.agreeToTerms}
+              <Button
+                variant="gold"
+                className="flex-1"
+                onClick={handleApply}
+                disabled={!formData.motivation || !formData.availability || !formData.agreeToTerms || isSubmitting}
               >
-                Proceed <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </div>
-          </>
-        )}
-
-        {step === "payment" && (
-          <>
-            <div className="flex-1 px-4 sm:px-6 overflow-y-auto custom-scrollbar">
-              <div className="space-y-6 py-6 text-center">
-                <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <CreditCard className="w-8 h-8 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Application Fee</p>
-                  <p className="text-3xl font-bold text-foreground">20,000 RWF</p>
-                </div>
-
-                <div className="space-y-3 text-left">
-                  <p className="text-sm font-medium">Select Payment Method</p>
-                  <div className="grid gap-3">
-                    <Button variant="outline" className="justify-start h-16 px-4 gap-4 border-accent/20 bg-accent/5 ring-1 ring-accent">
-                      <Smartphone className="w-6 h-6 text-accent" />
-                      <div className="text-left">
-                        <p className="font-medium">MTN Mobile Money</p>
-                        <p className="text-[10px] text-muted-foreground">Fast and secure local payment</p>
-                      </div>
-                    </Button>
-                  </div>
-                  <div className="mt-2">
-                    <Label className="text-xs mb-1.5 block">Phone Number</Label>
-                    <Input placeholder="078XXXXXXX" className="bg-background" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2 p-4 sm:p-6 border-t border-border">
-              <Button variant="outline" className="flex-1" onClick={() => setStep("info")}>
-                Back
-              </Button>
-              <Button variant="gold" className="flex-1" onClick={handleApply} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                    Processing...
+                    Submitting...
                   </>
                 ) : (
                   <>
-                    Pay & Submit <CheckCircle className="w-4 h-4 ml-2" />
+                    Submit Application <CheckCircle className="w-4 h-4 ml-2" />
                   </>
                 )}
               </Button>
@@ -337,8 +295,9 @@ export function ApplyInternshipDialog({
               Registration Successful!
             </h3>
             <p className="text-muted-foreground mb-6">
-              You are now registered for the program. Next, you need to complete the 
-              application fee payment from your internship dashboard to activate your profile.
+              Your application is registered! Please complete the application fee payment
+              of 20,000 RWF from your internship dashboard to activate your profile.
+              Upload your payment proof and wait for admin approval.
             </p>
             <Button variant="gold" className="w-full" onClick={handleClose}>
               Go to Dashboard

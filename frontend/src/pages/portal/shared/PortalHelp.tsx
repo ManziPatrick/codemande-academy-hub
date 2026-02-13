@@ -36,7 +36,7 @@ const faqs = [
   },
   {
     question: "How do I qualify for an internship?",
-    answer: "Complete at least 80% of your enrolled course, pass all challenges, and submit your final project. Once eligible, you can apply for internship placement with a 20,000 RWF fee."
+    answer: "Complete at least 80% of your enrolled course, pass all challenges, and submit your final project. Once eligible, you can apply for internship placement with a 20,000 RWF fee. Upload your payment proof and wait for admin approval before starting."
   },
   {
     question: "How do I get a certificate?",

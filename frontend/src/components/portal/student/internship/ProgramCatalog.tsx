@@ -154,40 +154,18 @@ export function ProgramCatalog() {
             <DialogTitle>Apply to {applyingTo?.title}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleApply} className="space-y-4 py-4">
-            {!profile?.isComplete ? (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 space-y-3">
-                <p className="text-sm font-semibold flex items-center gap-2 text-destructive">
-                  <AlertCircle className="w-4 h-4" />
-                  Profile Incomplete
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  You must complete your student profile before applying for internships.
-                  Currently, your profile is <strong>{profile?.completionPercentage || 0}%</strong> complete.
-                </p>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="w-full text-xs"
-                  onClick={() => window.location.href = '/portal/student/profile'}
-                >
-                  Complete My Profile
-                </Button>
-              </div>
-            ) : (
-              <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 space-y-2">
-                <p className="text-sm font-medium flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-accent" />
-                  Application Guidelines
-                </p>
-                <ul className="text-xs text-muted-foreground space-y-1 ml-6 list-disc">
-                  <li>Ensure all information is accurate and up-to-date</li>
-                  <li>List your technical skills honestly</li>
-                  <li>Portfolio links help strengthen your application</li>
-                  <li>You'll receive a response within 5 business days</li>
-                </ul>
-              </div>
-            )}
+            <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-accent" />
+                Application Guidelines
+              </p>
+              <ul className="text-xs text-muted-foreground space-y-1 ml-6 list-disc">
+                <li>Ensure all information is accurate and up-to-date</li>
+                <li>List your technical skills honestly</li>
+                <li>Portfolio links help strengthen your application</li>
+                <li>You'll receive a response within 5 business days</li>
+              </ul>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="skills">Technical Skills (comma-separated) *</Label>
@@ -195,6 +173,7 @@ export function ProgramCatalog() {
                 id="skills"
                 name="skills"
                 placeholder="e.g., JavaScript, React, Node.js, Python"
+                defaultValue={profile?.skills?.join(", ") || ""}
                 required
               />
               <p className="text-xs text-muted-foreground">List all relevant programming languages and frameworks</p>
@@ -206,6 +185,7 @@ export function ProgramCatalog() {
                 id="availability"
                 name="availability"
                 placeholder="e.g., Full-time, Part-time (20hrs/week)"
+                defaultValue={profile?.availability || ""}
                 required
               />
             </div>
@@ -217,6 +197,7 @@ export function ProgramCatalog() {
                 name="portfolioUrl"
                 type="url"
                 placeholder="https://github.com/yourusername"
+                defaultValue={profile?.portfolioUrl || ""}
               />
               <p className="text-xs text-muted-foreground">Share your best work to stand out</p>
             </div>
@@ -229,10 +210,9 @@ export function ProgramCatalog() {
                 type="submit"
                 variant="default"
                 className="gap-2"
-                disabled={!profile?.isComplete}
               >
                 <Send className="w-4 h-4" />
-                {profile?.isComplete ? 'Submit Application' : 'Profile Required'}
+                Submit Application
               </Button>
             </DialogFooter>
           </form>
