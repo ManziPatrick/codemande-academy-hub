@@ -21,12 +21,5 @@ ENV NODE_ENV=production
 
 EXPOSE 4000
 
-# Run all seeds and start the application
-CMD echo "Starting seeding process..." && \
-    node dist/seed.js && echo "✅ Main seed completed" && \
-    node dist/seedInternship.js && echo "✅ Internship seed completed" && \
-    node dist/seedBlogs.js && echo "✅ Blogs seed completed" && \
-    node dist/seedTestUsers.js && echo "✅ Test users seed completed" && \
-    node dist/seedPublicTeam.js && echo "✅ Team seed completed" && \
-    echo "🚀 All seeds completed! Starting application..." && \
-    node dist/index.js
+# Run start the application
+CMD node dist/index.js
