@@ -1584,3 +1584,33 @@ export const GET_NOTIFICATIONS = gql`
     }
   }
 `;
+
+export const GET_PROJECT_TEMPLATES = gql`
+  query GetProjectTemplates($category: String, $course: String) {
+    projectTemplates(category: $category, course: $course) {
+      id
+      title
+      description
+      course
+      type
+      category
+      visibility
+      isTemplate
+      deadline
+      tasks {
+        id
+        title
+      }
+      milestones {
+        title
+      }
+      documentation {
+        links {
+            title
+            url
+        }
+      }
+      createdAt
+    }
+  }
+`;

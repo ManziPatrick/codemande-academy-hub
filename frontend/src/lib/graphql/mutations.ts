@@ -1210,3 +1210,34 @@ export const ASSIGN_PROJECT_TO_USERS = gql`
     }
   }
 `;
+
+export const REQUEST_PROJECT_START = gql`
+  mutation RequestProjectStart($templateId: ID!, $type: String!, $teamMembers: [ID]) {
+    requestProjectStart(templateId: $templateId, type: $type, teamMembers: $teamMembers) {
+      id
+      title
+      status
+      type
+    }
+  }
+`;
+
+export const APPROVE_PROJECT_REQUEST = gql`
+  mutation ApproveProjectRequest($projectId: ID!, $approved: Boolean!, $feedback: String) {
+    approveProjectRequest(projectId: $projectId, approved: $approved, feedback: $feedback) {
+      id
+      status
+      feedback
+    }
+  }
+`;
+
+export const TOGGLE_PROJECT_TEMPLATE = gql`
+  mutation ToggleProjectTemplate($id: ID!, $visibility: String) {
+    toggleProjectTemplate(id: $id, visibility: $visibility) {
+      id
+      isTemplate
+      visibility
+    }
+  }
+`;
