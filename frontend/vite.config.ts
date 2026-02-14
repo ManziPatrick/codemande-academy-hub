@@ -11,7 +11,10 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
-    allowedHosts: ["codemande-academy-fn.andasy.dev", "codemande.com"],
+    allowedHosts: true,
+  },
+  preview: {
+    allowedHosts: true,
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
