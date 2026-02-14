@@ -2416,6 +2416,7 @@ export const resolvers = {
     },
 
     assignProjectToUsers: async (_: any, { projectId, userIds, type, deadline }: any, context: any) => {
+      // Allow admins to assign ANY template (even drafts)
       if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
         throw new Error('Not authorized');
       }
@@ -2436,7 +2437,8 @@ export const resolvers = {
             description: sourceProject.description,
             course: sourceProject.course,
             type: 'Individual',
-            status: 'in_progress',
+            status: 'in_progress', // Direct assignment skips approval
+            category: sourceProject.category,
             progress: 0,
             deadline: deadline ? new Date(deadline) : sourceProject.deadline,
             tasks: (sourceProject.tasks || []).map((t: any) => ({ ...t, completed: false, approved: false, feedback: '' })),
@@ -2459,12 +2461,16 @@ export const resolvers = {
         }));
 
         const newProject = new Project({
-          userId: context.user.id,
+          userId: context.user.id, // Or the first student? Usually trainer assigns to themselves as owner or first student?
+          // Let's assign to the first student for now, or keep it generic. 
+          // Actually, for team projects, usually one student is the 'owner' in the schema, 
+          // or we need a specific owner. Let's use the first user in the list as owner.
           title: sourceProject.title,
           description: sourceProject.description,
           course: sourceProject.course,
           type: 'Team Project',
-          status: 'in_progress',
+          status: 'in_progress', // Direct assignment skips approval
+          category: sourceProject.category,
           progress: 0,
           deadline: deadline ? new Date(deadline) : sourceProject.deadline,
           tasks: (sourceProject.tasks || []).map((t: any) => ({ ...t, completed: false, approved: false, feedback: '' })),
@@ -2477,11 +2483,103 @@ export const resolvers = {
             submissions: []
           })),
         });
+        // Override userId to be the first team member if context.user is admin
+        if (users.length > 0) {
+          newProject.userId = users[0]._id;
+        }
+
         await newProject.save();
         createdProjects.push(newProject);
       }
 
       return await Project.populate(createdProjects, 'userId mentors team.userId');
+    },
+
+    requestProjectStart: async (_: any, { templateId, type, teamMembers }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      const template = await Project.findById(templateId);
+      if (!template) throw new Error('Template not found');
+      if (template.visibility !== 'public' && !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('This project is not available for request');
+      }
+
+      let team: { userId: string; name: string; role: string }[] = [];
+      if (type === 'Team Project' && teamMembers && teamMembers.length > 0) {
+        const users = await User.find({ _id: { $in: teamMembers } });
+        team = users.map(u => ({
+          userId: u._id.toString(),
+          name: u.username,
+          role: 'Member'
+        }));
+        // Add self
+        team.push({ userId: context.user.id, name: context.user.username, role: 'Leader' });
+      }
+
+      const newProject = new Project({
+        userId: context.user.id,
+        title: template.title,
+        description: template.description,
+        course: template.course,
+        type: type,
+        category: template.category,
+        status: 'pending_approval', // Needs approval
+        progress: 0,
+        deadline: template.deadline, // Copy default deadline or leave null
+        tasks: (template.tasks || []).map((t: any) => ({ ...t, completed: false, approved: false, feedback: '' })),
+        mentors: template.mentors,
+        team: team,
+        documentation: template.documentation,
+        milestones: template.milestones?.map((m: any) => ({
+          ...m.toObject(),
+          completed: false,
+          submissions: []
+        })),
+        parentProject: template._id // Track origin
+      });
+
+      await newProject.save();
+      return newProject;
+    },
+
+    approveProjectRequest: async (_: any, { projectId, approved, feedback }: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      const project = await Project.findById(projectId);
+      if (!project) throw new Error('Project not found');
+
+      if (approved) {
+        project.status = 'in_progress';
+        project.startDate = new Date();
+        // project.feedback = feedback; // Optional initial feedback?
+      } else {
+        project.status = 'rejected';
+        project.feedback = feedback;
+      }
+
+      await project.save();
+      return project;
+    },
+
+    toggleProjectTemplate: async (_: any, { id, visibility }: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      const project = await Project.findById(id);
+      if (!project) throw new Error('Project not found');
+
+      project.isTemplate = !project.isTemplate;
+      if (visibility) {
+        project.visibility = visibility;
+      }
+      // Ensure category matches valid enum if needed, or default
+      if (!project.category) project.category = 'Other';
+
+      await project.save();
+      return project;
     },
 
     sendMessageToProject: async (_: any, { projectId, content }: any, context: any) => {

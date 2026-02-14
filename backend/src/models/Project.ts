@@ -5,7 +5,10 @@ export interface IProject extends Document {
   title: string;
   course: string;
   type: string; // 'Team Project' or 'Individual'
-  status: string; // 'in_progress', 'pending_review', 'completed'
+  status: string; // 'in_progress', 'pending_review', 'completed', 'pending_approval', 'rejected'
+  isTemplate: boolean;
+  visibility: string; // 'public', 'private', 'draft'
+  category: string; // 'Internship', 'Training', 'Capstone', 'Other'
   progress: number;
   deadline?: Date;
   submittedAt?: Date;
@@ -74,7 +77,10 @@ const ProjectSchema: Schema = new Schema(
     title: { type: String, required: true },
     course: { type: String, required: true },
     type: { type: String, required: true, enum: ['Team Project', 'Individual'] },
-    status: { type: String, required: true, enum: ['in_progress', 'pending_review', 'completed'], default: 'in_progress' },
+    status: { type: String, required: true, enum: ['in_progress', 'pending_review', 'completed', 'pending_approval', 'rejected'], default: 'in_progress' },
+    isTemplate: { type: Boolean, default: false },
+    visibility: { type: String, enum: ['public', 'private', 'draft'], default: 'draft' },
+    category: { type: String, enum: ['Internship', 'Training', 'Capstone', 'Other'], default: 'Other' },
     progress: { type: Number, default: 0, min: 0, max: 100 },
     deadline: { type: Date },
     submittedAt: { type: Date },

@@ -178,19 +178,7 @@ export const typeDefs = `#graphql
     updatedAt: String!
   }
 
-  type Resource {
-    id: ID!
-    title: String!
-    type: String!
-    source: String!
-    url: String!
-    linkedTo: ID
-    onModel: String
-    visibility: String
-    createdBy: User
-    createdAt: String
-    updatedAt: String
-  }
+
 
   input ResourceInput {
     title: String!
@@ -312,6 +300,9 @@ export const typeDefs = `#graphql
     course: String!
     type: String!
     status: String!
+    isTemplate: Boolean
+    visibility: String
+    category: String
     progress: Int!
     deadline: String
     submittedAt: String
@@ -546,7 +537,9 @@ export const typeDefs = `#graphql
 
     # Projects
     projects: [Project]
+    projectTemplates(category: String, course: String): [Project]
     myProjects: [Project]
+
     project(id: ID!): Project
     
     # Certificates
@@ -589,15 +582,7 @@ export const typeDefs = `#graphql
     status: String
   }
 
-  input ResourceInput {
-    title: String!
-    url: String!
-    type: String!
-    source: String
-    linkedTo: ID
-    onModel: String
-    visibility: String
-  }
+
 
   input LessonInput {
     id: ID
@@ -746,6 +731,18 @@ export const typeDefs = `#graphql
     # Badges
     awardBadge(userId: ID!, badgeId: ID!): User
     
+
+
+    # Badges
+
+    
+    # Project Templates
+    enrollInProject(templateId: ID!, type: String!, teamMembers: [ID]): Project @deprecated(reason: "Use requestProjectStart instead")
+    requestProjectStart(templateId: ID!, type: String!, teamMembers: [ID]): Project
+    approveProjectRequest(projectId: ID!, approved: Boolean!, feedback: String): Project
+    toggleProjectTemplate(id: ID!, visibility: String): Project
+    assignProjectToUsers(projectId: ID!, userIds: [ID!]!, type: String!, deadline: String): [Project]
+
     enroll(courseId: ID!): Course
     createCourse(
       title: String!
@@ -934,7 +931,7 @@ export const typeDefs = `#graphql
     approveProjectTask(projectId: ID!, taskId: String!, approved: Boolean!, feedback: String): Project
     gradeProject(id: ID!, grade: String!, feedback: String!): Project
     assignGroupProject(internshipIds: [ID!], title: String!, description: String!, repoUrl: String, deadline: String, mentorIds: [ID!]): Project
-    assignProjectToUsers(projectId: ID!, userIds: [ID!]!, type: String!, deadline: String): [Project]
+
 
     # New Internship Module Mutations
     createInternshipProgram(title: String!, description: String!, duration: String!, startDate: String!, endDate: String!, applicationDeadline: String!, eligibility: [String], rules: String, price: Float, currency: String, image: String): InternshipProgram
