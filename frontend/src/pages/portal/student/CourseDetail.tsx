@@ -338,10 +338,37 @@ export default function CourseDetail() {
                         <ChevronLeft className="w-4 h-4 mr-1.5" />
                         Previous Block
                       </Button>
-                      <Button variant="gold" className="px-8 shadow-lg shadow-gold/20" onClick={handleMarkComplete}>
-                        {currentIndex === allLessons.length - 1 ? "Complete Track" : "Mark Complete & Continue"}
-                        <ChevronRight className="w-4 h-4 ml-2" />
-                      </Button>
+
+                      {(() => {
+                        const isAssignment = currentLesson?.type === 'assignment' || currentLesson?.isAssignment;
+                        const submission = (submissionsData as any)?.getAssignmentSubmissions?.[0];
+                        const isPending = isAssignment && (!submission || submission.status === 'pending');
+                        const isApproved = isAssignment && (submission?.status === 'reviewed' || submission?.status === 'graded');
+
+                        if (isAssignment) {
+                          if (!submission) {
+                            return (
+                              <Button variant="outline" className="px-8 border-accent text-accent" onClick={() => (document.querySelector('button[value="overview"]') as HTMLElement)?.click()}>
+                                Submit Assignment to Continue
+                              </Button>
+                            );
+                          } else if (submission.status === 'pending') {
+                            return (
+                              <Button variant="secondary" className="px-8" disabled>
+                                <Clock className="w-4 h-4 mr-2" />
+                                Waiting for Review
+                              </Button>
+                            );
+                          }
+                        }
+
+                        return (
+                          <Button variant="gold" className="px-8 shadow-lg shadow-gold/20" onClick={handleMarkComplete}>
+                            {currentIndex === allLessons.length - 1 ? "Complete Track" : "Mark Complete & Continue"}
+                            <ChevronRight className="w-4 h-4 ml-2" />
+                          </Button>
+                        );
+                      })()}
                     </div>
                   </CardContent>
                 </Card>

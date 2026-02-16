@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, User, LogOut } from "lucide-react";
+import { Menu, X, User, LogOut, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useQuery } from "@apollo/client/react";
+import { GET_UNREAD_NOTIFICATIONS } from "@/lib/graphql/queries";
 
 const navLinks = [
   { name: "Home", href: "/" },
   { name: "About", href: "/about" },
   { name: "Services", href: "/services" },
-  { name: "Training", href: "http://localhost:8080/training" },
+  { name: "Training", href: "/training" },
   { name: "Internships", href: "/internships" },
   { name: "Projects", href: "/projects" },
   { name: "Team", href: "/team" },
@@ -27,6 +29,12 @@ export function Header() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const { branding } = useBranding();
+
+  const { data: notificationData } = useQuery(GET_UNREAD_NOTIFICATIONS, {
+    skip: !isAuthenticated,
+    pollInterval: 30000, // Poll every 30 seconds
+  });
+  const unreadCount = notificationData?.unreadNotificationCount || 0;
 
   const handleLogout = () => {
     logout();
@@ -90,14 +98,24 @@ export function Header() {
           <div className="flex items-center gap-3">
             <ThemeToggle />
 
+            {/* Notification Bell - Desktop */}
+            {isAuthenticated && (
+              <Button variant="ghost" size="icon" className="relative text-card-foreground hover:text-accent hidden md:flex">
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                )}
+              </Button>
+            )}
+
             {/* Auth Buttons - Desktop Only (Hidden under 1280px) */}
             <div className="hidden xl:flex items-center gap-3">
               {isAuthenticated ? (
                 <>
-                  <Link to="/portal/student">
+                  <Link to={user?.role === 'trainer' ? "/portal/trainer" : user?.role === 'admin' || user?.role === 'super_admin' ? "/portal/admin" : "/portal/student"}>
                     <Button variant="gold" size="default" className="gap-2">
                       <User size={16} />
-                      Student Portal
+                      {user?.role === 'trainer' ? "Trainer Portal" : user?.role === 'admin' || user?.role === 'super_admin' ? "Admin Portal" : "Student Portal"}
                     </Button>
                   </Link>
                   <Button
@@ -162,10 +180,10 @@ export function Header() {
             ))}
             {isAuthenticated ? (
               <>
-                <Link to="/portal/student">
+                <Link to={user?.role === 'trainer' ? "/portal/trainer" : user?.role === 'admin' || user?.role === 'super_admin' ? "/portal/admin" : "/portal/student"}>
                   <Button variant="gold" size="lg" className="mt-2 w-full gap-2">
                     <User size={18} />
-                    Student Portal
+                    {user?.role === 'trainer' ? "Trainer Portal" : user?.role === 'admin' || user?.role === 'super_admin' ? "Admin Portal" : "Student Portal"}
                   </Button>
                 </Link>
                 <Button

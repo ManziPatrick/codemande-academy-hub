@@ -1,4 +1,4 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 
 export const CHAT_WITH_AI = gql`
   mutation ChatWithAI($message: String!) {
@@ -28,6 +28,33 @@ export const REVIEW_SUBMISSION = gql`
 export const LOGIN_USER = gql`
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password) {
+      token
+      user {
+        id
+        username
+        email
+        role
+        fullName
+        avatar
+        title
+        bio
+        phone
+        location
+        createdAt
+        themePreference {
+          primaryColor
+          mode
+          lightBg
+          darkBg
+        }
+      }
+    }
+  }
+`;
+
+export const GOOGLE_LOGIN = gql`
+  mutation GoogleLogin($token: String!) {
+    googleLogin(token: $token) {
       token
       user {
         id
@@ -366,6 +393,7 @@ export const CREATE_PROJECT = gql`
     $type: String!
     $description: String!
     $deadline: String
+    $userId: ID
     $mentorIds: [ID]
     $team: [TeamMemberInput]
     $tasks: [TaskInput]
@@ -377,6 +405,7 @@ export const CREATE_PROJECT = gql`
       type: $type
       description: $description
       deadline: $deadline
+      userId: $userId
       mentorIds: $mentorIds
       team: $team
       tasks: $tasks

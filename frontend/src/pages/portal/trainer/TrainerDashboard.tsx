@@ -18,12 +18,13 @@ import {
   MessageSquare,
   Video,
   GraduationCap,
+  FolderOpen,
   ExternalLink,
   Check,
   X,
   Loader2
 } from "lucide-react";
-import { StartLiveSessionDialog, AddSessionDialog } from "@/components/portal/dialogs";
+import { StartLiveSessionDialog, AddSessionDialog, ApproveBookingDialog } from "@/components/portal/dialogs";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_MY_BOOKINGS, GET_TRAINER_STUDENTS, GET_CONVERSATIONS, GET_TRAINER_STATS } from "@/lib/graphql/queries";
 import { UPDATE_BOOKING_STATUS, CREATE_BOOKING } from "@/lib/graphql/mutations";
@@ -35,6 +36,7 @@ export default function TrainerDashboard() {
   const { user } = useAuth();
   const [isLiveSessionOpen, setIsLiveSessionOpen] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [approveBooking, setApproveBooking] = useState<any | null>(null);
 
   const { data: bookingsData, loading: bookingsLoading, refetch: refetchBookings } = useQuery(GET_MY_BOOKINGS);
   const { data: studentsData, refetch: refetchStudents } = useQuery(GET_TRAINER_STUDENTS);
@@ -173,14 +175,15 @@ export default function TrainerDashboard() {
     };
   }, [students]);
 
-  const handleStatusUpdate = async (id: string, status: string) => {
-    let meetingLink = "";
-    if (status === 'confirmed') {
-      meetingLink = `https://meet.google.com/call-${Math.random().toString(36).substring(7)}`;
-    }
+  const handleStatusUpdate = async (id: string, status: string, meetingLink: string = "") => {
     await updateBookingStatus({
       variables: { id, status, meetingLink }
     });
+    setApproveBooking(null);
+  };
+
+  const onConfirmClick = (booking: any) => {
+    setApproveBooking(booking);
   };
 
 
@@ -435,7 +438,7 @@ export default function TrainerDashboard() {
                           <div className="flex gap-1">
                             {booking.status === 'pending' ? (
                               <>
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-green-400 hover:bg-green-500/10" onClick={() => handleStatusUpdate(booking.id, 'confirmed')}>
+                                <Button size="icon" variant="ghost" className="h-7 w-7 text-green-400 hover:bg-green-500/10" onClick={() => onConfirmClick(booking)}>
                                   <Check className="h-4 h-4" />
                                 </Button>
                                 <Button size="icon" variant="ghost" className="h-7 w-7 text-red-500 hover:bg-red-500/10" onClick={() => handleStatusUpdate(booking.id, 'cancelled')}>
@@ -519,10 +522,16 @@ export default function TrainerDashboard() {
                   <CardTitle className="text-lg font-heading">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
+                  <Link to="/portal/trainer/projects">
+                    <Button variant="ghost" className="w-full justify-start hover:bg-accent/5">
+                      <GraduationCap className="w-4 h-4 mr-2 text-accent" />
+                      Review Assignments
+                    </Button>
+                  </Link>
                   <Link to="/portal/trainer/assignments">
                     <Button variant="ghost" className="w-full justify-start hover:bg-accent/5">
-                      <AlertCircle className="w-4 h-4 mr-2 text-accent" />
-                      Review Submissions
+                      <FolderOpen className="w-4 h-4 mr-2 text-accent" />
+                      Manage Projects
                     </Button>
                   </Link>
                   <Link to="/portal/trainer/students">
@@ -554,6 +563,13 @@ export default function TrainerDashboard() {
         open={isScheduleOpen}
         onOpenChange={setIsScheduleOpen}
         onAdd={handleAddSession}
+      />
+      <ApproveBookingDialog
+        open={!!approveBooking}
+        onOpenChange={(open) => !open && setApproveBooking(null)}
+        onApprove={(link) => handleStatusUpdate(approveBooking?.id, 'confirmed', link)}
+        bookingType={approveBooking?.type || 'Session'}
+        studentName={approveBooking?.user?.username || 'Student'}
       />
     </PortalLayout>
   );

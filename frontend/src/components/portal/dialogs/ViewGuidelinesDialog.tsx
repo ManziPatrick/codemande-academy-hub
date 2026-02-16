@@ -26,9 +26,10 @@ export function ViewGuidelinesDialog({ open, onOpenChange, project }: ViewGuidel
           <div className="space-y-4 py-4">
             <div className="p-4 bg-background/50 rounded-lg border border-border/50">
               <h4 className="text-sm font-bold text-accent uppercase tracking-wider mb-2">Project Brief</h4>
-              <p className="text-sm text-card-foreground leading-relaxed">
-                {project.description}
-              </p>
+              <div
+                className="text-sm text-card-foreground leading-relaxed prose prose-sm dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: project.description }}
+              />
             </div>
 
             {project.documentation?.links && project.documentation.links.length > 0 && (
@@ -55,20 +56,29 @@ export function ViewGuidelinesDialog({ open, onOpenChange, project }: ViewGuidel
             )}
 
             <div>
-              <h4 className="text-sm font-medium text-card-foreground mb-2">Requirements</h4>
+              <h4 className="text-sm font-bold text-accent uppercase tracking-wider mb-2">Deliverables & Requirements</h4>
               <div className="space-y-2">
-                {[
-                  "Implement all required features as specified",
-                  "Follow coding best practices and patterns",
-                  "Include documentation and README file",
-                  "Write clean, maintainable code",
-                  "Add appropriate error handling",
-                ].map((req, i) => (
-                  <div key={i} className="flex items-center gap-2 text-sm text-card-foreground/70">
-                    <CheckCircle className="w-4 h-4 text-accent" />
-                    {req}
-                  </div>
-                ))}
+                {project.tasks && project.tasks.length > 0 ? (
+                  project.tasks.map((task: any, i: number) => (
+                    <div key={i} className="flex items-start gap-2 text-sm text-card-foreground/70">
+                      <CheckCircle className="w-4 h-4 text-accent mt-0.5" />
+                      {typeof task === 'string' ? task : task.title}
+                    </div>
+                  ))
+                ) : (
+                  [
+                    "Implement all required features as specified",
+                    "Follow coding best practices and patterns",
+                    "Include documentation and README file",
+                    "Write clean, maintainable code",
+                    "Add appropriate error handling",
+                  ].map((req, i) => (
+                    <div key={i} className="flex items-start gap-2 text-sm text-card-foreground/70">
+                      <CheckCircle className="w-4 h-4 text-accent mt-0.5" />
+                      {req}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 

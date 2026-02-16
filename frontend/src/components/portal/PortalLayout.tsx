@@ -74,11 +74,11 @@ const trainerNavItems: NavItem[] = [
   { label: "Dashboard", href: "/portal/trainer", icon: LayoutDashboard },
   { label: "My Courses", href: "/portal/trainer/courses", icon: BookOpen },
   { label: "Students", href: "/portal/trainer/students", icon: Users },
-  { label: "Assignments", href: "/portal/trainer/assignments", icon: FolderOpen },
+  { label: "Projects", href: "/portal/trainer/assignments", icon: FolderOpen },
   { label: "Schedule", href: "/portal/trainer/schedule", icon: Calendar },
   { label: "Mentorship", href: "/portal/trainer/mentorship", icon: GraduationCap },
   { label: "Internships", href: "/portal/trainer/internships", icon: Briefcase },
-  { label: "Projects", href: "/portal/trainer/projects", icon: FolderOpen },
+  { label: "Assignments", href: "/portal/trainer/projects", icon: GraduationCap },
   { label: "Messages", href: "/chat", icon: MessageSquare },
 ];
 

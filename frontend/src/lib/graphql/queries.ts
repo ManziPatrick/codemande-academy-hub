@@ -1,4 +1,48 @@
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
+
+export const GET_UNREAD_NOTIFICATIONS = gql`
+  query GetUnreadNotifications {
+    unreadNotificationCount
+  }
+`;
+
+export const GET_USER_PROFILE = gql`
+  query GetUserProfile($userId: ID!) {
+    user(id: $userId) {
+      id
+      username
+      email
+      role
+      fullName
+      avatar
+      bio
+      isOnline
+      lastActive
+      enrolledCourses {
+        id
+        title
+        thumbnail
+      }
+      badges {
+        badge {
+          id
+          title
+          icon
+        }
+        awardedAt
+      }
+      studentProfile {
+        school
+        educationLevel
+        fieldOfStudy
+        skills
+        portfolioUrl
+        githubUrl
+        linkedinUrl
+      }
+    }
+  }
+`;
 
 export const GET_STATS = gql`
   query GetStats {
@@ -402,8 +446,8 @@ export const GET_CONFIGS = gql`
 `;
 
 export const GET_MY_PROJECTS = gql`
-  query GetMyProjects {
-    myProjects {
+  query GetMyProjects($status: String) {
+    myProjects(status: $status) {
       id
       title
       course
@@ -421,6 +465,7 @@ export const GET_MY_PROJECTS = gql`
         user {
           id
           username
+          isOnline
         }
       }
       mentors {
@@ -637,6 +682,30 @@ export const GET_ALL_CERTIFICATES = gql`
         username
       }
       createdAt
+    }
+  }
+`;
+
+export const GET_MY_INTERNSHIPS = gql`
+  query GetMyInternships($status: String) {
+    myInternships(status: $status) {
+      id
+      title
+      organization
+      company
+      status
+      stage
+      startDate
+      endDate
+      mentor {
+        id
+        username
+      }
+      user {
+        id
+        username
+        avatar
+      }
     }
   }
 `;
@@ -1611,6 +1680,18 @@ export const GET_PROJECT_TEMPLATES = gql`
         }
       }
       createdAt
+    }
+  }
+`;
+
+export const GET_ALL_STUDENTS = gql`
+  query GetAllStudents {
+    getAllStudents {
+      id
+      username
+      fullName
+      avatar
+      email
     }
   }
 `;

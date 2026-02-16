@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useQuery, useMutation } from "@apollo/client/react";
-import { GET_ALL_PROJECTS } from "@/lib/graphql/queries";
-import { UPDATE_PROJECT } from "@/lib/graphql/mutations";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,19 +9,51 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TextEditor } from "@/components/ui/text-editor";
 import {
+  ChevronRight,
+  Loader2,
+  Plus,
+  Trash2,
+  Link as LinkIcon,
+  ListTodo,
+  User,
+  Calendar as CalendarIcon,
+  AlertCircle,
   Search,
   Filter,
-  CheckCircle,
   Clock,
-  AlertCircle,
-  MessageSquare,
-  Download,
+  CheckCircle,
   Eye,
-  ThumbsUp,
+  Download,
   ThumbsDown,
-  ChevronRight,
-  Loader2
+  ThumbsUp,
+  MessageSquare
 } from "lucide-react";
+import {
+  GET_ALL_PROJECTS,
+  GET_COURSES,
+  GET_ALL_STUDENTS
+} from "@/lib/graphql/queries";
+import {
+  UPDATE_PROJECT,
+  CREATE_PROJECT
+} from "@/lib/graphql/mutations";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { ViewSubmissionDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -46,7 +76,23 @@ export default function TrainerAssignments() {
 
   // Queries
   const { data, loading, refetch } = useQuery(GET_ALL_PROJECTS);
+  const { data: coursesData } = useQuery(GET_COURSES);
+  const { data: studentsData } = useQuery(GET_ALL_STUDENTS);
+
   const [updateProject] = useMutation(UPDATE_PROJECT);
+  const [createProject, { loading: creatingProject }] = useMutation(CREATE_PROJECT);
+
+  // Create Assignment State
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newAssignment, setNewAssignment] = useState({
+    userId: "",
+    title: "",
+    course: "",
+    description: "",
+    deadline: "",
+    tasks: [{ title: "", completed: false }],
+    links: [{ title: "", url: "" }]
+  });
 
   const projects = (data as any)?.projects || [];
 
@@ -76,6 +122,46 @@ export default function TrainerAssignments() {
       setFeedback(selectedSubmission.feedback || "");
     }
   }, [selectedSubmissionId, selectedSubmission]);
+
+  const handleCreateAssignment = async () => {
+    if (!newAssignment.userId || !newAssignment.title || !newAssignment.course || !newAssignment.description) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    try {
+      await createProject({
+        variables: {
+          userId: newAssignment.userId,
+          title: newAssignment.title,
+          course: newAssignment.course,
+          type: 'Individual',
+          description: newAssignment.description,
+          deadline: newAssignment.deadline || null,
+          tasks: newAssignment.tasks.filter(t => t.title.trim() !== ""),
+          documentation: {
+            links: newAssignment.links.filter(l => l.title.trim() !== "" && l.url.trim() !== "")
+          }
+        }
+      });
+
+      toast.success("Assignment created successfully");
+      setIsCreateOpen(false);
+      setNewAssignment({
+        userId: "",
+        title: "",
+        course: "",
+        description: "",
+        deadline: "",
+        tasks: [{ title: "", completed: false }],
+        links: [{ title: "", url: "" }]
+      });
+      refetch();
+    } catch (error: any) {
+      console.error("Error creating assignment:", error);
+      toast.error(error.message || "Failed to create assignment");
+    }
+  };
 
   const handleGradeSubmit = async () => {
     if (!selectedSubmissionId || !grade) {
@@ -160,17 +246,187 @@ export default function TrainerAssignments() {
         >
           <div>
             <h1 className="font-heading text-2xl lg:text-3xl font-medium text-foreground">
-              Assignments & Grading
+              Project Management
             </h1>
             <p className="text-muted-foreground mt-1">
-              Review student submissions and provide feedback
+              Review team and individual projects, milestones, and deliverables
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <Badge className="bg-accent/20 text-accent border-0">
               <AlertCircle className="w-3 h-3 mr-1" />
               {pendingSubmissions.length} pending reviews
             </Badge>
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button variant="gold" className="shadow-lg shadow-gold/20">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Assignment
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Assign Custom Task</DialogTitle>
+                  <DialogDescription>
+                    Assign a specific project or task to a student.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label>Select Student *</Label>
+                    <Select
+                      value={newAssignment.userId}
+                      onValueChange={(val) => setNewAssignment({ ...newAssignment, userId: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Chose student..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(studentsData as any)?.getAllStudents?.map((s: any) => (
+                          <SelectItem key={s.id} value={s.id}>{s.fullName || s.username}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label htmlFor="title">Assignment Title *</Label>
+                    <Input
+                      id="title"
+                      value={newAssignment.title}
+                      onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
+                      placeholder="e.g. Advanced React Patterns"
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label>Track / Course *</Label>
+                    <Select
+                      value={newAssignment.course}
+                      onValueChange={(val) => setNewAssignment({ ...newAssignment, course: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select course context..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(coursesData as any)?.courses?.map((c: any) => (
+                          <SelectItem key={c.id} value={c.title}>{c.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label>Deadline (Optional)</Label>
+                    <Input
+                      type="date"
+                      value={newAssignment.deadline}
+                      onChange={(e) => setNewAssignment({ ...newAssignment, deadline: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label>Deliverables / Checklist</Label>
+                    <div className="space-y-2">
+                      {newAssignment.tasks.map((task, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input
+                            placeholder="Deliverable title..."
+                            value={task.title}
+                            onChange={(e) => {
+                              const updated = [...newAssignment.tasks];
+                              updated[index].title = e.target.value;
+                              setNewAssignment({ ...newAssignment, tasks: updated });
+                            }}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const updated = newAssignment.tasks.filter((_, i) => i !== index);
+                              setNewAssignment({ ...newAssignment, tasks: updated.length ? updated : [{ title: "", completed: false }] });
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-dashed"
+                        onClick={() => setNewAssignment({ ...newAssignment, tasks: [...newAssignment.tasks, { title: "", completed: false }] })}
+                      >
+                        <Plus className="w-3 h-3 mr-1" /> Add Task
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label>Resource Links</Label>
+                    <div className="space-y-2">
+                      {newAssignment.links.map((link, index) => (
+                        <div key={index} className="flex gap-2">
+                          <Input
+                            placeholder="Label"
+                            className="w-1/3"
+                            value={link.title}
+                            onChange={(e) => {
+                              const updated = [...newAssignment.links];
+                              updated[index].title = e.target.value;
+                              setNewAssignment({ ...newAssignment, links: updated });
+                            }}
+                          />
+                          <Input
+                            placeholder="URL"
+                            className="flex-1"
+                            value={link.url}
+                            onChange={(e) => {
+                              const updated = [...newAssignment.links];
+                              updated[index].url = e.target.value;
+                              setNewAssignment({ ...newAssignment, links: updated });
+                            }}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              const updated = newAssignment.links.filter((_, i) => i !== index);
+                              setNewAssignment({ ...newAssignment, links: updated.length ? updated : [{ title: "", url: "" }] });
+                            }}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-dashed"
+                        onClick={() => setNewAssignment({ ...newAssignment, links: [...newAssignment.links, { title: "", url: "" }] })}
+                      >
+                        <Plus className="w-3 h-3 mr-1" /> Add Link
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Label>Instructions</Label>
+                    <TextEditor
+                      value={newAssignment.description}
+                      onChange={(content) => setNewAssignment({ ...newAssignment, description: content })}
+                      placeholder="Write detailed instructions..."
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                  <Button variant="gold" onClick={handleCreateAssignment} disabled={creatingProject}>
+                    {creatingProject ? "Assigning..." : "Assign Task"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </motion.div>
 

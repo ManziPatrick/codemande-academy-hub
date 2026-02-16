@@ -11,6 +11,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 interface TeamMember {
   name: string;
   role: string;
+  user?: {
+    isOnline: boolean;
+  };
 }
 
 interface TeamChatDialogProps {
@@ -27,7 +30,7 @@ export function TeamChatDialog({ open, onOpenChange, projectId, conversationId, 
   const { user } = useAuth();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   const { messages, sendMessage, isConnected } = useProjectChat({
     projectId,
     conversationId,
@@ -70,7 +73,7 @@ export function TeamChatDialog({ open, onOpenChange, projectId, conversationId, 
             </div>
           </div>
         </DialogHeader>
-        
+
         <div className="flex-1 overflow-y-auto space-y-3 px-4 sm:px-6 py-2 custom-scrollbar">
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -92,11 +95,10 @@ export function TeamChatDialog({ open, onOpenChange, projectId, conversationId, 
                   <span className="text-xs font-medium text-card-foreground">{msg.sender}</span>
                   <span className="text-xs text-card-foreground/50">{msg.time}</span>
                 </div>
-                <div className={`p-2 rounded-lg text-sm ${
-                  isOwnMessage(msg.senderId)
-                    ? "bg-accent text-accent-foreground" 
+                <div className={`p-2 rounded-lg text-sm ${isOwnMessage(msg.senderId)
+                    ? "bg-accent text-accent-foreground"
                     : "bg-background/50 text-card-foreground"
-                }`}>
+                  }`}>
                   {msg.message}
                 </div>
               </div>
@@ -114,15 +116,21 @@ export function TeamChatDialog({ open, onOpenChange, projectId, conversationId, 
                   <TooltipProvider key={i}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Avatar className="w-6 h-6 border-2 border-background ring-1 ring-border/50">
-                          <AvatarFallback className="bg-accent/20 text-accent text-[10px] font-bold">
-                            {getInitials(member.name)}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className="relative">
+                          <Avatar className="w-6 h-6 border-2 border-background ring-1 ring-border/50">
+                            <AvatarFallback className="bg-accent/20 text-accent text-[10px] font-bold">
+                              {getInitials(member.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          {member.user?.isOnline && (
+                            <span className="absolute bottom-0 right-0 w-2 h-2 bg-green-500 rounded-full border border-background" />
+                          )}
+                        </div>
                       </TooltipTrigger>
                       <TooltipContent side="top">
                         <p className="text-xs font-semibold">{member.name}</p>
                         <p className="text-[10px] text-muted-foreground">{member.role}</p>
+                        {member.user?.isOnline && <p className="text-[10px] text-green-500">Online</p>}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>

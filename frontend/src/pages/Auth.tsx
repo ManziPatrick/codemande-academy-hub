@@ -8,6 +8,10 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, ArrowLeft, GraduationCap, BookOpen, Users, Award } from "lucide-react";
 import { env } from "@/lib/env";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "@/lib/firebase";
+import { useMutation } from "@apollo/client/react";
+import { GOOGLE_LOGIN } from "@/lib/graphql/mutations";
 
 type AuthMode = "login" | "signup";
 
@@ -34,31 +38,11 @@ export default function Auth() {
   const [resetEmail, setResetEmail] = useState("");
   const [resetSent, setResetSent] = useState(false);
 
-  const { login, signup, user } = useAuth();
+  const { login, signup, user, loginWithToken } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    // Initialize Google Login Button if not already done
-    const renderGoogleButton = () => {
-      if ((window as any).google && document.getElementById('google-login-button')) {
-        (window as any).google.accounts.id.renderButton(
-          document.getElementById('google-login-button'),
-          { theme: 'outline', size: 'large', width: '100%' }
-        );
-      }
-    };
-
-    if ((window as any).google) {
-      renderGoogleButton();
-    } else {
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.onload = renderGoogleButton;
-      document.head.appendChild(script);
-    }
-  }, [mode]);
+  const [googleLoginMutation] = useMutation(GOOGLE_LOGIN);
 
   // If already logged in, redirect to portal
   if (user) {
@@ -71,6 +55,33 @@ export default function Auth() {
     navigate(roleRedirects[user.role], { replace: true });
     return null;
   }
+
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      const token = await user.getIdToken();
+
+      setIsLoading(true);
+      const { data } = await googleLoginMutation({
+        variables: { token }
+      });
+
+      const { token: backendToken, user: userData } = (data as any).googleLogin;
+
+      loginWithToken(backendToken, userData);
+      toast.success("Successfully signed in with Google!");
+
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/portal/student";
+      navigate(from, { replace: true });
+
+    } catch (error: any) {
+      console.error("Google Login Error:", error);
+      toast.error(error.message || "Failed to sign in with Google");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -457,7 +468,19 @@ export default function Auth() {
                 </div>
               </div>
 
-              <div id="google-login-button" className="flex justify-center"></div>
+              <div className="flex justify-center">
+                <Button
+                  variant="outline"
+                  className="w-full h-12 relative"
+                  onClick={handleGoogleLogin}
+                  disabled={isLoading}
+                >
+                  <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                    <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
+                  </svg>
+                  Sign in with Google
+                </Button>
+              </div>
 
               <p className="mt-6 text-center text-sm text-muted-foreground">
                 By continuing, you agree to our{" "}

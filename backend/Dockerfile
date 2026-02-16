@@ -21,5 +21,5 @@ ENV NODE_ENV=production
 
 EXPOSE 4000
 
-# Run start the application
-CMD node dist/index.js
+# Run the application
+CMD ["node", "dist/index.js"]

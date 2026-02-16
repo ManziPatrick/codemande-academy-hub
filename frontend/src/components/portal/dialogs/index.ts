@@ -48,3 +48,4 @@ export { StudentDetailDialog } from "./StudentDetailDialog";
 export { CreateProjectDialog } from "./CreateProjectDialog";
 export { GradeProjectDialog } from "./GradeProjectDialog";
 export { StartProjectDialog } from "./StartProjectDialog";
+export { ApproveBookingDialog } from "./ApproveBookingDialog";

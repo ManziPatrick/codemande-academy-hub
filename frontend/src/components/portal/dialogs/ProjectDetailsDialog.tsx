@@ -37,7 +37,6 @@ import { AIHelper } from "../AIHelper";
 import { Sparkles } from "lucide-react";
 import { AddResourceDialog } from "./AddResourceDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import ReactMarkdown from 'react-markdown';
 
 interface ProjectDetailsDialogProps {
   open: boolean;
@@ -186,11 +185,10 @@ export function ProjectDetailsDialog({ open, onOpenChange, project, refetch }: P
               >
                 <div>
                   <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-3">Project Description</h3>
-                  <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-heading prose-headings:font-bold prose-p:leading-relaxed prose-a:text-accent hover:prose-a:underline">
-                    <ReactMarkdown>
-                      {project.description}
-                    </ReactMarkdown>
-                  </div>
+                  <div
+                    className="prose prose-sm dark:prose-invert max-w-none prose-headings:font-heading prose-headings:font-bold prose-p:leading-relaxed prose-a:text-accent hover:prose-a:underline"
+                    dangerouslySetInnerHTML={{ __html: project.description }}
+                  />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

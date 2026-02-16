@@ -26,13 +26,17 @@ import { useQuery } from "@apollo/client/react";
 import { GET_MY_PROJECTS } from "@/lib/graphql/queries";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProjectMarketplace } from "@/components/portal/student/ProjectMarketplace";
-import ReactMarkdown from 'react-markdown';
 import { AIHelper } from "@/components/portal/AIHelper";
 import { Sparkles } from "lucide-react";
 
 interface TeamMember {
   name: string;
   role: string;
+  user?: {
+    id: string;
+    username: string;
+    isOnline: boolean;
+  };
 }
 
 interface Task {
@@ -224,15 +228,10 @@ export default function StudentProjects() {
                               </div>
                             </div>
 
-                            <div className="text-card-foreground/70 text-sm mb-4 line-clamp-3 prose prose-sm dark:prose-invert">
-                              <ReactMarkdown
-                                components={{
-                                  p: ({ children }) => <p className="mb-0">{children}</p>
-                                }}
-                              >
-                                {project.description}
-                              </ReactMarkdown>
-                            </div>
+                            <div
+                              className="text-card-foreground/70 text-sm mb-4 line-clamp-3 prose prose-sm dark:prose-invert max-w-none"
+                              dangerouslySetInnerHTML={{ __html: project.description }}
+                            />
 
                             {/* Progress */}
                             {project.status !== "completed" && (

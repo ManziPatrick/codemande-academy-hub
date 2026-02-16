@@ -23,8 +23,10 @@ const lessonSchema = new mongoose.Schema({
 
   // Assignment specific fields
   isAssignment: { type: Boolean, default: false },
+  requiredAssignment: { type: Boolean, default: false },
   assignmentDescription: { type: String },
-  assignmentDeliverables: [{ type: String }] // e.g. ["GitHub URL", "PDF Report"]
+  assignmentDeliverables: [{ type: String }],
+  order: { type: Number }
 });
 
 const moduleSchema = new mongoose.Schema({
@@ -32,7 +34,8 @@ const moduleSchema = new mongoose.Schema({
   description: { type: String },
   lessons: [lessonSchema],
   learningOutcome: { type: String },
-  hoursAllocated: { type: Number }
+  hoursAllocated: { type: Number },
+  order: { type: Number }
 });
 
 const courseSchema = new mongoose.Schema({

@@ -94,9 +94,10 @@ export function ProgramCatalog() {
               </CardHeader>
 
               <CardContent className="pt-6 space-y-4">
-                <p className="text-sm text-muted-foreground line-clamp-4 min-h-[5.5rem]">
-                  {program.description}
-                </p>
+                <div
+                  className="text-sm text-muted-foreground line-clamp-4 min-h-[5.5rem] prose prose-sm dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: program.description }}
+                />
 
                 <div className="space-y-2 pt-2 border-t border-border/50">
                   <div className="flex items-center gap-2 text-xs">

@@ -1,7 +1,13 @@
 import { User } from '../models/User';
 import Notification from '../models/Notification';
 import { Resource } from '../models/Resource';
-import { OAuth2Client } from 'google-auth-library';
+import * as admin from 'firebase-admin';
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    projectId: process.env.FIREBASE_PROJECT_ID || "codemande-d218d"
+  });
+}
 import { Message } from '../models/Message';
 import { Conversation } from '../models/Conversation';
 import { Course } from '../models/Course';
@@ -142,9 +148,62 @@ export const resolvers = {
       }
 
       return await AssignmentSubmission.find(filter)
-        .populate('user')
-        .populate('course')
+        .populate('userId')
+        .populate('courseId')
         .sort({ createdAt: -1 });
+    },
+
+    myProjects: async (_: any, { status }: { status?: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const filter: any = {
+        $or: [
+          { userId: context.user.id },
+          { mentors: context.user.id }
+        ]
+      };
+      if (status) filter.status = status;
+      return await Project.find(filter).populate(['userId', 'mentors', 'team.userId']).sort({ updatedAt: -1 });
+    },
+
+    myInternships: async (_: any, { status }: { status?: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const filter: any = {
+        $or: [
+          { mentorId: context.user.id },
+          { mentors: context.user.id }
+        ]
+      };
+      if (status) filter.status = status;
+      return await Internship.find(filter).populate(['userId', 'mentorId', 'mentors']).sort({ updatedAt: -1 });
+    },
+
+    myBookings: async (_: any, { status }: { status?: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+
+      let filter: any = {
+        $or: [{ userId: context.user.id }, { mentorId: context.user.id }]
+      };
+
+      if (context.user.role === 'trainer') {
+        const courses = await Course.find({ instructor: context.user.id });
+        const studentIds = courses.reduce((acc: any[], course: any) => {
+          return [...acc, ...course.studentsEnrolled];
+        }, []);
+
+        if (studentIds.length > 0) {
+          filter.$or.push({ userId: { $in: studentIds }, mentorId: null });
+        }
+      }
+
+      if (status) filter.status = status;
+      return await Booking.find(filter).populate('userId mentorId').sort({ createdAt: -1 });
+    },
+
+    getAllStudents: async (_: any, __: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Unauthorized');
+      }
+      return await User.find({ role: 'student', isDeleted: { $ne: true } });
     },
 
     getUploadSignature: (_: any, { folder }: { folder?: string }, context: any) => {
@@ -265,6 +324,11 @@ export const resolvers = {
     notifications: async (_: any, __: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       return await Notification.find({ userId: context.user.id }).sort({ createdAt: -1 }).limit(50);
+    },
+
+    unreadNotificationCount: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      return await Notification.countDocuments({ userId: context.user.id, read: false });
     },
 
     getCourseQuestions: async (_: any, { courseId }: { courseId: string }) => {
@@ -448,29 +512,7 @@ export const resolvers = {
       }
       return await Booking.find().populate('userId').populate('mentorId').sort({ createdAt: -1 });
     },
-    myBookings: async (_: any, __: any, context: any) => {
-      if (!context.user) throw new Error('Not authenticated');
-      let filter: any = {
-        $or: [{ userId: context.user.id }, { mentorId: context.user.id }]
-      };
 
-      if (context.user.role === 'trainer') {
-        // Find courses taught by this trainer
-        const courses = await Course.find({ instructor: context.user.id });
-        const studentIds = courses.reduce((acc: any[], course: any) => {
-          return [...acc, ...course.studentsEnrolled];
-        }, []);
-
-        // Add condition: Request from my student AND (mentorId is me OR mentorId is null)
-        // We already have "mentorId is me" in the initial $or.
-        // So we add: { userId: { $in: studentIds }, mentorId: null }
-        if (studentIds.length > 0) {
-          filter.$or.push({ userId: { $in: studentIds }, mentorId: null });
-        }
-      }
-
-      return await Booking.find(filter).populate('userId mentorId').sort({ createdAt: -1 });
-    },
 
     payments: async (_: any, __: any, context: any) => {
       if (!context.user || !['admin', 'super_admin'].includes(context.user.role)) {
@@ -566,10 +608,17 @@ export const resolvers = {
       myCourses.forEach(c => c.studentsEnrolled.forEach((s: any) => studentIds.add(s.toString())));
 
       const myCourseTitles = myCourses.map(c => c.title);
-      const pendingReviews = await Project.countDocuments({
-        course: { $in: myCourseTitles }, // Simple string match on course title
-        status: { $in: ['pending_review', 'submitted', 'in_progress'] } // widened search for demo
+      const pendingProjects = await Project.countDocuments({
+        course: { $in: myCourseTitles },
+        status: { $in: ['pending_review', 'submitted'] }
       });
+
+      const pendingAssignments = await AssignmentSubmission.countDocuments({
+        courseId: { $in: myCourses.map(c => c._id) },
+        status: 'pending'
+      });
+
+      const pendingReviews = pendingProjects + pendingAssignments;
 
       // Count unique mentees from bookings
       const explicitMentees = await Booking.distinct('userId', { mentorId: context.user.id });
@@ -701,19 +750,7 @@ export const resolvers = {
         .populate('team.userId')
         .sort({ createdAt: -1 });
     },
-    myProjects: async (_: any, __: any, context: any) => {
-      if (!context.user) throw new Error('Not authenticated');
-      return await Project.find({
-        $or: [
-          { userId: context.user.id },
-          { 'team.userId': context.user.id }
-        ]
-      })
-        .populate('userId')
-        .populate('mentors')
-        .populate('team.userId')
-        .sort({ createdAt: -1 });
-    },
+
     project: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const project = await Project.findById(id)
@@ -1114,7 +1151,7 @@ export const resolvers = {
       // Log activity
       await logActivity(context.user.id, 'SUBMIT_ASSIGNMENT', 'AssignmentSubmission', submission.id, `Submitted assignment for lesson ${lessonId} in course ${courseId}`);
 
-      return await submission.populate(['user', 'course']);
+      return await submission.populate(['userId', 'courseId']);
     },
 
     gradeAssignment: async (_: any, { submissionId, grade, feedback }: any, context: any) => {
@@ -1130,6 +1167,37 @@ export const resolvers = {
       submission.status = 'reviewed';
       await submission.save();
 
+      // Auto-complete the lesson for the student if grade is passing (e.g. > 50)
+      if (grade >= 50) {
+        const user = await User.findById(submission.userId);
+        const isAlreadyCompleted = user?.completedLessons?.some((l: any) =>
+          l.courseId.toString() === submission.courseId && l.lessonId === submission.lessonId
+        );
+
+        if (user && !isAlreadyCompleted) {
+          user.completedLessons.push({ courseId: submission.courseId, lessonId: submission.lessonId });
+          await user.save();
+
+          // Update CourseProgress
+          const progress = await CourseProgress.findOne({ userId: submission.userId, courseId: submission.courseId });
+          if (progress) {
+            const lIdx = progress.lessons.findIndex((l: any) => l.lessonId === submission.lessonId);
+            if (lIdx > -1) {
+              progress.lessons[lIdx].completed = true;
+            } else {
+              progress.lessons.push({
+                lessonId: submission.lessonId,
+                completed: true,
+                timeSpent: 0,
+                lastAccessed: new Date(),
+                visits: 1
+              });
+            }
+            await progress.save();
+          }
+        }
+      }
+
       // Notify student
       await sendNotification(submission.userId.toString(), {
         type: 'ASSIGNMENT_GRADED',
@@ -1138,7 +1206,7 @@ export const resolvers = {
         link: `/portal/student/courses/${submission.courseId}`
       });
 
-      return await submission.populate(['user', 'course']);
+      return await submission.populate(['userId', 'courseId']);
     },
 
     chatWithAI: async (_: any, { message }: { message: string }, context: any) => {
@@ -1418,6 +1486,44 @@ export const resolvers = {
       const user = await User.findById(context.user.id);
       if (!user) throw new Error('User not found');
 
+      // Check if lesson is an assignment and requires approval
+      const course = await Course.findById(targetCourseId);
+      if (course) {
+        const allLessons = course.modules.flatMap((m: any) => m.lessons);
+        const lesson = allLessons.find((l: any) => (l.id || l._id).toString() === targetLessonId);
+
+        if (lesson && (lesson.type === 'assignment' || lesson.isAssignment)) {
+          const submission = await AssignmentSubmission.findOne({
+            userId: context.user.id,
+            courseId: targetCourseId,
+            lessonId: targetLessonId
+          });
+
+          if (!submission || submission.status !== 'reviewed') {
+            throw new Error('You must submit the assignment and wait for approval before completing this lesson.');
+          }
+        }
+
+        // Prerequisite Gating: Check if any PREVIOUS required assignments are approved
+        const currentLessonIndex = allLessons.findIndex((l: any) => (l.id || l._id).toString() === targetLessonId);
+        if (currentLessonIndex > 0) {
+          const previousRequiredAssignments = allLessons.slice(0, currentLessonIndex).filter((l: any) => l.requiredAssignment || (l.type === 'assignment' && l.requiredAssignment !== false));
+
+          for (const prevLesson of previousRequiredAssignments) {
+            const prevSubmission = await AssignmentSubmission.findOne({
+              userId: context.user.id,
+              courseId: targetCourseId,
+              lessonId: (prevLesson.id || prevLesson._id).toString()
+            });
+
+            if (!prevSubmission || prevSubmission.status !== 'reviewed') {
+              throw new Error(`You must complete and get approval for the prerequisite assignment: "${prevLesson.title}" before progressing.`);
+            }
+          }
+        }
+
+      }
+
       // Check if already completed
       const isAlreadyCompleted = user.completedLessons?.some((l: any) =>
         l.courseId.toString() === targetCourseId && l.lessonId === targetLessonId
@@ -1435,7 +1541,29 @@ export const resolvers = {
         if (lIdx > -1) {
           progress.lessons[lIdx].completed = true;
           await progress.save();
+        } else {
+          progress.lessons.push({
+            lessonId: targetLessonId,
+            completed: true,
+            timeSpent: 0,
+            lastAccessed: new Date(),
+            visits: 1
+          });
+          await progress.save();
         }
+      } else {
+        // Create progress if not exists
+        await new CourseProgress({
+          userId: context.user.id,
+          courseId: targetCourseId,
+          lessons: [{
+            lessonId: targetLessonId,
+            completed: true,
+            timeSpent: 0,
+            lastAccessed: new Date(),
+            visits: 1
+          }]
+        }).save();
       }
 
       return await user.populate('enrolledCourses');
@@ -1621,53 +1749,49 @@ export const resolvers = {
 
       return { token, user };
     },
-    googleLogin: async (_: any, { idToken }: { idToken: string }) => {
-      const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
+    googleLogin: async (_: any, { token }: { token: string }) => {
       try {
-        const ticket = await client.verifyIdToken({
-          idToken,
-          audience: process.env.GOOGLE_CLIENT_ID,
-        });
-        const payload = ticket.getPayload();
-        if (!payload || !payload.email) {
-          throw new Error('Invalid Google token');
+        const decodedToken = await admin.auth().verifyIdToken(token);
+
+        if (!decodedToken || !decodedToken.email) {
+          throw new Error('Invalid Firebase token');
         }
 
-        const { email, name, picture, sub: googleId } = payload;
-        let user = await User.findOne({ email });
+        const { email, name, picture } = decodedToken as any;
+        let dbUser = await User.findOne({ email });
 
-        if (!user) {
+        if (!dbUser) {
           // Create new student user
-          user = new User({
+          dbUser = new User({
             username: email.split('@')[0] + Math.floor(Math.random() * 1000),
             email,
             password: await bcrypt.hash(Math.random().toString(36), 10), // Random password
             role: 'student',
-            fullName: name,
+            fullName: name || email.split('@')[0],
+            avatar: picture
           });
-          await user.save();
+          await dbUser.save();
         }
 
         // Check Account Status
-        if ((user as any).status === 'suspended') throw new Error('Account is suspended. Contact support.');
-        if ((user as any).isDeleted) throw new Error('User not found');
+        if ((dbUser as any).status === 'suspended') throw new Error('Account is suspended. Contact support.');
+        if ((dbUser as any).isDeleted) throw new Error('User not found');
 
         // Update Presence
-        (user as any).isOnline = true;
-        (user as any).lastActive = new Date();
-        await user.save();
+        (dbUser as any).isOnline = true;
+        (dbUser as any).lastActive = new Date();
+        await dbUser.save();
 
-        const token = jwt.sign(
-          { id: user.id, email: user.email, username: user.username, role: (user as any).role },
+        const jwtToken = jwt.sign(
+          { id: dbUser.id, email: dbUser.email, username: dbUser.username, role: (dbUser as any).role },
           process.env.JWT_SECRET || 'secret',
           { expiresIn: '30d' }
         );
 
-        return { token, user };
+        return { token: jwtToken, user: dbUser };
       } catch (error: any) {
-        console.error('Google login error:', error);
-        throw new Error('Google authentication failed: ' + error.message);
+        console.error('Firebase login error:', error);
+        throw new Error('Firebase authentication failed: ' + error.message);
       }
     },
 
@@ -1921,6 +2045,23 @@ export const resolvers = {
         progress: 0,
       });
       await project.save();
+
+      // Link to Internship if applicable
+      if (project.course === 'Internship') {
+        await Internship.findOneAndUpdate(
+          { userId: project.userId },
+          { $addToSet: { projects: project._id } }
+        );
+      }
+
+      // Notify User
+      await sendNotification(targetUserId, {
+        type: 'PROJECT_ASSIGNED',
+        title: 'New Project Assigned',
+        message: `You have been assigned a new project: ${project.title}`,
+        link: `/portal/student/projects/${project._id}`
+      });
+
       return await project.populate(['userId', 'mentors', 'team.userId']);
     },
     updateProject: async (_: any, { id, mentorIds, ...args }: any, context: any) => {
@@ -1982,6 +2123,17 @@ export const resolvers = {
       project.submittedAt = new Date();
       (project as any).submissionUrl = submissionUrl;
       await project.save();
+
+      // Notify Mentors
+      if (project.mentors && project.mentors.length > 0) {
+        await broadcastToTeam(project.mentors.map(m => m.toString()), {
+          type: 'PROJECT_SUBMITTED',
+          title: 'Project Submitted',
+          message: `${context.user.username} submitted project: ${project.title}`,
+          link: `/portal/trainer/projects/${project._id}`
+        });
+      }
+
       return await project.populate(['userId', 'mentors', 'team.userId']);
     },
     gradeProject: async (_: any, { id, grade, feedback }: any, context: any) => {
@@ -2001,6 +2153,15 @@ export const resolvers = {
       project.progress = 100;
 
       await project.save();
+
+      // Notify Student
+      await sendNotification(project.userId.toString(), {
+        type: 'PROJECT_GRADED',
+        title: 'Project Graded',
+        message: `Your project "${project.title}" has been graded: ${grade}`,
+        link: `/portal/student/projects/${project._id}`
+      });
+
       return await project.populate(['userId', 'mentors', 'team.userId']);
     },
 
@@ -2051,6 +2212,7 @@ export const resolvers = {
 
       return projects;
     },
+
 
     createBooking: async (_: any, args: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -2107,6 +2269,24 @@ export const resolvers = {
       }
 
       await booking.save();
+
+      // Create Notification record for DB
+      if (booking.userId.toString() !== context.user.id) {
+        await sendNotification(booking.userId.toString(), {
+          type: 'BOOKING_UPDATED',
+          title: 'Booking Updated',
+          message: `Your session request status is now: ${status}`,
+          link: '/portal/student/bookings'
+        });
+      }
+      if (booking.mentorId && booking.mentorId.toString() !== context.user.id) {
+        await sendNotification(booking.mentorId.toString(), {
+          type: 'BOOKING_UPDATED',
+          title: 'Booking Updated',
+          message: `Session request status updated: ${status}`,
+          link: '/portal/trainer/dashboard'
+        });
+      }
 
       // Notify relevant parties (minimal payload)
       const minimalBooking = {
@@ -2331,7 +2511,7 @@ export const resolvers = {
       for (const intern of interns) {
         const oldStageTitle = intern.stage;
         intern.currentStage = targetStage;
-        intern.stage = stagesMap[targetStage] || `Stage ${targetStage}`;
+        intern.stage = stagesMap[targetStage] || `Stage ${targetStage} `;
 
         // Calculate progress based on stage baseline
         const totalStages = 6;
@@ -2452,6 +2632,22 @@ export const resolvers = {
           });
           await newProject.save();
           createdProjects.push(newProject);
+
+          // Link to Internship if applicable
+          if (newProject.course === 'Internship') {
+            await Internship.findOneAndUpdate(
+              { userId: user._id },
+              { $addToSet: { projects: newProject._id } }
+            );
+          }
+
+          // Notify User
+          await sendNotification(user._id.toString(), {
+            type: 'PROJECT_ASSIGNED',
+            title: 'New Project Assigned',
+            message: `You have been assigned a new project: ${newProject.title}`,
+            link: `/portal/student/projects/${newProject._id}`
+          });
         }
       } else if (type === 'Team Project') {
         const team = users.map(u => ({
@@ -2490,6 +2686,23 @@ export const resolvers = {
 
         await newProject.save();
         createdProjects.push(newProject);
+
+        // Link to Internship if applicable
+        if (newProject.course === 'Internship') {
+          const teamUserIds = users.map(u => u._id);
+          await Internship.updateMany(
+            { userId: { $in: teamUserIds } },
+            { $addToSet: { projects: newProject._id } }
+          );
+        }
+
+        // Notify Team
+        await broadcastToTeam(users.map(u => u._id.toString()), {
+          type: 'PROJECT_ASSIGNED',
+          title: 'New Team Project Assigned',
+          message: `You have been assigned to a new team project: ${newProject.title}`,
+          link: `/portal/student/projects/${newProject._id}`
+        });
       }
 
       return await Project.populate(createdProjects, 'userId mentors team.userId');
@@ -2649,7 +2862,7 @@ export const resolvers = {
             currency: internship.payment.currency || 'RWF',
             status: 'completed',
             paymentMethod: 'Mobile Money',
-            transactionId: `TXN-INT-${Math.random().toString(36).substring(7).toUpperCase()}`,
+            transactionId: `TXN - INT - ${Math.random().toString(36).substring(7).toUpperCase()} `,
             type: 'Internship Fee',
             itemTitle: internship.title
           }).save();
@@ -2702,7 +2915,7 @@ export const resolvers = {
 
       const targetId = typeof courseId === 'object' ? (courseId.id || courseId._id) : courseId;
       const course = await Course.findById(targetId);
-      if (!course) throw new Error(`Course not found for ID: ${targetId}`);
+      if (!course) throw new Error(`Course not found for ID: ${targetId} `);
 
       const user = await User.findById(context.user.id);
       if (!user) throw new Error('User not found');
@@ -2732,7 +2945,7 @@ export const resolvers = {
         currency: 'RWF',
         status: 'pending',
         paymentMethod,
-        transactionId: `TXN-${Math.random().toString(36).substring(7).toUpperCase()}`,
+        transactionId: `TXN - ${Math.random().toString(36).substring(7).toUpperCase()} `,
         type: 'Course Enrollment',
         itemTitle: course.title
       });
@@ -2740,7 +2953,7 @@ export const resolvers = {
 
       (user as any).activityLog.push({
         action: 'COURSE_PAYMENT_INITIATED',
-        details: `Initiated payment of ${amount} for ${course.title} via ${paymentMethod}`,
+        details: `Initiated payment of ${amount} for ${course.title} via ${paymentMethod} `,
         timestamp: new Date()
       });
       await user.save();
@@ -2832,7 +3045,7 @@ export const resolvers = {
 
           (user as any).activityLog.push({
             action: 'PAYMENT_APPROVED',
-            details: `Admin approved payment for ${course.title}. Access granted.`,
+            details: `Admin approved payment for ${course.title}.Access granted.`,
             timestamp: new Date()
           });
           await user.save();
@@ -2885,7 +3098,7 @@ export const resolvers = {
       if (user) {
         (user as any).activityLog.push({
           action: 'PAYMENT_REJECTED',
-          details: `Admin rejected payment for ${payment.itemTitle}. Reason: ${adminNotes}`,
+          details: `Admin rejected payment for ${payment.itemTitle}.Reason: ${adminNotes} `,
           timestamp: new Date()
         });
         await user.save();
@@ -3012,7 +3225,7 @@ export const resolvers = {
       if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
       const program = new InternshipProgram(args);
       await program.save();
-      await logActivity(context.user.id, 'CREATE', 'InternshipProgram', program.id, `Created program: ${program.title}`);
+      await logActivity(context.user.id, 'CREATE', 'InternshipProgram', program.id, `Created program: ${program.title} `);
       return program;
     },
 
@@ -3020,7 +3233,7 @@ export const resolvers = {
       if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
       const program = await InternshipProgram.findByIdAndUpdate(id, args, { new: true });
       if (!program) throw new Error('Program not found');
-      await logActivity(context.user.id, 'UPDATE', 'InternshipProgram', id, `Updated program: ${program.title}`);
+      await logActivity(context.user.id, 'UPDATE', 'InternshipProgram', id, `Updated program: ${program.title} `);
       return program;
     },
 
@@ -3030,7 +3243,7 @@ export const resolvers = {
       if (!program) throw new Error('Program not found');
       program.isDeleted = true;
       await program.save();
-      await logActivity(context.user.id, 'DELETE', 'InternshipProgram', id, `Soft deleted program: ${program.title}`);
+      await logActivity(context.user.id, 'DELETE', 'InternshipProgram', id, `Soft deleted program: ${program.title} `);
       return true;
     },
 
@@ -3045,7 +3258,7 @@ export const resolvers = {
         status: 'pending'
       });
       await application.save();
-      await logActivity(context.user.id, 'APPLY', 'InternshipApplication', application.id, `Applied to program: ${program.title}`);
+      await logActivity(context.user.id, 'APPLY', 'InternshipApplication', application.id, `Applied to program: ${program.title} `);
       return application;
     },
 
@@ -3088,7 +3301,7 @@ export const resolvers = {
         }
       }
 
-      await logActivity(context.user.id, 'REVIEW', 'InternshipApplication', id, `Reviewed application status to: ${status}`);
+      await logActivity(context.user.id, 'REVIEW', 'InternshipApplication', id, `Reviewed application status to: ${status} `);
 
       // Notify via Socket
       sendNotification(application.userId.toString(), {
@@ -3096,7 +3309,7 @@ export const resolvers = {
         title: 'Application Update',
         status,
         applicationId: id,
-        message: `Your internship application status has been updated to: ${status}`
+        message: `Your internship application status has been updated to: ${status} `
       });
 
       // Notify via Email
@@ -3128,7 +3341,7 @@ export const resolvers = {
         teamSizeRange: { min: minTeamSize, max: maxTeamSize }
       });
       await project.save();
-      await logActivity(context.user.id, 'CREATE', 'InternshipProject', project.id, `Created project: ${project.title}`);
+      await logActivity(context.user.id, 'CREATE', 'InternshipProject', project.id, `Created project: ${project.title} `);
       return project;
     },
 
@@ -3146,7 +3359,7 @@ export const resolvers = {
       }
       const project = await InternshipProject.findByIdAndUpdate(id, updateData, { new: true });
       if (!project) throw new Error('Project not found');
-      await logActivity(context.user.id, 'UPDATE', 'InternshipProject', id, `Updated project: ${project.title}`);
+      await logActivity(context.user.id, 'UPDATE', 'InternshipProject', id, `Updated project: ${project.title} `);
       return project;
     },
 
@@ -3156,7 +3369,7 @@ export const resolvers = {
       if (!project) throw new Error('Project not found');
       project.isDeleted = true;
       await project.save();
-      await logActivity(context.user.id, 'DELETE', 'InternshipProject', id, `Soft deleted project: ${project.title}`);
+      await logActivity(context.user.id, 'DELETE', 'InternshipProject', id, `Soft deleted project: ${project.title} `);
       return true;
     },
 
@@ -3166,7 +3379,7 @@ export const resolvers = {
       if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
       const team = new InternshipTeam(args);
       await team.save();
-      await logActivity(context.user.id, 'CREATE', 'InternshipTeam', team.id, `Created team: ${team.name}`);
+      await logActivity(context.user.id, 'CREATE', 'InternshipTeam', team.id, `Created team: ${team.name} `);
       return team;
     },
 
@@ -3180,7 +3393,7 @@ export const resolvers = {
 
       Object.assign(team, args);
       await team.save();
-      await logActivity(context.user.id, 'UPDATE', 'InternshipTeam', id, `Updated team: ${team.name}`);
+      await logActivity(context.user.id, 'UPDATE', 'InternshipTeam', id, `Updated team: ${team.name} `);
       return team;
     },
 
@@ -3218,7 +3431,7 @@ export const resolvers = {
       if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
       const milestone = new InternshipMilestone(args);
       await milestone.save();
-      await logActivity(context.user.id, 'CREATE', 'InternshipMilestone', milestone.id, `Created milestone: ${milestone.title}`);
+      await logActivity(context.user.id, 'CREATE', 'InternshipMilestone', milestone.id, `Created milestone: ${milestone.title} `);
       return milestone;
     },
 
@@ -3243,7 +3456,7 @@ export const resolvers = {
           title: 'New Project Submission',
           teamId: args.teamId,
           submissionId: submission.id,
-          message: `New submission from team ${team.name}`
+          message: `New submission from team ${team.name} `
         });
       }
 
@@ -3259,7 +3472,7 @@ export const resolvers = {
       submission.feedback = feedback;
       await submission.save();
 
-      await logActivity(context.user.id, 'REVIEW_WORK', 'InternshipSubmission', id, `Reviewed submission status to: ${status}`);
+      await logActivity(context.user.id, 'REVIEW_WORK', 'InternshipSubmission', id, `Reviewed submission status to: ${status} `);
 
       // Notify team member who submitted
       sendNotification(submission.userId.toString(), {
@@ -3267,7 +3480,7 @@ export const resolvers = {
         title: 'Submission Reviewed',
         status,
         submissionId: id,
-        message: `Your project submission has been reviewed: ${status}`
+        message: `Your project submission has been reviewed: ${status} `
       });
 
       return submission;
@@ -3363,7 +3576,7 @@ export const resolvers = {
         completionPercentage: profile.completionPercentage,
         message: missingFields.length === 0
           ? 'Profile is complete. You can apply for internships.'
-          : `Please complete the following fields: ${missingFields.join(', ')}`
+          : `Please complete the following fields: ${missingFields.join(', ')} `
       };
     },
 
@@ -3402,7 +3615,7 @@ export const resolvers = {
         status: 'pending'
       });
       await application.save();
-      await logActivity(context.user.id, 'APPLY', 'InternshipApplication', application.id, `Applied to program: ${program.title}`);
+      await logActivity(context.user.id, 'APPLY', 'InternshipApplication', application.id, `Applied to program: ${program.title} `);
 
       return application;
     },
@@ -3443,7 +3656,7 @@ export const resolvers = {
       if (payment.userId.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
         throw new Error('Unauthorized');
       }
-      if (payment.status !== 'pending') throw new Error(`Payment cannot be processed. Current status: ${payment.status}`);
+      if (payment.status !== 'pending') throw new Error(`Payment cannot be processed.Current status: ${payment.status} `);
 
       payment.status = 'paid';
       payment.transactionId = args.transactionId;
@@ -3451,7 +3664,7 @@ export const resolvers = {
       payment.paidAt = new Date();
       await payment.save();
 
-      await logActivity(context.user.id, 'UPDATE', 'InternshipPayment', payment.id, `Payment processed: ${args.transactionId}`);
+      await logActivity(context.user.id, 'UPDATE', 'InternshipPayment', payment.id, `Payment processed: ${args.transactionId} `);
 
       // Notify admin
       sendNotification('admin', {
@@ -3471,20 +3684,20 @@ export const resolvers = {
 
       const payment = await InternshipPayment.findById(args.paymentId);
       if (!payment) throw new Error('Payment not found.');
-      if (payment.status !== 'pending') throw new Error(`Cannot waive payment. Current status: ${payment.status}`);
+      if (payment.status !== 'pending') throw new Error(`Cannot waive payment.Current status: ${payment.status} `);
 
       payment.status = 'waived';
       payment.waivedBy = context.user.id;
       payment.waivedReason = args.reason;
       await payment.save();
 
-      await logActivity(context.user.id, 'WAIVE', 'InternshipPayment', payment.id, `Payment waived: ${args.reason}`);
+      await logActivity(context.user.id, 'WAIVE', 'InternshipPayment', payment.id, `Payment waived: ${args.reason} `);
 
       // Notify student
       sendNotification(payment.userId.toString(), {
         type: 'PAYMENT_WAIVED',
         title: 'Payment Waived',
-        message: `Your internship payment has been waived. You can now proceed with the program.`
+        message: `Your internship payment has been waived.You can now proceed with the program.`
       });
 
       return payment;
@@ -3495,13 +3708,13 @@ export const resolvers = {
 
       const payment = await InternshipPayment.findById(args.paymentId);
       if (!payment) throw new Error('Payment not found.');
-      if (payment.status !== 'paid') throw new Error(`Cannot refund. Current status: ${payment.status}`);
+      if (payment.status !== 'paid') throw new Error(`Cannot refund.Current status: ${payment.status} `);
 
       payment.status = 'refunded';
       payment.notes = args.reason;
       await payment.save();
 
-      await logActivity(context.user.id, 'REFUND', 'InternshipPayment', payment.id, `Payment refunded: ${args.reason}`);
+      await logActivity(context.user.id, 'REFUND', 'InternshipPayment', payment.id, `Payment refunded: ${args.reason} `);
 
       // Notify student
       sendNotification(payment.userId.toString(), {
@@ -3541,7 +3754,7 @@ export const resolvers = {
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
         status: 'issued',
         items: [{
-          description: `Internship Program: ${program?.title || 'Unknown'}`,
+          description: `Internship Program: ${program?.title || 'Unknown'} `,
           quantity: 1,
           unitPrice: payment.amount,
           total: payment.amount
@@ -3553,7 +3766,7 @@ export const resolvers = {
       payment.invoiceId = invoice.id as any;
       await payment.save();
 
-      await logActivity(context.user.id, 'CREATE', 'InternshipInvoice', invoice.id, `Generated invoice: ${invoice.invoiceNumber}`);
+      await logActivity(context.user.id, 'CREATE', 'InternshipInvoice', invoice.id, `Generated invoice: ${invoice.invoiceNumber} `);
 
       return invoice;
     },
@@ -3665,7 +3878,7 @@ export const resolvers = {
         metadata: {
           milestonesCompleted: submissions.length,
           totalMilestones: milestones.length,
-          finalGrade: (feedback as any)?.score ? `${(feedback as any).score}%` : 'N/A',
+          finalGrade: (feedback as any)?.score ? `${(feedback as any).score}% ` : 'N/A',
           skills: program.eligibility || []
         }
       });
@@ -3698,14 +3911,14 @@ export const resolvers = {
       certificate.revocationReason = args.reason;
       await certificate.save();
 
-      await logActivity(context.user.id, 'REVOKE', 'InternshipCertificate', certificate.id, `Certificate revoked: ${args.reason}`);
+      await logActivity(context.user.id, 'REVOKE', 'InternshipCertificate', certificate.id, `Certificate revoked: ${args.reason} `);
 
       // Notify student
       sendNotification(certificate.userId.toString(), {
         type: 'CERTIFICATE_REVOKED',
         title: 'Certificate Revoked',
         certificateNumber: certificate.certificateNumber,
-        message: `Your certificate ${certificate.certificateNumber} has been revoked. Reason: ${args.reason}`
+        message: `Your certificate ${certificate.certificateNumber} has been revoked.Reason: ${args.reason} `
       });
 
       return certificate;
@@ -3746,13 +3959,13 @@ export const resolvers = {
         await feedback.save();
       }
 
-      await logActivity(context.user.id, 'APPROVE', 'InternshipMentorFeedback', (feedback as any).id, `Approved intern ${userId} for certification with grade ${finalGrade}`);
+      await logActivity(context.user.id, 'APPROVE', 'InternshipMentorFeedback', (feedback as any).id, `Approved intern ${userId} for certification with grade ${finalGrade} `);
 
       // Notify student
       sendNotification(userId, {
         type: 'CERTIFICATE_APPROVAL',
         title: 'Certificate Approved',
-        message: `Your trainer has approved you for certification with grade: ${finalGrade}%`
+        message: `Your trainer has approved you for certification with grade: ${finalGrade}% `
       });
 
       return feedback;
@@ -3922,8 +4135,14 @@ export const resolvers = {
   },
   Internship: {
     id: (parent: any) => parent.id || parent._id || parent.toString(),
-    user: async (parent: any) => await User.findById(parent.userId),
-    mentor: async (parent: any) => await User.findById(parent.mentorId),
+    user: async (parent: any) => {
+      if (parent.userId && (parent.userId as any).username) return parent.userId;
+      return await User.findById(parent.userId);
+    },
+    mentor: async (parent: any) => {
+      if (parent.mentorId && (parent.mentorId as any).username) return parent.mentorId;
+      return await User.findById(parent.mentorId);
+    },
     mentors: async (parent: any) => {
       if (parent.mentors && parent.mentors.length > 0 && (parent.mentors[0] as any).username) return parent.mentors;
       return await User.find({ _id: { $in: parent.mentors || [] } });
@@ -4030,8 +4249,14 @@ export const resolvers = {
     revokedByUser: async (parent: any) => parent.revokedBy ? await User.findById(parent.revokedBy) : null,
   },
   AssignmentSubmission: {
-    user: async (parent: any) => await User.findById(parent.userId),
-    course: async (parent: any) => await Course.findById(parent.courseId),
+    user: async (parent: any) => {
+      if (parent.userId && (parent.userId as any).username) return parent.userId;
+      return await User.findById(parent.userId);
+    },
+    course: async (parent: any) => {
+      if (parent.courseId && (parent.courseId as any).title) return parent.courseId;
+      return await Course.findById(parent.courseId);
+    },
   },
   UserBadge: {
     badge: async (parent: any) => {

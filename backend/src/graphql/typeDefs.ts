@@ -141,8 +141,10 @@ export const typeDefs = `#graphql
     type: String
     resources: [Resource]
     isAssignment: Boolean
+    requiredAssignment: Boolean
     assignmentDescription: String
     assignmentDeliverables: [String]
+    order: Int
   }
 
   type Module {
@@ -150,6 +152,7 @@ export const typeDefs = `#graphql
     title: String!
     description: String
     lessons: [Lesson!]!
+    order: Int
   }
 
   type ProgramStage {
@@ -527,7 +530,6 @@ export const typeDefs = `#graphql
     analytics: AnalyticsData
     branding: BrandingConfig
     configs: [Config]
-    myBookings: [Booking]
     myPayments: [PaymentTransaction]
     myCourseProgress(courseId: ID!): CourseProgress
     badges: [Badge]
@@ -538,7 +540,10 @@ export const typeDefs = `#graphql
     # Projects
     projects: [Project]
     projectTemplates(category: String, course: String): [Project]
-    myProjects: [Project]
+    myProjects(status: String): [Project]
+    myInternships(status: String): [Internship]
+    myBookings(status: String): [Booking]
+    getAllStudents: [User]
 
     project(id: ID!): Project
     
@@ -594,8 +599,10 @@ export const typeDefs = `#graphql
     type: String
     resources: [ResourceInput]
     isAssignment: Boolean
+    requiredAssignment: Boolean
     assignmentDescription: String
     assignmentDeliverables: [String]
+    order: Int
   }
 
   input ModuleInput {
@@ -704,7 +711,7 @@ export const typeDefs = `#graphql
     sendMessage(receiverId: ID!, content: String!): Message
     register(username: String!, email: String!, password: String!, role: String): AuthPayload
     login(email: String!, password: String!): AuthPayload
-    googleLogin(idToken: String!): AuthPayload
+    googleLogin(token: String!): AuthPayload
     requestPasswordReset(email: String!): Boolean
     resetPassword(token: String!, newPassword: String!): Boolean
     
@@ -797,6 +804,7 @@ export const typeDefs = `#graphql
 
     awardBadgeToBatch(userIds: [ID!]!, badgeId: ID!): Boolean
     submitGrade(userId: ID!, courseId: ID!, lessonId: String, score: Int!, feedback: String): User
+
 
     # Payment Verification
     submitPaymentProof(paymentId: ID!, proofUrl: String!): PaymentTransaction
@@ -1126,6 +1134,9 @@ export const typeDefs = `#graphql
     myInternshipCertificates: [InternshipCertificate]
     internshipCertificate(id: ID!): InternshipCertificate
     verifyCertificate(certificateNumber: String!): InternshipCertificate
+
+    # Notifications
+    unreadNotificationCount: Int!
   }
 
   # Student Profile Type

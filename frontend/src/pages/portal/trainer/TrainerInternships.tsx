@@ -6,18 +6,32 @@ import {
     Briefcase,
     Users,
     FileText,
-    Activity,
-    Search,
     LayoutGrid
 } from "lucide-react";
-import ProgramList from "@/components/portal/admin/internship/ProgramList";
 import ApplicationReview from "@/components/portal/admin/internship/ApplicationReview";
 import TeamManagement from "@/components/portal/admin/internship/TeamManagement";
+import ProgramList from "@/components/portal/admin/internship/ProgramList";
 import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function TrainerInternships() {
     const [activeTab, setActiveTab] = useState("applications");
     const { user } = useAuth();
+
+    if (!user || user.role !== 'trainer') {
+        return (
+            <PortalLayout>
+                <div className="flex items-center justify-center h-[50vh]">
+                    <Alert variant="destructive" className="max-w-md">
+                        <AlertTitle>Access Denied</AlertTitle>
+                        <AlertDescription>
+                            You must be a trainer to view this page.
+                        </AlertDescription>
+                    </Alert>
+                </div>
+            </PortalLayout>
+        );
+    }
 
     return (
         <PortalLayout>
@@ -51,20 +65,55 @@ export default function TrainerInternships() {
                         </TabsTrigger>
                         <TabsTrigger value="programs" className="gap-2">
                             <Briefcase className="w-4 h-4" />
-                            Programs
+                            Programs Directory
                         </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="applications">
-                        <ApplicationReview />
+                        <div className="space-y-4">
+                            <div className="bg-blue-50/50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/50 p-4 rounded-lg">
+                                <h3 className="font-medium text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                                    <Users className="w-4 h-4" />
+                                    Trainer View
+                                </h3>
+                                <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                                    You can review applications for internship programs you are assigned to.
+                                    Approving an application will create an internship record for the student.
+                                </p>
+                            </div>
+                            <ApplicationReview />
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="teams">
-                        <TeamManagement />
+                        <div className="space-y-4">
+                            <div className="bg-amber-50/50 border border-amber-100 dark:bg-amber-900/10 dark:border-amber-900/50 p-4 rounded-lg">
+                                <h3 className="font-medium text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                                    <LayoutGrid className="w-4 h-4" />
+                                    Team Management
+                                </h3>
+                                <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                                    Manage teams you are mentoring. You can update team status, view members, and track project progress.
+                                </p>
+                            </div>
+                            <TeamManagement />
+                        </div>
                     </TabsContent>
 
                     <TabsContent value="programs">
-                        <ProgramList />
+                        <div className="space-y-4">
+                            <div className="bg-green-50/50 border border-green-100 dark:bg-green-900/10 dark:border-green-900/50 p-4 rounded-lg">
+                                <h3 className="font-medium text-green-800 dark:text-green-300 flex items-center gap-2">
+                                    <Briefcase className="w-4 h-4" />
+                                    Programs Directory
+                                </h3>
+                                <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                                    View available internship programs. Only administrators can create or edit program details.
+                                </p>
+                            </div>
+                            {/* Pass readOnly prop if ProgramList supports it, or it will just show programs and edit buttons might be disabled by backend auth */}
+                            <ProgramList />
+                        </div>
                     </TabsContent>
                 </Tabs>
             </div>

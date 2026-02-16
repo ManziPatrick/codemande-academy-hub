@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation } from '@apollo/client/react';
-import { gql } from '@apollo/client';
+import { gql } from "@apollo/client";
 import { toast } from 'sonner';
 import { env } from '@/lib/env';
 
