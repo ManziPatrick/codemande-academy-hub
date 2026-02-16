@@ -79,12 +79,22 @@ const startServer = async () => {
     await server.start();
 
     // Middleware
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8080'];
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:8080').split(',').map(o => o.trim());
+    console.log('CORS Allowed Origins:', allowedOrigins);
+
     app.use(cors({
         origin: function (origin, callback) {
-            if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            console.log(`[CORS Check] Origin: ${origin}`);
+            // Allow if no origin (like mobile apps, curl, or same-origin in some cases)
+            // or if the origin is in our allowed list
+            if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true);
             } else {
+                console.warn(`[CORS Reject] Origin ${origin} is not in allowed list`);
+                // Instead of failing the request, we can allow it in debug mode or
+                // just return false to let the browser handle it.
+                // However, returning an error (callback(new Error)) causes a 500.
+                // Returning false is usually correct for "not allowed".
                 callback(null, false);
             }
         },
