@@ -30,7 +30,7 @@ export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const { branding } = useBranding();
 
-  const { data: notificationData } = useQuery(GET_UNREAD_NOTIFICATIONS, {
+  const { data: notificationData } = useQuery<{ unreadNotificationCount: number }>(GET_UNREAD_NOTIFICATIONS, {
     skip: !isAuthenticated,
     pollInterval: 30000, // Poll every 30 seconds
   });
