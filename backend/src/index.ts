@@ -38,6 +38,7 @@ const startServer = async () => {
     const schema = makeExecutableSchema({ typeDefs, resolvers });
 
     // WebSocket Server Setup
+    console.log('🔌 Setting up WebSocket Server...');
     const wsServer = new WebSocketServer({
         server: httpServer,
         path: '/graphql',
@@ -60,6 +61,7 @@ const startServer = async () => {
     }, wsServer);
 
     // Apollo Server Setup
+    console.log('🛰️ Setting up Apollo Server...');
     const server = new ApolloServer({
         schema,
         plugins: [
@@ -77,29 +79,42 @@ const startServer = async () => {
     });
 
     await server.start();
+    console.log('✅ Apollo Server Started');
 
     // Middleware
     const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:8080').split(',').map(o => o.trim());
     console.log('CORS Allowed Origins:', allowedOrigins);
 
+    // General CORS middleware for all requests
     app.use(cors({
         origin: function (origin, callback) {
-            console.log(`[CORS Check] Origin: ${origin}`);
-            // Allow if no origin (like mobile apps, curl, or same-origin in some cases)
-            // or if the origin is in our allowed list
             if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true);
             } else {
-                console.warn(`[CORS Reject] Origin ${origin} is not in allowed list`);
-                // Instead of failing the request, we can allow it in debug mode or
-                // just return false to let the browser handle it.
-                // However, returning an error (callback(new Error)) causes a 500.
-                // Returning false is usually correct for "not allowed".
-                callback(null, false);
+                callback(new Error('Not allowed by CORS'));
             }
         },
         credentials: true
     }));
+
+    // Preflight handler (must be before authMiddleware and routes)
+    app.use((req, res, next) => {
+        if (req.method === 'OPTIONS') {
+            return cors({
+                origin: function (origin, callback) {
+                    if (!origin || allowedOrigins.includes(origin)) {
+                        callback(null, true);
+                    } else {
+                        callback(new Error('Not allowed by CORS'));
+                    }
+                },
+                credentials: true,
+                methods: ['GET', 'POST', 'OPTIONS'],
+                allowedHeaders: ['Content-Type', 'Authorization'],
+            })(req, res, next);
+        }
+        next();
+    });
 
     // Global Body Parser
     app.use(bodyParser.json({ limit: '50mb' }));
@@ -107,7 +122,12 @@ const startServer = async () => {
 
     // Global Logger
     app.use((req, res, next) => {
-        console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+        if (req.method === 'OPTIONS') {
+            console.log(`[PREFLIGHT] ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+            console.log('Headers:', JSON.stringify(req.headers, null, 2));
+        } else {
+            console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+        }
         next();
     });
 
@@ -130,6 +150,15 @@ const startServer = async () => {
     app.use('/api/team', teamRoutes);
     app.use('/api/ai-courses', aiCourseRoutes);
 
+    // Global Error Handler
+    app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+        console.error('Unhandled Server Error:', err);
+        res.status(500).json({
+            message: 'Internal Server Error',
+            error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        });
+    });
+
     const PORT = process.env.PORT || 4000;
 
     httpServer.listen(Number(PORT), () => {
@@ -137,4 +166,6 @@ const startServer = async () => {
     });
 };
 
-startServer();
+startServer().catch(err => {
+    console.error('CRITICAL: Server failed to start:', err);
+});
