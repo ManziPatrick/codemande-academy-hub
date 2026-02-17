@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMutation } from '@apollo/client/react';
 import { gql } from "@apollo/client";
@@ -34,6 +34,8 @@ interface GoogleLoginData {
 export function GoogleOneTap() {
     const { user, loginWithToken } = useAuth();
     const [googleLogin] = useMutation<GoogleLoginData>(GOOGLE_LOGIN);
+    const isPromptActiveRef = useRef(false);
+    const isInitializedRef = useRef(false);
 
     useEffect(() => {
         if (user) return; // Don't show if already logged in
@@ -61,22 +63,27 @@ export function GoogleOneTap() {
                 return;
             }
 
-            (window as any).google.accounts.id.initialize({
-                client_id: env.GOOGLE_CLIENT_ID,
-                callback: handleCredentialResponse,
-                cancel_on_tap_outside: false,
-                auto_select: false,
-            });
+            if (!isInitializedRef.current) {
+                (window as any).google.accounts.id.initialize({
+                    client_id: env.GOOGLE_CLIENT_ID,
+                    callback: handleCredentialResponse,
+                    cancel_on_tap_outside: false,
+                    auto_select: false,
+                    use_fedcm_for_prompt: true,
+                });
+                isInitializedRef.current = true;
+            }
+
+            if (isPromptActiveRef.current) return;
+            isPromptActiveRef.current = true;
 
             console.log('Google One Tap initialized for origin:', window.location.origin);
 
             (window as any).google.accounts.id.prompt((notification: any) => {
-                if (notification.isNotDisplayed()) {
-                    console.warn('One Tap prompt not displayed:', notification.getNotDisplayedReason());
-                } else if (notification.isSkippedMoment()) {
-                    console.log('One Tap prompt skipped:', notification.getSkippedReason());
-                } else if (notification.isDismissedMoment()) {
-                    console.log('One Tap prompt dismissed:', notification.getDismissedReason());
+                isPromptActiveRef.current = false;
+
+                if (notification.isNotDisplayed?.()) {
+                    console.warn('One Tap prompt not displayed:', notification.getNotDisplayedReason?.());
                 }
             });
         };
@@ -92,6 +99,13 @@ export function GoogleOneTap() {
         } else {
             initializeGoogleOneTap();
         }
+
+        return () => {
+            isPromptActiveRef.current = false;
+            if ((window as any).google?.accounts?.id) {
+                (window as any).google.accounts.id.cancel();
+            }
+        };
     }, [user, googleLogin, loginWithToken]);
 
     return null;
