@@ -4,6 +4,7 @@ import { Linkedin, Mail, Github, Twitter } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { getApiBaseUrl } from "@/lib/env";
 
 interface TeamMember {
     _id: string;
@@ -19,7 +20,7 @@ interface TeamMember {
     };
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
+const API_BASE_URL = getApiBaseUrl();
 
 export default function Team() {
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);

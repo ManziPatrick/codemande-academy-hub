@@ -1,11 +1,13 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { getApiBaseUrl } from "@/lib/env";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
-import { Code, Database, Wifi, Clock, Users, Award, CheckCircle, BookOpen, Target, Briefcase, Calendar, ArrowRight, Brain, Shield, Building2, Stethoscope, GraduationCap, Landmark, ShoppingBag, Factory, BarChart, ChevronRight } from "lucide-react";
+import { Code, Database, Wifi, Clock, Users, Award, CheckCircle, BookOpen, Target, Briefcase, Calendar, ArrowRight, Brain, Shield, Building2, Stethoscope, GraduationCap, Landmark, ShoppingBag, Factory, BarChart, ChevronRight, User, Tag, ChevronLeft, Share2, Facebook, Twitter, Linkedin, Copy, Check } from "lucide-react";
 import heroImage from "@/assets/hero-training.webp";
 import heroImageMobile from "@/assets/hero-training-mobile.webp";
 import aboutImage from "@/assets/about-training.webp";
@@ -64,7 +66,7 @@ const faqs = [
   { q: "Are AI courses suitable for non-technical staff?", a: "Absolutely! Our department-specific AI courses are designed for professionals at all technical levels, focusing on practical applications rather than coding." },
 ];
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
+const API_BASE_URL = getApiBaseUrl();
 
 const Training = () => {
   const { data, loading: apolloLoading } = useQuery(GET_COURSES);

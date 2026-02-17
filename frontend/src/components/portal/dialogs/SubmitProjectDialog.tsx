@@ -9,6 +9,7 @@ import { Upload, FileText, X, CheckCircle } from "lucide-react";
 import { useMutation } from "@apollo/client/react";
 import { SUBMIT_PROJECT } from "@/lib/graphql/mutations";
 import { useRef } from "react";
+import { getApiBaseUrl } from "@/lib/env";
 
 interface SubmitProjectDialogProps {
   open: boolean;
@@ -25,7 +26,7 @@ export function SubmitProjectDialog({ open, onOpenChange, projectTitle, projectI
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [submitProject, { loading: isSubmitting }] = useMutation(SUBMIT_PROJECT);
 
-  const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
+  const API_BASE_URL = getApiBaseUrl();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

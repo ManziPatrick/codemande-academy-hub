@@ -29,7 +29,7 @@ function getEnv(key: string): string {
     const value = window._env_[key as keyof typeof window._env_];
     if (value) return value;
   }
-  
+
   // Fall back to build-time config (development)
   return import.meta.env[key] || '';
 }
@@ -49,6 +49,13 @@ export const env = {
  */
 export const getApiBaseUrl = (): string => {
   return env.API_URL?.replace('/graphql', '') || 'http://localhost:4000';
+};
+
+/**
+ * Get the GraphQL API URL
+ */
+export const getGraphqlUrl = (): string => {
+  return env.API_URL || 'http://localhost:4000/graphql';
 };
 
 // Log environment status in development

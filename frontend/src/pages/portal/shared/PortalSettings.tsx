@@ -14,6 +14,7 @@ import { UPDATE_THEME, UPDATE_USER, UPDATE_BRANDING } from "@/lib/graphql/mutati
 import { GET_ME, GET_BRANDING } from "@/lib/graphql/queries";
 import { toast } from "sonner";
 import { useBranding } from "@/components/BrandingProvider";
+import { getApiBaseUrl } from "@/lib/env";
 import {
   User,
   Palette,
@@ -144,8 +145,8 @@ export default function PortalSettings() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
-      const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
+
+      const response = await fetch(`${getApiBaseUrl()}/api/upload/image`, {
         method: 'POST',
         headers: headers,
         body: formData
@@ -182,8 +183,8 @@ export default function PortalSettings() {
       const headers: HeadersInit = {};
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
-      const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
+
+      const response = await fetch(`${getApiBaseUrl()}/api/upload/image`, {
         method: 'POST',
         headers: headers,
         body: formData

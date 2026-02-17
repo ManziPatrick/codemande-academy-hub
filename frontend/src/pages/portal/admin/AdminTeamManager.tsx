@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { PortalLayout } from "@/components/portal/PortalLayout";
+import { getApiBaseUrl } from "@/lib/env";
 
 interface ITeamMember {
     _id: string;
@@ -36,7 +37,7 @@ interface ITeamMember {
     createdAt: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
+const API_BASE_URL = getApiBaseUrl();
 
 const AdminTeamManager = () => {
     const { user } = useAuth();

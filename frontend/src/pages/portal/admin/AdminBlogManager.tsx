@@ -27,6 +27,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { PortalLayout } from "@/components/portal/PortalLayout";
+import { getApiBaseUrl } from "@/lib/env";
 
 interface ICategory {
     _id: string;
@@ -46,7 +47,7 @@ interface IBlog {
     createdAt: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
+const API_BASE_URL = getApiBaseUrl();
 
 const AdminBlogManager = () => {
     const { user } = useAuth();

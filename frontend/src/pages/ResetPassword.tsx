@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, Lock, ArrowLeft, CheckCircle } from "lucide-react";
-import { env } from "@/lib/env";
+import { getGraphqlUrl } from "@/lib/env";
 
 export default function ResetPassword() {
     const [searchParams] = useSearchParams();
@@ -35,7 +35,7 @@ export default function ResetPassword() {
 
         try {
             // Use the GRAPHQL_URL from environment or fallback
-            const graphqlUrl = env.API_URL || 'http://localhost:4000/graphql';
+            const graphqlUrl = getGraphqlUrl();
 
             const response = await fetch(graphqlUrl, {
                 method: 'POST',

@@ -3,7 +3,8 @@ import { Footer } from "@/components/layout/Footer";
 import { motion } from "framer-motion";
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Calendar, User, Tag, Heart, MessageSquare, ArrowLeft, Loader2, Send } from "lucide-react";
+import { User, Calendar, Tag, ChevronLeft, Share2, Facebook, Twitter, Linkedin, Copy, Check, Loader2, ArrowLeft, Heart, MessageSquare, Send } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/env";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Helmet } from "react-helmet-async";
@@ -35,7 +36,7 @@ interface IBlog {
     createdAt: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
+const API_BASE_URL = getApiBaseUrl();
 
 const BlogDetail = () => {
     const { slug } = useParams();

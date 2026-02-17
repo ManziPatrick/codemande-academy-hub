@@ -81,8 +81,12 @@ const startServer = async () => {
     await server.start();
     console.log('✅ Apollo Server Started');
 
+    // CRITICAL: Body Parser MUST come before Apollo Server middleware
+    app.use(bodyParser.json({ limit: '50mb' }));
+    app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+
     // Middleware
-    const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:8080').split(',').map(o => o.trim());
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:8080,https://codemande-academy.onrender.com').split(',').map(o => o.trim());
     console.log('CORS Allowed Origins:', allowedOrigins);
 
     // Consistently handle CORS and Preflight
@@ -118,10 +122,6 @@ const startServer = async () => {
             credentials: true
         })(req, res, next);
     });
-
-    // Global Body Parser
-    app.use(bodyParser.json({ limit: '50mb' }));
-    app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
     // Global Logger
     app.use((req, res, next) => {

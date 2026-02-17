@@ -19,6 +19,7 @@ import { CREATE_RESOURCE } from "@/lib/graphql/mutations";
 import { GET_RESOURCES } from "@/lib/graphql/queries";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getApiBaseUrl, getGraphqlUrl } from "@/lib/env";
 
 interface AddResourceDialogProps {
     open: boolean;
@@ -64,7 +65,9 @@ export function AddResourceDialog({ open, onOpenChange, linkedTo, onModel, onSuc
         formData.append('image', file); // Current backend uses 'image' field for all uploads
 
         try {
-            const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
+            // Use the GRAPHQL_URL from environment or fallback
+            const graphqlUrl = getGraphqlUrl(); // This line was added as per instruction, though its direct use here is not shown in the instruction's snippet.
+            const API_BASE_URL = getApiBaseUrl();
             const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
                 method: 'POST',
                 headers: {

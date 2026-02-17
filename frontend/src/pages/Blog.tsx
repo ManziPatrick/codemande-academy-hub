@@ -1,7 +1,9 @@
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Calendar, ArrowRight, Clock, User, Tag, Search, Loader2 } from "lucide-react";
+import { getApiBaseUrl } from "@/lib/env";
 import heroImage from "@/assets/hero-training.webp";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -25,7 +27,7 @@ interface IBlog {
   tags: string[];
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL?.replace('/graphql', '') || 'http://localhost:4000';
+const API_BASE_URL = getApiBaseUrl();
 
 const Blog = () => {
   const [blogs, setBlogs] = useState<IBlog[]>([]);
