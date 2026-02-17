@@ -85,36 +85,38 @@ const startServer = async () => {
     const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:8080').split(',').map(o => o.trim());
     console.log('CORS Allowed Origins:', allowedOrigins);
 
-    // General CORS middleware for all requests
-    app.use(cors({
-        origin: function (origin, callback) {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                console.warn(`[CORS Reject] Origin ${origin} is not in allowed list`);
-                callback(null, false);
-            }
-        },
-        credentials: true
-    }));
-
-    // Preflight handler (must be before authMiddleware and routes)
+    // Consistently handle CORS and Preflight
     app.use((req, res, next) => {
+        const origin = req.headers.origin;
+        const isAllowed = !origin || allowedOrigins.includes(origin);
+
         if (req.method === 'OPTIONS') {
-            return cors({
-                origin: function (origin, callback) {
-                    if (!origin || allowedOrigins.includes(origin)) {
-                        callback(null, true);
-                    } else {
-                        callback(null, false);
-                    }
-                },
-                credentials: true,
-                methods: ['GET', 'POST', 'OPTIONS'],
-                allowedHeaders: ['Content-Type', 'Authorization'],
-            })(req, res, next);
+            console.log(`[CORS DEBUG] Preflight Request - Origin: ${origin}, Allowed: ${isAllowed}`);
+            console.log(`[CORS DEBUG] Headers: ${JSON.stringify(req.headers, null, 2)}`);
+
+            if (isAllowed) {
+                res.header('Access-Control-Allow-Origin', origin);
+                res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+                res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-apollo-operation-name, apollo-query-plan-experimental');
+                res.header('Access-Control-Allow-Credentials', 'true');
+                return res.sendStatus(204);
+            } else {
+                console.warn(`[CORS DEBUG] Rejecting origin: ${origin}`);
+                return res.status(403).json({ message: 'CORS Origin Not Allowed' });
+            }
         }
-        next();
+
+        // Apply CORS for regular requests
+        cors({
+            origin: function (o, callback) {
+                if (!o || allowedOrigins.includes(o)) {
+                    callback(null, true);
+                } else {
+                    callback(null, false);
+                }
+            },
+            credentials: true
+        })(req, res, next);
     });
 
     // Global Body Parser
