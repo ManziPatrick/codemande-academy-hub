@@ -91,7 +91,8 @@ const startServer = async () => {
             if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true);
             } else {
-                callback(new Error('Not allowed by CORS'));
+                console.warn(`[CORS Reject] Origin ${origin} is not in allowed list`);
+                callback(null, false);
             }
         },
         credentials: true
@@ -105,7 +106,7 @@ const startServer = async () => {
                     if (!origin || allowedOrigins.includes(origin)) {
                         callback(null, true);
                     } else {
-                        callback(new Error('Not allowed by CORS'));
+                        callback(null, false);
                     }
                 },
                 credentials: true,
