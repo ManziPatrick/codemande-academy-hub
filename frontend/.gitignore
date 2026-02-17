@@ -19,6 +19,8 @@ out/
 .env.development.local
 .env.test.local
 .env.production.local
+public/env-config.js
+frontend/public/env-config.js
 
 # IDE
 .vscode/
