@@ -4,9 +4,22 @@ import { Resource } from '../models/Resource';
 import * as admin from 'firebase-admin';
 
 if (!admin.apps.length) {
-  admin.initializeApp({
-    projectId: process.env.FIREBASE_PROJECT_ID || "codemande-d218d"
-  });
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+    ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+    : null;
+
+  if (serviceAccount) {
+    console.log('🔥 Initializing Firebase Admin with Service Account');
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: serviceAccount.project_id
+    });
+  } else {
+    console.log('🔥 Initializing Firebase Admin with Project ID only');
+    admin.initializeApp({
+      projectId: process.env.FIREBASE_PROJECT_ID || "codemande-d218d"
+    });
+  }
 }
 import { Message } from '../models/Message';
 import { Conversation } from '../models/Conversation';
@@ -1697,9 +1710,10 @@ export const resolvers = {
         return false;
       }
     },
-    register: async (_: any, { username, email, password }: any) => {
-      // Check if user exists
-      const existingUser = await User.findOne({ email });
+    register: async (_: any, { username, email, password, fullName, role }: any) => {
+      console.log(`[Register] Attempt for email: ${email}`);
+      // Check if user exists (case-insensitive)
+      const existingUser = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
       if (existingUser) {
         throw new Error('User already exists');
       }
@@ -1708,7 +1722,13 @@ export const resolvers = {
       const hashedPassword = await bcrypt.hash(password, 12);
 
       // Create user
-      const user = new User({ username, email, password: hashedPassword });
+      const user = new User({
+        username,
+        email,
+        password: hashedPassword,
+        fullName: fullName || username,
+        role: role || 'student',
+      });
       await user.save();
 
       const token = jwt.sign(
@@ -1720,7 +1740,9 @@ export const resolvers = {
       return { token, user };
     },
     login: async (_: any, { email, password }: any) => {
-      const user = await User.findOne({ email });
+      console.log(`[Login] Attempt for email: ${email}`);
+      // Case-insensitive lookup
+      const user = await User.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
       if (!user) {
         throw new Error('User not found');
       }
@@ -1790,7 +1812,11 @@ export const resolvers = {
 
         return { token: jwtToken, user: dbUser };
       } catch (error: any) {
-        console.error('Firebase login error:', error);
+        console.error('Firebase login error details:', {
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        });
         throw new Error('Firebase authentication failed: ' + error.message);
       }
     },

@@ -153,7 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data: resData } = await registerMutation({
         variables: {
-          username: data.fullName, // using fullName as username
+          username: data.email.split('@')[0], // derived username
+          fullName: data.fullName,
           email: data.email,
           password: data.password
         }

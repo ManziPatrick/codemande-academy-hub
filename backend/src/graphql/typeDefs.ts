@@ -709,7 +709,7 @@ export const typeDefs = `#graphql
     getUploadSignature(folder: String): UploadSignature!
 
     sendMessage(receiverId: ID!, content: String!): Message
-    register(username: String!, email: String!, password: String!, role: String): AuthPayload
+    register(username: String!, email: String!, password: String!, fullName: String, role: String): AuthPayload
     login(email: String!, password: String!): AuthPayload
     googleLogin(token: String!): AuthPayload
     requestPasswordReset(email: String!): Boolean
