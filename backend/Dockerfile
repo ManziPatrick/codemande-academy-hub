@@ -11,7 +11,7 @@ RUN npm install --legacy-peer-deps
 # Copy source code
 COPY . .
 
-# Build the TypeScript code
+# Build the application
 RUN npm run build
 
 # Environment variables
