@@ -57,7 +57,17 @@ import { InternshipCertificate } from '../models/internship/Certificate';
 import { logActivity } from '../services/audit.service';
 import { sendNotification, broadcastToTeam } from '../services/notification.service';
 import { createPaymentIntent, createCheckoutSession, confirmPayment, refundPayment } from '../services/stripe.service';
-import { sendApplicationConfirmation, sendApplicationStatusUpdate, sendPaymentConfirmation, sendCertificateIssued, sendFeedbackNotification, sendPasswordResetEmail } from '../services/email.service';
+import {
+  sendApplicationConfirmation,
+  sendApplicationStatusUpdate,
+  sendPaymentConfirmation,
+  sendCertificateIssued,
+  sendFeedbackNotification,
+  sendPasswordResetEmail,
+  sendWelcomeEmail,
+  sendAdminNewUserNotification,
+  sendMeetingInvitation
+} from '../services/email.service';
 import { generateCertificatePDF, generateInvoicePDF } from '../services/pdf.service';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -1199,8 +1209,8 @@ export const resolvers = {
       submission.status = 'reviewed';
       await submission.save();
 
-      // Auto-complete the lesson for the student if grade is passing (e.g. > 50)
-      if (grade >= 50) {
+      // Auto-complete the lesson for the student if grade is passing (e.g. > 70)
+      if (grade >= 70) {
         const user = await User.findById(submission.userId);
         const isAlreadyCompleted = user?.completedLessons?.some((l: any) =>
           l.courseId.toString() === submission.courseId && l.lessonId === submission.lessonId
@@ -1478,6 +1488,48 @@ export const resolvers = {
       return true;
     },
 
+    approveLessonProgress: async (_: any, { userId, courseId, lessonId }: any, context: any) => {
+      if (!context.user || !['trainer', 'mentor', 'admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Unauthorized');
+      }
+
+      const user = await User.findById(userId);
+      if (!user) throw new Error('User not found');
+
+      const targetCourseId = typeof courseId === 'object' ? ((courseId as any).id || (courseId as any)._id) : courseId;
+      const targetLessonId = typeof lessonId === 'object' ? ((lessonId as any).id || (lessonId as any)._id) : lessonId;
+
+      // Add to completedLessons if not already there
+      const isAlreadyCompleted = user.completedLessons?.some((l: any) =>
+        l.courseId.toString() === targetCourseId.toString() && l.lessonId === targetLessonId.toString()
+      );
+
+      if (!isAlreadyCompleted) {
+        user.completedLessons.push({ courseId: targetCourseId, lessonId: targetLessonId });
+        await user.save();
+
+        // Update CourseProgress
+        const progress = await CourseProgress.findOne({ userId, courseId: targetCourseId });
+        if (progress) {
+          const lIdx = progress.lessons.findIndex((l: any) => l.lessonId === targetLessonId.toString());
+          if (lIdx > -1) {
+            progress.lessons[lIdx].completed = true;
+          } else {
+            progress.lessons.push({
+              lessonId: targetLessonId.toString(),
+              completed: true,
+              timeSpent: 0,
+              lastAccessed: new Date(),
+              visits: 1
+            });
+          }
+          await progress.save();
+        }
+      }
+
+      return true;
+    },
+
     updateLessonProgress: async (_: any, { courseId, lessonId, timeSpent, completed }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
 
@@ -1532,28 +1584,35 @@ export const resolvers = {
           });
 
           if (!submission || submission.status !== 'reviewed') {
-            throw new Error('You must submit the assignment and wait for approval before completing this lesson.');
+            throw new Error('You must submit the assignment and wait for trainer approval before completing this unit.');
+          }
+
+          if (submission.grade !== undefined && submission.grade < 70) {
+            throw new Error(`Your assignment grade (${submission.grade}/100) is below the 70% passing threshold. Please contact your trainer.`);
           }
         }
 
-        // Prerequisite Gating: Check if any PREVIOUS required assignments are approved
+        // Prerequisite Gating: Check if any PREVIOUS required units (assignments/quizzes) are approved
         const currentLessonIndex = allLessons.findIndex((l: any) => (l.id || l._id).toString() === targetLessonId);
         if (currentLessonIndex > 0) {
-          const previousRequiredAssignments = allLessons.slice(0, currentLessonIndex).filter((l: any) => l.requiredAssignment || (l.type === 'assignment' && l.requiredAssignment !== false));
+          const previousRequiredLessons = allLessons.slice(0, currentLessonIndex).filter((l: any) =>
+            l.requiredAssignment ||
+            l.type === 'assignment' ||
+            l.type === 'quiz' ||
+            l.isAssignment
+          );
 
-          for (const prevLesson of previousRequiredAssignments) {
-            const prevSubmission = await AssignmentSubmission.findOne({
-              userId: context.user.id,
-              courseId: targetCourseId,
-              lessonId: (prevLesson.id || prevLesson._id).toString()
-            });
+          for (const prevLesson of previousRequiredLessons) {
+            const isPrevCompleted = user.completedLessons?.some((cl: any) =>
+              cl.courseId.toString() === targetCourseId.toString() &&
+              cl.lessonId === (prevLesson.id || prevLesson._id).toString()
+            );
 
-            if (!prevSubmission || prevSubmission.status !== 'reviewed') {
-              throw new Error(`You must complete and get approval for the prerequisite assignment: "${prevLesson.title}" before progressing.`);
+            if (!isPrevCompleted) {
+              throw new Error(`Prerequisite Block: You must complete and get approval for "${prevLesson.title}" before starting this unit.`);
             }
           }
         }
-
       }
 
       // Check if already completed
@@ -1617,6 +1676,17 @@ export const resolvers = {
         permissions: args.permissions || []
       });
       await user.save();
+
+      // Trigger Emails
+      try {
+        await sendWelcomeEmail(user.email, user.username, user.role);
+        if (context.user && context.user.email) {
+          await sendAdminNewUserNotification(context.user.email, user.username, user.email, user.role);
+        }
+      } catch (err) {
+        console.error('[CreateUser] Email error:', err);
+      }
+
       return user;
     },
 
@@ -1750,6 +1820,13 @@ export const resolvers = {
       });
       await user.save();
 
+      // Trigger Welcome Email
+      try {
+        await sendWelcomeEmail(user.email, user.username, user.role);
+      } catch (err) {
+        console.error('[Register] Welcome email error:', err);
+      }
+
       const token = jwt.sign(
         { id: user.id, email: user.email, username: user.username, role: (user as any).role },
         process.env.JWT_SECRET || 'secret',
@@ -1812,6 +1889,20 @@ export const resolvers = {
             avatar: picture
           });
           await dbUser.save();
+
+          // Trigger Welcome Email for new Google user
+          try {
+            await sendWelcomeEmail(dbUser.email, dbUser.username, dbUser.role);
+          } catch (err) {
+            console.error('[GoogleLogin] Welcome email error:', err);
+          }
+
+          // Trigger Welcome Email for new Google user
+          try {
+            await sendWelcomeEmail(dbUser.email, dbUser.username, dbUser.role);
+          } catch (err) {
+            console.error('[GoogleLogin] Welcome email error:', err);
+          }
         }
 
         // Check Account Status
@@ -2270,23 +2361,33 @@ export const resolvers = {
 
       await booking.save();
 
-      // Notify mentor via Pusher (minimal payload)
-      if (args.mentorId) {
-        const minimalBooking = {
-          id: booking._id,
-          userId: booking.userId,
-          mentorId: booking.mentorId,
-          type: booking.type,
-          status: booking.status,
-          date: booking.date,
-          time: booking.time
-        };
-        try {
-          await pusher.trigger(`user-${args.mentorId}`, 'new_booking', minimalBooking);
-        } catch (e) {
-          console.error('Pusher booking error:', e);
+      // Send Email Invitations
+      try {
+        const student = await User.findById(booking.userId);
+        if (student) {
+          await sendMeetingInvitation(student.email, student.username || 'Student', 'Mentor', {
+            type: booking.type,
+            date: booking.date,
+            time: booking.time,
+            meetingLink: booking.meetingLink || undefined
+          });
         }
+
+        if (booking.mentorId) {
+          const mentor = await User.findById(booking.mentorId);
+          if (mentor) {
+            await sendMeetingInvitation(mentor.email, mentor.username || 'Mentor', student?.username || 'Student', {
+              type: booking.type,
+              date: booking.date,
+              time: booking.time,
+              meetingLink: booking.meetingLink || undefined
+            });
+          }
+        }
+      } catch (err) {
+        console.error('[CreateBooking] Email error:', err);
       }
+
       return booking;
     },
 
@@ -2350,7 +2451,35 @@ export const resolvers = {
           await pusher.trigger(`user-${booking.mentorId.toString()}`, 'booking_updated', minimalBooking);
         }
       } catch (e) {
-        console.error('Pusher booking update error:', e);
+        console.error('Pusher booking error:', e);
+      }
+
+      // Send Email Invitations if confirmed
+      if (status === 'confirmed') {
+        try {
+          const student = await User.findById(booking.userId);
+          const mentor = booking.mentorId ? await User.findById(booking.mentorId) : null;
+
+          if (student) {
+            await sendMeetingInvitation(student.email, student.username || 'Student', mentor?.username || 'Mentor', {
+              type: booking.type,
+              date: booking.date,
+              time: booking.time,
+              meetingLink: booking.meetingLink || undefined
+            });
+          }
+
+          if (mentor) {
+            await sendMeetingInvitation(mentor.email, mentor.username || 'Mentor', student?.username || 'Student', {
+              type: booking.type,
+              date: booking.date,
+              time: booking.time,
+              meetingLink: booking.meetingLink || undefined
+            });
+          }
+        } catch (err) {
+          console.error('[UpdateBookingStatus] Email error:', err);
+        }
       }
 
       return booking;

@@ -63,7 +63,7 @@ export function LessonQuiz({ courseId, lessonId, onComplete }: LessonQuizProps) 
   };
 
   if (isFinished) {
-    const passed = score / questions.length >= 0.8;
+    const passed = score / questions.length >= 0.7;
     return (
       <div className="text-center p-8 space-y-6">
         <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto ${passed ? "bg-green-500/20 text-green-400" : "bg-orange-500/20 text-orange-400"}`}>
@@ -71,7 +71,7 @@ export function LessonQuiz({ courseId, lessonId, onComplete }: LessonQuizProps) 
         </div>
         <div>
           <h3 className="text-2xl font-bold">{passed ? "Quiz Completed!" : "Try Again"}</h3>
-          <p className="text-muted-foreground">You scored {score} out of {questions.length} ({Math.round(score/questions.length * 100)}%)</p>
+          <p className="text-muted-foreground">You scored {score} out of {questions.length} ({Math.round(score / questions.length * 100)}%)</p>
         </div>
         <div className="flex gap-4 justify-center">
           {passed ? (
@@ -97,7 +97,7 @@ export function LessonQuiz({ courseId, lessonId, onComplete }: LessonQuizProps) 
 
       <div className="space-y-4">
         <h4 className="text-lg font-medium leading-tight">{currentQuestion.questionText}</h4>
-        
+
         <div className="grid gap-3">
           {currentQuestion.options.map((option: string, i: number) => {
             let variant = "outline";
@@ -113,13 +113,12 @@ export function LessonQuiz({ courseId, lessonId, onComplete }: LessonQuizProps) 
                 key={i}
                 onClick={() => handleOptionSelect(i)}
                 disabled={isAnswered}
-                className={`w-full text-left p-4 rounded-xl border transition-all flex items-center justify-between ${
-                  isAnswered 
-                    ? (i === currentQuestion.correctOptionIndex 
-                        ? "bg-green-500/10 border-green-500/40 text-green-400" 
-                        : (i === selectedOption ? "bg-red-500/10 border-red-500/40 text-red-500" : "bg-muted/10 border-border/30 text-muted-foreground opacity-50"))
+                className={`w-full text-left p-4 rounded-xl border transition-all flex items-center justify-between ${isAnswered
+                    ? (i === currentQuestion.correctOptionIndex
+                      ? "bg-green-500/10 border-green-500/40 text-green-400"
+                      : (i === selectedOption ? "bg-red-500/10 border-red-500/40 text-red-500" : "bg-muted/10 border-border/30 text-muted-foreground opacity-50"))
                     : (selectedOption === i ? "bg-accent/10 border-accent text-accent" : "bg-card border-border hover:border-accent/50")
-                }`}
+                  }`}
               >
                 <span>{option}</span>
                 {isAnswered && i === currentQuestion.correctOptionIndex && <CheckCircle2 className="w-5 h-5" />}

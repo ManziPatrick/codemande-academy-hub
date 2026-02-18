@@ -29,6 +29,7 @@ const StudentDashboard = lazy(() => import("@/pages/portal/student/StudentDashbo
 const StudentCourses = lazy(() => import("@/pages/portal/student/StudentCourses"));
 const CourseDetail = lazy(() => import("@/pages/portal/student/CourseDetail"));
 const StudentProjects = lazy(() => import("@/pages/portal/student/StudentProjects"));
+const StudentProjectDetail = lazy(() => import("@/pages/portal/student/StudentProjectDetail"));
 const StudentCertificates = lazy(() => import("@/pages/portal/student/StudentCertificates"));
 const StudentInternships = lazy(() => import("@/pages/portal/student/StudentInternships"));
 const StudentSchedule = lazy(() => import("@/pages/portal/student/StudentSchedule"));
@@ -69,6 +70,7 @@ const SuperAdminAnalytics = lazy(() => import("@/pages/portal/super-admin/SuperA
 // Shared Portal Pages
 const PortalSettings = lazy(() => import("@/pages/portal/shared/PortalSettings"));
 const PortalHelp = lazy(() => import("@/pages/portal/shared/PortalHelp"));
+const NotificationsPage = lazy(() => import("@/pages/portal/shared/NotificationsPage"));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[50vh]">
@@ -104,6 +106,7 @@ export function AnimatedRoutes() {
           <Route path="/portal/student/courses" element={<ProtectedRoute allowedRoles={["student"]}><StudentCourses /></ProtectedRoute>} />
           <Route path="/portal/student/courses/:courseId" element={<ProtectedRoute allowedRoles={["student"]}><CourseDetail /></ProtectedRoute>} />
           <Route path="/portal/student/projects" element={<ProtectedRoute allowedRoles={["student"]}><StudentProjects /></ProtectedRoute>} />
+          <Route path="/portal/student/projects/:projectId" element={<ProtectedRoute allowedRoles={["student"]}><StudentProjectDetail /></ProtectedRoute>} />
           <Route path="/portal/student/certificates" element={<ProtectedRoute allowedRoles={["student"]}><StudentCertificates /></ProtectedRoute>} />
           <Route path="/portal/student/internship" element={<ProtectedRoute allowedRoles={["student"]}><StudentInternships /></ProtectedRoute>} />
           <Route path="/portal/student/schedule" element={<ProtectedRoute allowedRoles={["student"]}><StudentSchedule /></ProtectedRoute>} />
@@ -145,6 +148,7 @@ export function AnimatedRoutes() {
           {/* Shared Portal Routes */}
           <Route path="/portal/settings" element={<ProtectedRoute allowedRoles={["student", "trainer", "admin", "super_admin"]}><PortalSettings /></ProtectedRoute>} />
           <Route path="/portal/help" element={<ProtectedRoute allowedRoles={["student", "trainer", "admin", "super_admin"]}><PortalHelp /></ProtectedRoute>} />
+          <Route path="/portal/notifications" element={<ProtectedRoute allowedRoles={["student", "trainer", "admin", "super_admin"]}><NotificationsPage /></ProtectedRoute>} />
 
           {/* Experimental/Testing */}
           <Route path="/courses/:id" element={<PageTransition><CoursePage /></PageTransition>} />

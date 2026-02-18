@@ -50,6 +50,153 @@ export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
 
 // ========== EMAIL TEMPLATES ==========
 
+export const sendWelcomeEmail = async (
+  email: string,
+  username: string,
+  role: string
+): Promise<boolean> => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #D4AF37 0%, #B08D2A 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+        .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        .btn { display: inline-block; background: #D4AF37; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 20px; font-weight: bold; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Welcome to CODEMANDE Academy!</h1>
+        </div>
+        <div class="content">
+          <h2>Hi ${username},</h2>
+          <p>We're thrilled to have you join our community of innovators and builders!</p>
+          <p>Your account has been successfully created as a <strong>${role.charAt(0).toUpperCase() + role.slice(1)}</strong>.</p>
+          <p>At CODEMANDE Academy, we focus on real-world engineering skills that matter. You can now access your dashboard to start your learning journey.</p>
+          <a href="${process.env.CLIENT_ORIGIN}/login" class="btn">Access My Dashboard</a>
+        </div>
+        <div class="footer">
+          <p>© 2026 CODEMANDE Academy. Building Africa's Tech Talent.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `Welcome to CODEMANDE Academy, ${username}!`,
+    html
+  });
+};
+
+/**
+ * Send admin notification for new user creation
+ */
+export const sendAdminNewUserNotification = async (
+  adminEmail: string,
+  newUserName: string,
+  newUserEmail: string,
+  newUserRole: string
+): Promise<boolean> => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <body>
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee;">
+        <h2 style="color: #333;">New User Account Created</h2>
+        <p>A new user account has been successfully created in the system:</p>
+        <ul style="list-style: none; padding: 0;">
+          <li><strong>Name:</strong> ${newUserName}</li>
+          <li><strong>Email:</strong> ${newUserEmail}</li>
+          <li><strong>Role:</strong> ${newUserRole}</li>
+          <li><strong>Date:</strong> ${new Date().toLocaleString()}</li>
+        </ul>
+        <p>You can manage this user from the Admin Portal.</p>
+        <a href="${process.env.CLIENT_ORIGIN}/portal/admin/users" style="display: inline-block; padding: 10px 20px; background: #333; color: #fff; text-decoration: none; border-radius: 4px;">View User List</a>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: adminEmail,
+    subject: `Admin Notification: New User Registered (${newUserName})`,
+    html
+  });
+};
+
+/**
+ * Send meeting invitation to student and mentor
+ */
+export const sendMeetingInvitation = async (
+  recipientEmail: string,
+  recipientName: string,
+  participantName: string, // The other person
+  bookingDetails: {
+    type: string;
+    date: string;
+    time: string;
+    meetingLink?: string;
+  }
+): Promise<boolean> => {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #3b82f6; color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+        .details-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e2e8f0; }
+        .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+        .btn { display: inline-block; background: #3b82f6; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin-top: 10px; font-weight: bold; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>📅 Meeting Scheduled</h1>
+        </div>
+        <div class="content">
+          <h2>Hi ${recipientName},</h2>
+          <p>Your ${bookingDetails.type} meeting with <strong>${participantName}</strong> has been scheduled.</p>
+          
+          <div class="details-box">
+            <p><strong>Topic:</strong> ${bookingDetails.type}</p>
+            <p><strong>Date:</strong> ${bookingDetails.date}</p>
+            <p><strong>Time:</strong> ${bookingDetails.time}</p>
+            ${bookingDetails.meetingLink ? `<p><strong>Link:</strong> <a href="${bookingDetails.meetingLink}">${bookingDetails.meetingLink}</a></p>` : ''}
+          </div>
+          
+          ${bookingDetails.meetingLink ? `
+            <p>Please click the button below to join the meeting at the scheduled time:</p>
+            <a href="${bookingDetails.meetingLink}" class="btn">Join Meeting</a>
+          ` : '<p>The meeting link will be updated in your portal shortly.</p>'}
+          
+          <p>If you need to reschedule, please do so through your portal dashboard.</p>
+        </div>
+        <div class="footer">
+          <p>© 2026 CODEMANDE Academy. Building Africa's Tech Talent.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: recipientEmail,
+    subject: `Meeting Invitation: ${bookingDetails.type} with ${participantName}`,
+    html
+  });
+};
+
 /**
  * Send application confirmation email
  */
@@ -422,5 +569,8 @@ export default {
   sendPaymentConfirmation,
   sendCertificateIssued,
   sendFeedbackNotification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendWelcomeEmail,
+  sendAdminNewUserNotification,
+  sendMeetingInvitation
 };

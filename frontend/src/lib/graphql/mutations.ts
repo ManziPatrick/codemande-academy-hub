@@ -1282,3 +1282,8 @@ export const TOGGLE_PROJECT_TEMPLATE = gql`
     }
   }
 `;
+export const APPROVE_LESSON_PROGRESS = gql`
+  mutation ApproveLessonProgress($userId: ID!, $courseId: ID!, $lessonId: String!) {
+    approveLessonProgress(userId: $userId, courseId: $courseId, lessonId: $lessonId)
+  }
+`;

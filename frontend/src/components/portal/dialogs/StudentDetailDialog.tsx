@@ -1,4 +1,9 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useMutation } from "@apollo/client/react";
+import { APPROVE_LESSON_PROGRESS } from "@/lib/graphql/mutations";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -17,6 +22,7 @@ import {
     Activity,
     CheckCircle,
     Clock,
+    Lock,
 } from "lucide-react";
 
 interface StudentDetailDialogProps {
@@ -189,6 +195,25 @@ export function StudentDetailDialog({ open, onOpenChange, student }: StudentDeta
 
                                         const courseProgress = totalLessons > 0 ? Math.round((completedInCourse / totalLessons) * 100) : 0;
 
+                                        const [expandedCourse, setExpandedCourse] = useState<string | null>(null);
+                                        const [approveProgress] = useMutation(APPROVE_LESSON_PROGRESS);
+
+                                        const handleApprove = async (lessonId: string) => {
+                                            try {
+                                                await approveProgress({
+                                                    variables: {
+                                                        userId: student.id,
+                                                        courseId: currentCourseId,
+                                                        lessonId
+                                                    }
+                                                });
+                                                toast.success("Lesson progress approved!");
+                                                // Note: Ideally we'd refetch or update local state here
+                                            } catch (err: any) {
+                                                toast.error(err.message || "Failed to approve progress");
+                                            }
+                                        };
+
                                         return (
                                             <Card key={course.id} className="border-border/50">
                                                 <CardContent className="p-4">
@@ -199,9 +224,19 @@ export function StudentDetailDialog({ open, onOpenChange, student }: StudentDeta
                                                                 {course.modules?.length || 0} modules • {totalLessons} lessons
                                                             </p>
                                                         </div>
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {course.level || 'Beginner'}
-                                                        </Badge>
+                                                        <div className="flex gap-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="text-xs h-7"
+                                                                onClick={() => setExpandedCourse(expandedCourse === course.id ? null : course.id)}
+                                                            >
+                                                                {expandedCourse === course.id ? "Hide Units" : "View Units"}
+                                                            </Button>
+                                                            <Badge variant="outline" className="text-xs">
+                                                                {course.level || 'Beginner'}
+                                                            </Badge>
+                                                        </div>
                                                     </div>
                                                     <div className="flex items-center gap-2 mt-3">
                                                         <Progress value={courseProgress} className="flex-1 h-2" />
@@ -212,6 +247,46 @@ export function StudentDetailDialog({ open, onOpenChange, student }: StudentDeta
                                                     <p className="text-xs text-card-foreground/60 mt-1">
                                                         {completedInCourse}/{totalLessons} lessons completed
                                                     </p>
+
+                                                    {expandedCourse === course.id && (
+                                                        <div className="mt-4 pt-4 border-t border-border/30 space-y-4">
+                                                            {course.modules?.map((mod: any) => (
+                                                                <div key={mod.id || mod._id} className="space-y-2">
+                                                                    <p className="text-[10px] font-bold uppercase text-accent/70 tracking-wider px-1">{mod.title}</p>
+                                                                    <div className="space-y-1">
+                                                                        {mod.lessons?.map((les: any) => {
+                                                                            const lesId = (les.id || les._id).toString();
+                                                                            const isLesCompleted = completedLessonsArray.some((cl: any) => {
+                                                                                const clCourseId = (cl.courseId || (cl.course && (cl.course.id || cl.course._id)) || "").toString();
+                                                                                return clCourseId === currentCourseId && cl.lessonId === lesId;
+                                                                            });
+
+                                                                            return (
+                                                                                <div key={lesId} className="flex items-center justify-between p-2 rounded-lg bg-background/40 text-xs">
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        {isLesCompleted ? <CheckCircle className="w-3 h-3 text-green-500" /> : <div className="w-3 h-3 rounded-full border border-muted-foreground/30" />}
+                                                                                        <span className={isLesCompleted ? "text-card-foreground/50 line-through" : "text-card-foreground"}>{les.title}</span>
+                                                                                        {les.type === 'assignment' && <Badge variant="outline" className="text-[8px] h-4 py-0">Assignment</Badge>}
+                                                                                        {les.type === 'quiz' && <Badge variant="outline" className="text-[8px] h-4 py-0 bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Quiz</Badge>}
+                                                                                    </div>
+                                                                                    {!isLesCompleted && (
+                                                                                        <Button
+                                                                                            variant="ghost"
+                                                                                            size="sm"
+                                                                                            className="h-6 text-[10px] hover:text-accent"
+                                                                                            onClick={() => handleApprove(lesId)}
+                                                                                        >
+                                                                                            Approve Progress
+                                                                                        </Button>
+                                                                                    )}
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </CardContent>
                                             </Card>
                                         );

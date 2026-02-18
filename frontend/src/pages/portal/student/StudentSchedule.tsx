@@ -15,9 +15,10 @@ import {
   ChevronRight,
   Eye,
   Loader2,
-  Calendar
+  Calendar,
+  Plus
 } from "lucide-react";
-import { ViewSessionDialog } from "@/components/portal/dialogs";
+import { ViewSessionDialog, BookCallDialog } from "@/components/portal/dialogs";
 import { CalendarGrid } from "@/components/portal/CalendarGrid";
 import { toast } from "sonner";
 import { useQuery } from "@apollo/client/react";
@@ -25,6 +26,7 @@ import { GET_MY_BOOKINGS } from "@/lib/graphql/queries";
 
 export default function StudentSchedule() {
   const [viewSession, setViewSession] = useState<any | null>(null);
+  const [bookOpen, setBookOpen] = useState(false);
   const { data, loading } = useQuery(GET_MY_BOOKINGS);
 
   const bookings = (data as any)?.myBookings || [];
@@ -74,6 +76,10 @@ export default function StudentSchedule() {
             <Button variant="outline" size="icon">
               <ChevronRight className="w-4 h-4" />
             </Button>
+            <Button variant="gold" size="sm" className="ml-2 gap-2" onClick={() => setBookOpen(true)}>
+              <Plus className="w-4 h-4" />
+              Book a Session
+            </Button>
           </div>
         </motion.div>
 
@@ -87,21 +93,22 @@ export default function StudentSchedule() {
                 Your Schedule is Clear
               </h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                No upcoming meetings or mentorship sessions found.
+                No upcoming meetings or mentorship sessions found. Book a one-on-one session with a mentor to get personalized guidance.
               </p>
-              <Button variant="gold" onClick={() => toast.info("Go to Courses to book a call with a mentor")}>
-                Find a Mentor
+              <Button variant="gold" onClick={() => setBookOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Book a Session
               </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-8">
-            <CalendarGrid 
+            <CalendarGrid
               events={bookings.map((b: any) => ({
                 ...b,
                 title: b.type.replace('-', ' ') + (b.mentor ? ` with ${b.mentor.username}` : ""),
-              }))} 
-              onEventClick={(event) => setViewSession(event)} 
+              }))}
+              onEventClick={(event) => setViewSession(event)}
             />
 
             <div className="space-y-4">
@@ -147,7 +154,7 @@ export default function StudentSchedule() {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="flex sm:flex-col md:flex-row gap-3">
                             {booking.meetingLink && booking.status === 'confirmed' && (
                               <Button variant="gold" className="flex-1" onClick={() => handleJoinSession(booking.meetingLink)}>
@@ -185,6 +192,12 @@ export default function StudentSchedule() {
           link: viewSession?.meetingLink
         }}
         onJoin={() => handleJoinSession(viewSession?.meetingLink)}
+      />
+
+      {/* Book a Session Dialog */}
+      <BookCallDialog
+        open={bookOpen}
+        onOpenChange={setBookOpen}
       />
     </PortalLayout>
   );

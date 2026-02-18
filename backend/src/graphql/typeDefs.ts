@@ -1370,6 +1370,12 @@ export const typeDefs = `#graphql
       grade: Int!
       feedback: String
     ): AssignmentSubmission
+
+    approveLessonProgress(
+      userId: ID!
+      courseId: ID!
+      lessonId: String!
+    ): Boolean
   }
 
   type StripePaymentIntent {

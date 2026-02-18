@@ -456,8 +456,10 @@ export function PortalLayout({ children }: PortalLayoutProps) {
               <DropdownMenuTrigger asChild>
                 <button className="relative p-2 text-card-foreground/70 hover:text-card-foreground transition-colors">
                   <Bell className="w-5 h-5" />
-                  {notifications.some(n => !n.read) && (
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent rounded-full animate-pulse" />
+                  {notifications.filter(n => !n.read).length > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] bg-accent text-accent-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+                      {notifications.filter(n => !n.read).length > 99 ? '99+' : notifications.filter(n => !n.read).length}
+                    </span>
                   )}
                 </button>
               </DropdownMenuTrigger>
