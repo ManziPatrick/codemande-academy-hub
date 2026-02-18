@@ -1090,6 +1090,25 @@ export const resolvers = {
       );
       return true;
     },
+
+    updatePresence: async (_: any, __: any, context: any) => {
+      if (!context.user) return false;
+      await User.findByIdAndUpdate(context.user.id, {
+        isOnline: true,
+        lastActive: new Date()
+      });
+      return true;
+    },
+
+    goOffline: async (_: any, __: any, context: any) => {
+      if (!context.user) return false;
+      await User.findByIdAndUpdate(context.user.id, {
+        isOnline: false,
+        lastActive: new Date()
+      });
+      return true;
+    },
+
     // Resource Mutations
     createResource: async (_: any, { input }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');

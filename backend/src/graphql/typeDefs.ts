@@ -800,6 +800,8 @@ export const typeDefs = `#graphql
     updateBookingStatus(id: ID!, status: String!, meetingLink: String): Booking
     markNotificationRead(id: ID!): Notification
     markAllNotificationsRead: Boolean
+    updatePresence: Boolean
+    goOffline: Boolean
     createBadge(title: String!, description: String!, icon: String, category: String): Badge
 
     awardBadgeToBatch(userIds: [ID!]!, badgeId: ID!): Boolean

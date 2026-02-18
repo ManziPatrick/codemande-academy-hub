@@ -1230,6 +1230,18 @@ export const MARK_ALL_NOTIFICATIONS_READ = gql`
   }
 `;
 
+export const UPDATE_PRESENCE = gql`
+  mutation UpdatePresence {
+    updatePresence
+  }
+`;
+
+export const GO_OFFLINE = gql`
+  mutation GoOffline {
+    goOffline
+  }
+`;
+
 export const ASSIGN_PROJECT_TO_USERS = gql`
   mutation AssignProjectToUsers($projectId: ID!, $userIds: [ID!]!, $type: String!, $deadline: String) {
     assignProjectToUsers(projectId: $projectId, userIds: $userIds, type: $type, deadline: $deadline) {

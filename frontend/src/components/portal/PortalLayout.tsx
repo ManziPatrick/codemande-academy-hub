@@ -133,6 +133,7 @@ import { useBranding } from "@/components/BrandingProvider";
 import { GET_NOTIFICATIONS } from "@/lib/graphql/queries";
 import { MARK_NOTIFICATION_READ, MARK_ALL_NOTIFICATIONS_READ } from "@/lib/graphql/mutations";
 import { formatDistanceToNow } from "date-fns";
+import { usePresence } from "@/hooks/use-presence";
 
 export function PortalLayout({ children }: PortalLayoutProps) {
   const { user, logout } = useAuth();
@@ -140,6 +141,9 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pusher = usePusher();
+
+  // Start presence tracking
+  usePresence();
 
   const [trackActivity] = useMutation(TRACK_ACTIVITY);
   const { branding } = useBranding();
