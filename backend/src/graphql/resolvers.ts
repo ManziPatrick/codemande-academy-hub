@@ -3103,7 +3103,7 @@ export const resolvers = {
                 userId: user.id,
                 courseId: course.id,
                 lessons: [],
-                status: 'in_progress',
+                status: 'active',
                 lastAccessed: new Date()
               }
             },

@@ -17,7 +17,7 @@ const courseProgressSchema = new mongoose.Schema({
     totalTimeSpent: { type: Number, default: 0 }, // seconds
     overallProgress: { type: Number, default: 0 }, // 0-100 percentage
     lastAccessed: { type: Date, default: Date.now },
-    status: { type: String, enum: ['active', 'completed', 'dropped'], default: 'active' },
+    status: { type: String, enum: ['active', 'in_progress', 'completed', 'dropped'], default: 'active' },
     completionDate: { type: Date }
 }, { timestamps: true });
 
