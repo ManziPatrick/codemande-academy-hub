@@ -4,6 +4,8 @@ import { useMutation } from '@apollo/client/react';
 import { gql } from "@apollo/client";
 import { toast } from 'sonner';
 import { env } from '@/lib/env';
+import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 const GOOGLE_LOGIN = gql`
   mutation GoogleLogin($idToken: String!) {
@@ -38,10 +40,16 @@ export function GoogleOneTap() {
     const isInitializedRef = useRef(false);
 
     useEffect(() => {
-        if (user) return; // Don't show if already logged in
+        // Don't show if already logged in OR on the auth page (avoid redundancy)
+        if (user || window.location.pathname === '/auth') return;
 
         const handleCredentialResponse = async (response: any) => {
             try {
+                // 1. Sync with local Firebase instance
+                const credential = GoogleAuthProvider.credential(response.credential);
+                await signInWithCredential(auth, credential);
+
+                // 2. Sync with Backend
                 const { data } = await googleLogin({
                     variables: { idToken: response.credential }
                 });
