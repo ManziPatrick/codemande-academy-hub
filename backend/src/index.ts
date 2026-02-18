@@ -39,21 +39,37 @@ const startServer = async () => {
 
     const allowedOrigins = (
         process.env.ALLOWED_ORIGINS ||
-        'http://localhost:8080,https://www.codemande.com,https://codemande.com'
+        'http://localhost:8080,http://localhost:5173,https://www.codemande.com,https://codemande.com,https://*.codemande.com'
     )
         .split(',')
-        .map(o => o.trim());
+        .map(o => o.trim())
+        .filter(Boolean);
 
-    app.use(cors({
+    const isAllowedOrigin = (origin: string) => {
+        return allowedOrigins.some((allowed) => {
+            if (allowed === '*') return true;
+
+            if (allowed.includes('*')) {
+                const escaped = allowed
+                    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+                    .replace(/\*/g, '.*');
+                return new RegExp(`^${escaped}$`).test(origin);
+            }
+
+            return allowed === origin;
+        });
+    };
+
+    const corsOptions: cors.CorsOptions = {
         origin: (origin, callback) => {
             if (!origin) return callback(null, true); // allow server-to-server
 
-            if (allowedOrigins.includes(origin)) {
+            if (isAllowedOrigin(origin)) {
                 return callback(null, origin);
-            } else {
-                console.warn('❌ Blocked by CORS:', origin);
-                return callback(new Error('Not allowed by CORS'));
             }
+
+            console.warn('❌ Blocked by CORS:', origin);
+            return callback(new Error('Not allowed by CORS'));
         },
         credentials: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -63,10 +79,13 @@ const startServer = async () => {
             'x-apollo-operation-name',
             'apollo-query-plan-experimental'
         ]
-    }));
+    };
 
-    // VERY IMPORTANT → enable preflight globally
-    app.options('*', cors());
+    app.use(cors(corsOptions));
+
+    // Enable preflight globally. In newer path-to-regexp versions, "*" is invalid
+    // and throws `Missing parameter name` during startup, so use a regex matcher.
+    app.options(/.*/, cors(corsOptions));
 
     // =============================
 
