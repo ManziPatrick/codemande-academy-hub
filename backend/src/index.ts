@@ -83,8 +83,9 @@ const startServer = async () => {
 
     app.use(cors(corsOptions));
 
-    // VERY IMPORTANT → enable preflight globally
-    app.options('*', cors(corsOptions));
+    // Enable preflight globally. In newer path-to-regexp versions, "*" is invalid
+    // and throws `Missing parameter name` during startup, so use a regex matcher.
+    app.options(/.*/, cors(corsOptions));
 
     // =============================
 
