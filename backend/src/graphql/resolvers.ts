@@ -2,6 +2,8 @@ import { User } from '../models/User';
 import Notification from '../models/Notification';
 import { Resource } from '../models/Resource';
 import * as admin from 'firebase-admin';
+import * as fs from 'fs';
+import { file as tmpFile } from 'tmp-promise';
 
 if (!admin.apps.length) {
   const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
@@ -38,6 +40,10 @@ import { Certificate } from '../models/Certificate';
 import { Internship } from '../models/Internship';
 import { CourseProgress } from '../models/CourseProgress';
 import { Payment } from '../models/Payment';
+import { generateUploadSignature } from '../services/upload.service';
+import { v2 as cloudinary } from 'cloudinary';
+// @ts-ignore
+import { GraphQLUpload } from 'graphql-upload';
 import { pusher } from '../lib/pusher';
 import { InternshipProgram } from '../models/internship/InternshipProgram';
 import { InternshipApplication } from '../models/internship/InternshipApplication';
@@ -69,10 +75,9 @@ import {
   sendMeetingInvitation
 } from '../services/email.service';
 import { generateCertificatePDF, generateInvoicePDF } from '../services/pdf.service';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import * as bcrypt from 'bcryptjs';
+import * as jwt from 'jsonwebtoken';
 import { chatWithAIService, explainTaskService, reviewSubmissionService } from '../services/ai.service';
-import { generateUploadSignature } from '../services/upload.service';
 
 
 const calculateInternshipProgress = async (internship: any) => {
@@ -121,6 +126,7 @@ const calculateInternshipProgress = async (internship: any) => {
 }
 
 export const resolvers = {
+  Upload: GraphQLUpload,
   Query: {
     hello: () => 'Hello world from Apollo Server!',
 
@@ -229,10 +235,10 @@ export const resolvers = {
       return await User.find({ role: 'student', isDeleted: { $ne: true } });
     },
 
-    getUploadSignature: (_: any, { folder }: { folder?: string }, context: any) => {
+    getUploadSignature: (_: any, { folder, resourceType }: { folder?: string, resourceType?: string }, context: any) => {
       // Optional: Check if user is authenticated
       if (!context.user) throw new Error('Not authenticated');
-      return generateUploadSignature(folder);
+      return generateUploadSignature(folder, resourceType);
     },
 
     dailyDashboard: async (_: any, __: any, context: any) => {
@@ -1083,6 +1089,68 @@ export const resolvers = {
     },
   },
   Mutation: {
+    singleUpload: async (_: any, { file, folder, resourceType }: { file: any, folder?: string, resourceType?: string }) => {
+      const { createReadStream, filename } = await file;
+      const stream = createReadStream();
+
+      // Use tmp to buffer the stream to disk for reliable upload_large
+      const { path, cleanup } = await tmpFile({
+        postfix: filename.substring(filename.lastIndexOf('.'))
+      });
+
+      try {
+        await new Promise((resolve, reject) => {
+          const writeStream = fs.createWriteStream(path);
+          stream.pipe(writeStream);
+          writeStream.on('finish', resolve);
+          writeStream.on('error', reject);
+        });
+
+        // Determine effective resource type
+        // For PPT/X, we use 'video' only for files > 10MB to bypass the 10MB raw limit.
+        // Smaller files use 'raw' to avoid "Unsupported video format" errors.
+        let effectiveResourceType = (resourceType || 'auto') as "auto" | "image" | "video" | "raw";
+        if (filename.toLowerCase().endsWith('.ppt') || filename.toLowerCase().endsWith('.pptx')) {
+          const stats = fs.statSync(path);
+          const fileSizeInMB = stats.size / (1024 * 1024);
+
+          if (fileSizeInMB > 10) {
+            effectiveResourceType = 'video';
+          } else {
+            effectiveResourceType = 'raw';
+          }
+        }
+
+        const extension = filename.substring(filename.lastIndexOf('.'));
+        const publicIdBase = filename.substring(0, filename.lastIndexOf('.')).replace(/[^a-zA-Z0-9]/g, '_');
+
+        const result = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_large(path, {
+            folder: folder || 'codemande-academy',
+            resource_type: effectiveResourceType,
+            public_id: `${publicIdBase}_${Date.now()}${extension}`,
+            chunk_size: 6000000, // 6MB chunks
+          }, (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          });
+        }) as any;
+
+        console.log('Cloudinary upload_large resolved result:', JSON.stringify(result, null, 2));
+
+        if (!result || (!result.secure_url && !result.url)) {
+          throw new Error('Cloudinary upload failed: No URL returned in response');
+        }
+
+        return {
+          url: result.secure_url || result.url,
+          publicId: result.public_id,
+          resourceType: result.resource_type
+        };
+      } finally {
+        await cleanup();
+      }
+    },
     markNotificationRead: async (_: any, { id }: { id: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const notification = await Notification.findOneAndUpdate(
@@ -2015,7 +2083,7 @@ export const resolvers = {
         try {
           // Import Course inside for scoping if needed, but it should be available in the file
           const enrolledCourses = await Course.find({ studentsEnrolled: context.user.id });
-          const instructorIds = [...new Set(enrolledCourses.map((c: any) => c.instructor.toString()))];
+          const instructorIds = Array.from(new Set(enrolledCourses.map((c: any) => c.instructor.toString())));
 
           instructorIds.forEach(async (id: string) => {
             try {
@@ -2734,7 +2802,7 @@ export const resolvers = {
         ...(mentorIds || []),
         ...interns.map((i: any) => i.userId?._id?.toString() || i.userId?.id?.toString())
       ].filter(Boolean);
-      const uniqueParticipants = [...new Set(participantIds)];
+      const uniqueParticipants = Array.from(new Set(participantIds));
 
       const newConversation = new Conversation({
         participants: uniqueParticipants
@@ -2979,7 +3047,7 @@ export const resolvers = {
 
       if (!conversationId) {
         const teamUserIds = project.team?.map((t: any) => t.userId).filter(Boolean) || [];
-        const uniqueParticipants = [...new Set([project.userId.toString(), ...teamUserIds.map((id: any) => id.toString())])];
+        const uniqueParticipants = Array.from(new Set([project.userId.toString(), ...teamUserIds.map((id: any) => id.toString())]));
 
         const newConversation = new Conversation({
           participants: uniqueParticipants

@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { GET_PROJECT } from "@/lib/graphql/queries";
 import { SubmitProjectDialog, TeamChatDialog, ViewGuidelinesDialog } from "@/components/portal/dialogs";
+import { PPTViewer } from "@/components/portal/PPTViewer";
 import { useState } from "react";
 import { format } from "date-fns";
 
@@ -184,6 +185,16 @@ export default function StudentProjectDetail() {
                 <div className="grid lg:grid-cols-3 gap-6">
                     {/* Main Content */}
                     <div className="lg:col-span-2 space-y-6">
+                        {/* Primary PPT Viewer if exists */}
+                        {project.documentation?.ppts && project.documentation.ppts.length > 0 && (
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
+                                <PPTViewer
+                                    url={project.documentation.ppts[0]}
+                                    title={`${project.title} - Main Presentation`}
+                                />
+                            </motion.div>
+                        )}
+
                         {/* Description */}
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
                             <Card className="border-border/50">
@@ -417,7 +428,7 @@ export default function StudentProjectDetail() {
                         )}
 
                         {/* Project Toolbox */}
-                        {project.documentation?.links && project.documentation.links.length > 0 && (
+                        {(project.documentation?.links?.length > 0 || project.documentation?.ppts?.length > 0) && (
                             <Card className="border-border/50">
                                 <CardHeader className="pb-2">
                                     <CardTitle className="text-sm flex items-center gap-2">
@@ -427,9 +438,22 @@ export default function StudentProjectDetail() {
                                 </CardHeader>
                                 <CardContent className="pt-0">
                                     <div className="space-y-1.5">
-                                        {project.documentation.links.map((link: any, i: number) => (
+                                        {project.documentation?.ppts?.map((ppt: string, i: number) => (
                                             <a
-                                                key={i}
+                                                key={`ppt-${i}`}
+                                                href={ppt}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center gap-2 px-3 py-2 bg-background border border-border/50 rounded-md text-xs hover:border-accent/50 hover:text-accent transition-all"
+                                            >
+                                                <FileText className="w-3 h-3 shrink-0 text-red-400" />
+                                                <span className="truncate">Presentation {i + 1}</span>
+                                                <ExternalLink className="w-3 h-3 ml-auto shrink-0 opacity-50" />
+                                            </a>
+                                        ))}
+                                        {project.documentation?.links?.map((link: any, i: number) => (
+                                            <a
+                                                key={`link-${i}`}
                                                 href={link.url}
                                                 target="_blank"
                                                 rel="noopener noreferrer"

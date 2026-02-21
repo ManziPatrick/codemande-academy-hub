@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { GET_ALL_PROJECTS, GET_USERS, GET_COURSES } from '@/lib/graphql/queries';
 import { Link as LinkIcon, Plus, Trash2, Book, Box, Layout, X, Check, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { FileUpload } from '@/components/FileUpload';
+import { FileText } from 'lucide-react';
 
 interface CreateProjectDialogProps {
     open: boolean;
@@ -29,6 +31,7 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
         templateId: '',
     });
     const [toolboxLinks, setToolboxLinks] = useState<{ title: string; url: string }[]>([]);
+    const [toolboxPPTs, setToolboxPPTs] = useState<string[]>([]);
 
     const { data: usersData } = useQuery(GET_USERS);
     const { data: projectsData } = useQuery(GET_ALL_PROJECTS);
@@ -63,6 +66,7 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
                 templateId: '',
             });
             setToolboxLinks([]);
+            setToolboxPPTs([]);
         },
         onError: (err) => toast.error(err.message)
     });
@@ -82,6 +86,7 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
                 templateId: '',
             });
             setToolboxLinks([]);
+            setToolboxPPTs([]);
         },
         onError: (err) => toast.error(err.message)
     });
@@ -120,7 +125,8 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
                     deadline: formData.deadline,
                     mentorIds: trainers.slice(0, 1).map(t => t.id),
                     documentation: {
-                        links: toolboxLinks
+                        links: toolboxLinks,
+                        ppts: toolboxPPTs
                     }
                 }
             });
@@ -323,15 +329,50 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
                                 <Box className="w-4 h-4 text-accent" />
                                 Project Toolbox (Resources)
                             </Label>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-[10px] font-bold uppercase gap-1"
-                                onClick={handleAddLink}
-                            >
-                                <Plus className="w-3 h-3" /> Add Link
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-[10px] font-bold uppercase gap-1"
+                                    onClick={handleAddLink}
+                                >
+                                    <Plus className="w-3 h-3" /> Add Link
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* PPT Uploads */}
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                                <FileText className="w-3 h-3" /> Presentation Files (PPT)
+                            </Label>
+                            <div className="grid gap-2">
+                                {toolboxPPTs.map((ppt, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-2 bg-muted/20 rounded border border-border/30">
+                                        <div className="flex items-center gap-2 truncate">
+                                            <FileText className="w-3.5 h-3.5 text-red-500" />
+                                            <span className="text-[10px] truncate">{ppt.split('/').pop()}</span>
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6 text-destructive"
+                                            onClick={() => setToolboxPPTs(toolboxPPTs.filter((_, i) => i !== idx))}
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <div className="h-24">
+                                    <FileUpload
+                                        folder="project_resources"
+                                        label="Upload PPT Resource"
+                                        onUploadComplete={(url) => setToolboxPPTs([...toolboxPPTs, url])}
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         <div className="space-y-2">
@@ -362,7 +403,7 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
                                     </Button>
                                 </div>
                             ))}
-                            {toolboxLinks.length === 0 && (
+                            {toolboxLinks.length === 0 && toolboxPPTs.length === 0 && (
                                 <p className="text-[10px] text-muted-foreground italic text-center py-2">
                                     No resources added to this project's toolbox.
                                 </p>

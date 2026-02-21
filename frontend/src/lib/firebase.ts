@@ -3,13 +3,13 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyCXbis7wKU3IAcUrjyLTrVXKiIoW1CSpuM",
-    authDomain: "project-665960152507.firebaseapp.com",
-    projectId: "project-665960152507",
-    storageBucket: "project-665960152507.firebasestorage.app",
-    messagingSenderId: "665960152507",
-    appId: "1:665960152507:web:4e27850283a1065074989e",
-    measurementId: "G-67XBBGTM1Y"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCXbis7wKU3IAcUrjyLTrVXKiIoW1CSpuM",
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "project-665960152507.firebaseapp.com",
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "project-665960152507",
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "project-665960152507.firebasestorage.app",
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "665960152507",
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:665960152507:web:4e27850283a1065074989e",
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-67XBBGTM1Y"
 };
 
 // Initialize Firebase

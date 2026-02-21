@@ -11,6 +11,8 @@ import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/use/ws';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { Context } from 'graphql-ws';
+// @ts-ignore
+import { graphqlUploadExpress } from 'graphql-upload';
 
 import connectDB from './config/db';
 import { typeDefs } from './graphql/typeDefs';
@@ -77,7 +79,8 @@ const startServer = async () => {
             'Content-Type',
             'Authorization',
             'x-apollo-operation-name',
-            'apollo-query-plan-experimental'
+            'apollo-query-plan-experimental',
+            'apollo-require-preflight'
         ]
     };
 
@@ -88,9 +91,14 @@ const startServer = async () => {
     app.options(/.*/, cors(corsOptions));
 
     // =============================
-
-    app.use(bodyParser.json({ limit: '50mb' }));
-    app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
+    // ✅ GRAPHQL UPLOAD MIDDLEWARE (Must be before body-parser)
+    // =============================
+    app.use(graphqlUploadExpress({
+        maxFileSize: 100 * 1024 * 1024, // 100MB
+        maxFiles: 5
+    }));
+    app.use(bodyParser.json({ limit: '100mb' }));
+    app.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
 
     // =============================
     // AUTH MIDDLEWARE

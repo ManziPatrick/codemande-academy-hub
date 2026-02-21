@@ -29,6 +29,11 @@ export interface IProject extends Document {
     videoUrl: string;
     milestoneIndex: number;
   }>;
+  milestonePPTs?: Array<{
+    title: string;
+    pptUrl: string;
+    milestoneIndex: number;
+  }>;
   milestones?: Array<{
     title: string;
     description?: string;
@@ -50,6 +55,7 @@ export interface IProject extends Document {
   documentation?: {
     images?: string[];
     videos?: string[];
+    ppts?: string[];
     links?: Array<{ title: string; url: string }>;
     inPersonNotes?: string;
   };
@@ -111,6 +117,13 @@ const ProjectSchema: Schema = new Schema(
         milestoneIndex: { type: Number },
       },
     ],
+    milestonePPTs: [
+      {
+        title: { type: String },
+        pptUrl: { type: String },
+        milestoneIndex: { type: Number },
+      },
+    ],
     // Enhanced Milestones for "Real Work" tracking
     milestones: [
       {
@@ -136,6 +149,7 @@ const ProjectSchema: Schema = new Schema(
     documentation: {
       images: [String],
       videos: [String],
+      ppts: [String],
       links: [{ title: String, url: String }],
       inPersonNotes: String,
     },

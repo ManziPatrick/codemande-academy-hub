@@ -1,8 +1,11 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { BookOpen, Users, Clock, DollarSign, Star, PlayCircle } from "lucide-react";
+import { BookOpen, Users, Clock, DollarSign, Star, PlayCircle, FileText } from "lucide-react";
+import { PPTViewer } from "../PPTViewer";
+import { useState } from "react";
 
 interface ViewCourseDialogProps {
   open: boolean;
@@ -11,6 +14,8 @@ interface ViewCourseDialogProps {
 }
 
 export function ViewCourseDialog({ open, onOpenChange, course }: ViewCourseDialogProps) {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
   if (!course) return null;
 
   const totalLessons = course.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 0;
@@ -93,12 +98,31 @@ export function ViewCourseDialog({ open, onOpenChange, course }: ViewCourseDialo
                     )}
                     <div className="space-y-2 ml-4">
                       {module.lessons?.map((lesson: any, lIdx: number) => (
-                        <div key={lIdx} className="flex items-center gap-3 p-2 bg-background/40 rounded-md text-sm">
-                          <div className="p-1 rounded bg-accent/10 text-accent">
-                            {lesson.type === 'video' ? <PlayCircle className="w-3 h-3" /> : <BookOpen className="w-3 h-3" />}
+                        <div key={lIdx} className="space-y-2">
+                          <div className="flex items-center gap-3 p-2 bg-background/40 rounded-md text-sm group">
+                            <div className="p-1 rounded bg-accent/10 text-accent">
+                              {lesson.type === 'video' ? <PlayCircle className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
+                            </div>
+                            <span className="flex-1 truncate">{lesson.title}</span>
+                            <div className="flex items-center gap-2">
+                              {lesson.fileUrl && (lesson.fileUrl.endsWith('.ppt') || lesson.fileUrl.endsWith('.pptx')) && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => setPreviewUrl(previewUrl === lesson.fileUrl ? null : lesson.fileUrl)}
+                                >
+                                  <PlayCircle className="w-3 h-3 text-accent" />
+                                </Button>
+                              )}
+                              <span className="text-[10px] text-muted-foreground">{lesson.duration}m</span>
+                            </div>
                           </div>
-                          <span className="flex-1 truncate">{lesson.title}</span>
-                          <span className="text-[10px] text-muted-foreground">{lesson.duration}m</span>
+                          {previewUrl === lesson.fileUrl && (
+                            <div className="mt-2 rounded-xl overflow-hidden border border-accent/20 shadow-lg">
+                              <PPTViewer url={lesson.fileUrl} title={lesson.title} className="h-48" />
+                            </div>
+                          )}
                         </div>
                       ))}
                       {(!module.lessons || module.lessons.length === 0) && (

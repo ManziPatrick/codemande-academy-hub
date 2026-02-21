@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useQuery } from "@apollo/client/react";
+import { useLazyQuery, useMutation } from "@apollo/client/react";
 import { gql } from "@apollo/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -8,13 +8,23 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const GET_UPLOAD_SIGNATURE = gql`
-  query GetUploadSignature($folder: String) {
-    getUploadSignature(folder: $folder) {
+  query GetUploadSignature($folder: String, $resourceType: String) {
+    getUploadSignature(folder: $folder, resourceType: $resourceType) {
       signature
       timestamp
       folder
       cloudName
       apiKey
+    }
+  }
+`;
+
+const SINGLE_UPLOAD = gql`
+  mutation SingleUpload($file: Upload!, $folder: String, $resourceType: String) {
+    singleUpload(file: $file, folder: $folder, resourceType: $resourceType) {
+      url
+      publicId
+      resourceType
     }
   }
 `;
@@ -26,6 +36,14 @@ interface UploadSignatureData {
         folder: string;
         cloudName: string;
         apiKey: string;
+    };
+}
+
+interface SingleUploadData {
+    singleUpload: {
+        url: string;
+        publicId: string;
+        resourceType: string;
     };
 }
 
@@ -41,8 +59,8 @@ interface FileUploadProps {
 export function FileUpload({
     onUploadComplete,
     folder = "codemande-academy",
-    accept = "image/*,application/pdf",
-    maxSizeMB = 10,
+    accept = "image/*,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    maxSizeMB = 100,
     className,
     label = "Upload File"
 }: FileUploadProps) {
@@ -53,10 +71,8 @@ export function FileUpload({
     const [preview, setPreview] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const { refetch: getSignature } = useQuery<UploadSignatureData>(GET_UPLOAD_SIGNATURE, {
-        variables: { folder },
-        skip: true,
-    });
+    const [getSignatureQuery] = useLazyQuery<UploadSignatureData>(GET_UPLOAD_SIGNATURE);
+    const [singleUpload] = useMutation<SingleUploadData>(SINGLE_UPLOAD);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
@@ -107,74 +123,42 @@ export function FileUpload({
         if (!file) return;
 
         setUploading(true);
-        setProgress(0);
+        setProgress(10);
         setError(null);
 
         try {
-            // 1. Get Signature from Backend
-            const { data } = await getSignature();
-            if (!data?.getUploadSignature) {
-                throw new Error("Failed to get upload signature");
+            // Determine resource type
+            const isVideo = file.type.startsWith("video/");
+            const isImageOrPdf = file.type.startsWith("image/") || file.type.includes("pdf");
+            const resourceType = isVideo ? "video" : isImageOrPdf ? "image" : "auto";
+
+            setProgress(30);
+
+            // Use the GraphQL mutation for upload
+            // This goes through our backend, which has the 100MB limit and uses the Private Secret
+            const { data } = await singleUpload({
+                variables: {
+                    file,
+                    folder,
+                    resourceType
+                }
+            });
+
+            if (data?.singleUpload) {
+                setProgress(100);
+                onUploadComplete(data.singleUpload.url, data.singleUpload.resourceType);
+                toast.success("File uploaded successfully");
+                setFile(null);
+                setPreview(null);
+            } else {
+                throw new Error("Upload failed");
             }
-
-            const { signature, timestamp, cloudName, apiKey } = data.getUploadSignature;
-
-            // 2. Prepare Form Data
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("api_key", apiKey);
-            formData.append("timestamp", timestamp.toString());
-            formData.append("signature", signature);
-            formData.append("folder", folder);
-
-            // 3. Upload to Cloudinary
-            const xhr = new XMLHttpRequest();
-            const resourceType = file.type.startsWith("video/") ? "video" : "image"; // 'image' also handles pdfs for some reason in signed uploads mostly, but better auto
-            const cloudinaryUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${file.type.startsWith("video/") ? "video" : "image"}/upload`;
-
-            // Note: For raw files (docs not converted), resource_type might need to be 'raw' or 'auto'. 
-            // Safe bet for mixed content is 'auto', but signed uploads often require specific types in the URL.
-            // Let's rely on 'auto' endpoint if possible, or fallback to image/video logic.
-            // Actually standard endpoint is usually /image/upload or /video/upload or /raw/upload
-
-            const endpointType = file.type.startsWith("video/") ? "video" : file.type.includes("pdf") || file.type.includes("document") ? "image" : "auto";
-
-            xhr.open("POST", `https://api.cloudinary.com/v1_1/${cloudName}/${endpointType}/upload`);
-
-            xhr.upload.onprogress = (e) => {
-                if (e.lengthComputable) {
-                    const percentComplete = Math.round((e.loaded / e.total) * 100);
-                    setProgress(percentComplete);
-                }
-            };
-
-            xhr.onload = () => {
-                if (xhr.status === 200) {
-                    const response = JSON.parse(xhr.responseText);
-                    onUploadComplete(response.secure_url, response.resource_type);
-                    toast.success("File uploaded successfully");
-                    setFile(null);
-                    setPreview(null);
-                } else {
-                    setError("Upload failed");
-                    toast.error("Upload failed");
-                }
-                setUploading(false);
-            };
-
-            xhr.onerror = () => {
-                setError("Network error during upload");
-                setUploading(false);
-                toast.error("Network error");
-            };
-
-            xhr.send(formData);
-
         } catch (err: any) {
-            console.error(err);
+            console.error("Upload error:", err);
             setError(err.message || "Upload failed");
-            setUploading(false);
             toast.error(err.message || "Upload failed");
+        } finally {
+            setUploading(false);
         }
     };
 

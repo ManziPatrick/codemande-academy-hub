@@ -56,6 +56,7 @@ export default function Auth() {
     return null;
   }
 
+  /* 
   const handleGoogleLogin = async () => {
     try {
       const result = await signInWithPopup(auth, googleProvider);
@@ -82,6 +83,7 @@ export default function Auth() {
       setIsLoading(false);
     }
   };
+  */
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -468,6 +470,7 @@ export default function Auth() {
                 </div>
               </div>
 
+              {/* 
               <div className="flex justify-center">
                 <Button
                   variant="outline"
@@ -481,6 +484,7 @@ export default function Auth() {
                   Sign in with Google
                 </Button>
               </div>
+              */}
 
               <p className="mt-6 text-center text-sm text-muted-foreground">
                 By continuing, you agree to our{" "}

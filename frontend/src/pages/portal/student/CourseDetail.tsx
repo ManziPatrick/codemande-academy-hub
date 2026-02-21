@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { RequestHelpDialog, BookCallDialog } from "@/components/portal/dialogs";
 import { LessonQuiz } from "@/components/portal/LessonQuiz";
+import { PPTViewer } from "@/components/portal/PPTViewer";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_COURSE, GET_ME, GET_ASSIGNMENT_SUBMISSIONS } from "@/lib/graphql/queries";
@@ -269,7 +270,9 @@ export default function CourseDetail() {
                 <div className="space-y-6">
                   <Card className="border-border/50 overflow-hidden shadow-2xl">
                     <div className="aspect-video bg-black relative">
-                      {currentLesson?.videoUrl ? (
+                      {currentLesson?.type === 'ppt' || (currentLesson?.fileUrl && (currentLesson.fileUrl.endsWith('.ppt') || currentLesson.fileUrl.endsWith('.pptx'))) ? (
+                        <PPTViewer url={currentLesson.fileUrl} title={currentLesson.title} />
+                      ) : currentLesson?.videoUrl ? (
                         <iframe src={currentLesson.videoUrl.replace("watch?v=", "embed/")} className="w-full h-full" allowFullScreen />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-center p-12">

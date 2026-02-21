@@ -1,4 +1,6 @@
 export const typeDefs = `#graphql
+  scalar Upload
+
   type AuthPayload {
     token: String!
     user: User!
@@ -271,6 +273,7 @@ export const typeDefs = `#graphql
   type Documentation {
     images: [String]
     videos: [String]
+    ppts: [String]
     links: [ProjectLink]
     inPersonNotes: String
   }
@@ -321,8 +324,15 @@ export const typeDefs = `#graphql
     conversationId: ID
     conversation: Conversation
     milestoneVideos: [MilestoneVideo]
+    milestonePPTs: [MilestonePPT]
     createdAt: String!
     updatedAt: String!
+  }
+
+  type MilestonePPT {
+    title: String!
+    pptUrl: String!
+    milestoneIndex: Int!
   }
 
   type MilestoneVideo {
@@ -509,6 +519,12 @@ export const typeDefs = `#graphql
     apiKey: String!
   }
 
+  type FileResponse {
+    url: String!
+    publicId: String
+    resourceType: String
+  }
+
   type Query {
     # Resources
     getResources(linkedTo: ID, onModel: String): [Resource!]!
@@ -562,7 +578,7 @@ export const typeDefs = `#graphql
     dailyDashboard: DailyDashboard
     notifications: [Notification]
     getCourseQuestions(courseId: ID!): [Question!]!
-    getUploadSignature(folder: String): UploadSignature!
+    getUploadSignature(folder: String, resourceType: String): UploadSignature!
     
     # Assignments
     getAssignmentSubmissions(courseId: ID, lessonId: String): [AssignmentSubmission]
@@ -634,6 +650,7 @@ export const typeDefs = `#graphql
   input DocumentationInput {
     images: [String]
     videos: [String]
+    ppts: [String]
     links: [ProjectLinkInput]
     inPersonNotes: String
   }
@@ -706,7 +723,8 @@ export const typeDefs = `#graphql
     reviewSubmission(taskTitle: String!, submissionContent: String!): ChatResponse
 
     # Uploads
-    getUploadSignature(folder: String): UploadSignature!
+    getUploadSignature(folder: String, resourceType: String): UploadSignature!
+    singleUpload(file: Upload!, folder: String, resourceType: String): FileResponse!
 
     sendMessage(receiverId: ID!, content: String!): Message
     register(username: String!, email: String!, password: String!, fullName: String, role: String): AuthPayload

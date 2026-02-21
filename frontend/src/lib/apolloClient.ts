@@ -1,12 +1,17 @@
-import { ApolloClient, InMemoryCache, createHttpLink, split } from "@apollo/client";
+import { ApolloClient, InMemoryCache, split } from "@apollo/client";
 import { setContext } from '@apollo/client/link/context';
 import { getMainDefinition } from '@apollo/client/utilities';
 import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
+// @ts-ignore
+import UploadHttpLink from 'apollo-upload-client/UploadHttpLink.mjs';
 import { createClient } from 'graphql-ws';
 import { env } from './env';
 
-const httpLink = createHttpLink({
+const httpLink = new UploadHttpLink({
   uri: env.API_URL || 'http://localhost:4000/graphql',
+  headers: {
+    'apollo-require-preflight': 'true',
+  }
 });
 
 const wsLink = new GraphQLWsLink(createClient({

@@ -677,7 +677,7 @@ export function EditCourseDialog({
                                     <div className="p-3 bg-accent/5 rounded-xl border border-accent/10 space-y-2">
                                       <div className="flex items-center justify-between">
                                         <label className="text-[10px] font-bold text-accent italic flex items-center gap-1">
-                                          <Paperclip className="w-3 h-3" /> Upload PDF/Resource
+                                          <Paperclip className="w-3 h-3" /> Upload PPT / PDF / Resource
                                         </label>
                                         {lesson.fileUrl && (
                                           <Badge variant="outline" className="text-[9px] bg-background">
