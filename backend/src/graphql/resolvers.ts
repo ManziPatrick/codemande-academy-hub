@@ -19,7 +19,7 @@ if (!admin.apps.length) {
   } else {
     console.log('🔥 Initializing Firebase Admin with Project ID only');
     admin.initializeApp({
-      projectId: process.env.FIREBASE_PROJECT_ID || "project-665960152507"
+      projectId: process.env.FIREBASE_PROJECT_ID || "codemande-d218d"
     });
   }
 }
