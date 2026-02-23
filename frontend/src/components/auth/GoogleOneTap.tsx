@@ -1,4 +1,120 @@
+import { useEffect, useRef } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMutation } from '@apollo/client/react';
+import { gql } from "@apollo/client";
+import { toast } from 'sonner';
+import { env } from '@/lib/env';
+import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+
+const GOOGLE_LOGIN = gql`
+  mutation GoogleLogin($idToken: String!) {
+    googleLogin(idToken: $idToken) {
+      token
+      user {
+        id
+        username
+        email
+        role
+      }
+    }
+  }
+`;
+
+interface GoogleLoginData {
+    googleLogin: {
+        token: string;
+        user: {
+            id: string;
+            username: string;
+            email: string;
+            role: string;
+        };
+    };
+}
+
 export function GoogleOneTap() {
-    // Disabled for local testing as requested
+    const { user, loginWithToken } = useAuth();
+    const [googleLogin] = useMutation<GoogleLoginData>(GOOGLE_LOGIN);
+    const isPromptActiveRef = useRef(false);
+    const isInitializedRef = useRef(false);
+
+    useEffect(() => {
+        // Don't show if already logged in OR on the auth page (avoid redundancy)
+        if (user || window.location.pathname === '/auth') return;
+
+        const handleCredentialResponse = async (response: any) => {
+            try {
+                // 1. Sync with local Firebase instance
+                const credential = GoogleAuthProvider.credential(response.credential);
+                await signInWithCredential(auth, credential);
+
+                // 2. Sync with Backend
+                const { data } = await googleLogin({
+                    variables: { idToken: response.credential }
+                });
+
+                if (data?.googleLogin) {
+                    loginWithToken(data.googleLogin.token, data.googleLogin.user);
+                    toast.success('Successfully logged in with Google');
+                }
+            } catch (error: any) {
+                console.error('Google login error:', error);
+                toast.error('Google login failed');
+            }
+        };
+
+        // Initialize Google One Tap
+        const initializeGoogleOneTap = () => {
+            if (!(window as any).google) {
+                console.error('Google script not loaded');
+                return;
+            }
+
+            if (!isInitializedRef.current) {
+                (window as any).google.accounts.id.initialize({
+                    client_id: env.GOOGLE_CLIENT_ID,
+                    callback: handleCredentialResponse,
+                    cancel_on_tap_outside: false,
+                    auto_select: false,
+                    use_fedcm_for_prompt: true,
+                });
+                isInitializedRef.current = true;
+            }
+
+            if (isPromptActiveRef.current) return;
+            isPromptActiveRef.current = true;
+
+            console.log('Google One Tap initialized for origin:', window.location.origin);
+
+            (window as any).google.accounts.id.prompt((notification: any) => {
+                isPromptActiveRef.current = false;
+
+                if (notification.isNotDisplayed?.()) {
+                    console.warn('One Tap prompt not displayed:', notification.getNotDisplayedReason?.());
+                }
+            });
+        };
+
+        // Load Google script if not present
+        if (!(window as any).google) {
+            const script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gsi/client';
+            script.async = true;
+            script.defer = true;
+            script.onload = initializeGoogleOneTap;
+            document.head.appendChild(script);
+        } else {
+            initializeGoogleOneTap();
+        }
+
+        return () => {
+            isPromptActiveRef.current = false;
+            if ((window as any).google?.accounts?.id) {
+                (window as any).google.accounts.id.cancel();
+            }
+        };
+    }, [user, googleLogin, loginWithToken]);
+
     return null;
 }
