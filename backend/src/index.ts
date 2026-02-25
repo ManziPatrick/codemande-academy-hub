@@ -23,6 +23,7 @@ import blogCategoryRoutes from './routes/BlogCategoryRoutes';
 import uploadRoutes from './routes/UploadRoutes';
 import teamRoutes from './routes/TeamRoutes';
 import aiCourseRoutes from './routes/AICourseRoutes';
+import moduleAccessRoutes from './routes/ModuleAccessRoutes';
 import { authMiddleware } from './middleware/auth';
 
 dotenv.config();
@@ -181,6 +182,7 @@ const startServer = async () => {
     app.use('/api/blog-categories', blogCategoryRoutes);
     app.use('/api/upload', uploadRoutes);
     app.use('/api/team', teamRoutes);
+    app.use('/api/module-access', moduleAccessRoutes);
     // app.use('/api/ai-courses', aiCourseRoutes); // Disabled for deployment
 
     // =============================
