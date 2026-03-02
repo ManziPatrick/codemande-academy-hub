@@ -144,21 +144,23 @@ export const ENROLL_STUDENT_IN_COURSE = gql`
 `;
 
 export const CREATE_COURSE = gql`
-  mutation CreateCourse($title: String!, $description: String!, $thumbnail: String, $price: Float, $discountPrice: Float, $level: String, $category: String, $instructorId: ID, $status: String, $modules: [ModuleInput!]!) {
-    createCourse(title: $title, description: $description, thumbnail: $thumbnail, price: $price, discountPrice: $discountPrice, level: $level, category: $category, instructorId: $instructorId, status: $status, modules: $modules) {
+  mutation CreateCourse($title: String!, $description: String!, $thumbnail: String, $price: Float, $discountPrice: Float, $level: String, $category: String, $instructorId: ID, $status: String, $submissionRequired: Boolean, $modules: [ModuleInput!]!) {
+    createCourse(title: $title, description: $description, thumbnail: $thumbnail, price: $price, discountPrice: $discountPrice, level: $level, category: $category, instructorId: $instructorId, status: $status, submissionRequired: $submissionRequired, modules: $modules) {
       id
       title
       status
+      submissionRequired
     }
   }
 `;
 
 export const UPDATE_COURSE = gql`
-  mutation UpdateCourse($id: ID!, $title: String, $description: String, $thumbnail: String, $price: Float, $discountPrice: Float, $level: String, $category: String, $instructorId: ID, $status: String, $modules: [ModuleInput!]) {
-    updateCourse(id: $id, title: $title, description: $description, thumbnail: $thumbnail, price: $price, discountPrice: $discountPrice, level: $level, category: $category, instructorId: $instructorId, status: $status, modules: $modules) {
+  mutation UpdateCourse($id: ID!, $title: String, $description: String, $thumbnail: String, $price: Float, $discountPrice: Float, $level: String, $category: String, $instructorId: ID, $status: String, $submissionRequired: Boolean, $modules: [ModuleInput!]) {
+    updateCourse(id: $id, title: $title, description: $description, thumbnail: $thumbnail, price: $price, discountPrice: $discountPrice, level: $level, category: $category, instructorId: $instructorId, status: $status, submissionRequired: $submissionRequired, modules: $modules) {
       id
       title
       status
+      submissionRequired
     }
   }
 `;
@@ -1182,6 +1184,12 @@ export const GRADE_ASSIGNMENT = gql`
       grade
       feedback
     }
+  }
+`;
+
+export const PING_INSTRUCTOR = gql`
+  mutation PingInstructor($submissionId: ID!, $message: String) {
+    pingInstructor(submissionId: $submissionId, message: $message)
   }
 `;
 

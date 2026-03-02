@@ -301,6 +301,12 @@ export default function AdminDashboard() {
                       Create New Course
                     </Button>
                   </Link>
+                  <Link to="/portal/admin/assignment-reviews">
+                    <Button variant="ghost" className="w-full justify-start">
+                      <GraduationCap className="w-4 h-4 mr-2 text-accent" />
+                      Review Assignments
+                    </Button>
+                  </Link>
                   <Link to="/portal/admin/internships">
                     <Button variant="ghost" className="w-full justify-start">
                       <Briefcase className="w-4 h-4 mr-2 text-accent" />

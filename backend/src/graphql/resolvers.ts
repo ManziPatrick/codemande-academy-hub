@@ -159,26 +159,21 @@ export const resolvers = {
       if (context.user.role === 'student') {
         filter.userId = context.user.id;
       } else if (context.user.role === 'trainer') {
-        // Fetch courses owned by this trainer
-        const myCourses = await Course.find({ instructor: context.user.id }).select('_id');
-        const myCourseIds = myCourses.map(c => c._id);
-
+        // trainers can now see all submissions based on the request
+        // but let's keep a way to filter or at least mark their own
         if (filter.courseId) {
-          // If a specific course is requested, verify ownership
-          const isMyCourse = myCourseIds.some(id => id.toString() === filter.courseId);
-          if (!isMyCourse) {
-            // For now, strict check. Or could just return empty []
-            throw new Error('You can only view submissions for your own courses');
-          }
+          // No restriction, they can view any course submission
         } else {
-          // Default: show all submissions for my courses
-          filter.courseId = { $in: myCourseIds };
+          // Default: show all submissions, but maybe sort them?
         }
       }
 
       return await AssignmentSubmission.find(filter)
         .populate('userId')
-        .populate('courseId')
+        .populate({
+          path: 'courseId',
+          populate: { path: 'instructor' }
+        })
         .sort({ createdAt: -1 });
     },
 
@@ -1089,6 +1084,22 @@ export const resolvers = {
     },
   },
   Mutation: {
+    pingInstructor: async (_: any, { submissionId, message }: any, context: any) => {
+      const submission = await AssignmentSubmission.findById(submissionId).populate('courseId');
+      if (!submission) throw new Error('Submission not found');
+      
+      const course = submission.courseId as any;
+      if (course && course.instructor) {
+        await sendNotification(course.instructor.toString(), {
+          type: 'ASSIGNMENT_REVIEW_PING',
+          title: 'Review Assistance Needed',
+          message: `${context.user.fullName || context.user.username} is reviewing a submission for ${course.title}: ${message || 'No additional message'}`,
+          link: `/portal/trainer/projects`
+        });
+        return true;
+      }
+      return false;
+    },
     singleUpload: async (_: any, { file, folder, resourceType }: { file: any, folder?: string, resourceType?: string }) => {
       const { createReadStream, filename } = await file;
       const stream = createReadStream();
@@ -1261,6 +1272,17 @@ export const resolvers = {
       // Log activity
       await logActivity(context.user.id, 'SUBMIT_ASSIGNMENT', 'AssignmentSubmission', submission.id, `Submitted assignment for lesson ${lessonId} in course ${courseId}`);
 
+      // Notify Instructor
+      const course = await Course.findById(courseId);
+      if (course && course.instructor) {
+        sendNotification(course.instructor.toString(), {
+          type: 'ASSIGNMENT_SUBMITTED',
+          title: 'New Assignment Submission',
+          message: `${context.user.fullName || context.user.username} submitted an assignment for ${course.title}.`,
+          link: `/portal/trainer/projects`
+        });
+      }
+
       return await submission.populate(['userId', 'courseId']);
     },
 
@@ -1315,6 +1337,17 @@ export const resolvers = {
         message: `Your assignment for course ${submission.courseId} has been graded: ${grade}/100`,
         link: `/portal/student/courses/${submission.courseId}`
       });
+
+      // Notify instructor if graded by someone else
+      const course = await Course.findById(submission.courseId);
+      if (course && course.instructor && course.instructor.toString() !== context.user.id) {
+        sendNotification(course.instructor.toString(), {
+          type: 'ASSIGNMENT_GRADED_BY_OTHERS',
+          title: 'Assignment Graded by Team',
+          message: `Submission from ${submission.userId} for ${course.title} was graded by ${context.user.fullName || context.user.username}.`,
+          link: `/portal/trainer/projects`
+        });
+      }
 
       return await submission.populate(['userId', 'courseId']);
     },
@@ -1644,7 +1677,10 @@ export const resolvers = {
         const allLessons = course.modules.flatMap((m: any) => m.lessons);
         const lesson = allLessons.find((l: any) => (l.id || l._id).toString() === targetLessonId);
 
-        if (lesson && (lesson.type === 'assignment' || lesson.isAssignment)) {
+        const isGlobalAssignmentRequired = course.submissionRequired !== false && (lesson && (lesson.type === 'assignment' || lesson.isAssignment));
+        const isLessonExplicitlyRequired = lesson && !!lesson.requiredAssignment;
+
+        if (isGlobalAssignmentRequired || isLessonExplicitlyRequired) {
           const submission = await AssignmentSubmission.findOne({
             userId: context.user.id,
             courseId: targetCourseId,

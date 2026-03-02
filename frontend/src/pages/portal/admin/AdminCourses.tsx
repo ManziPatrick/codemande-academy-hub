@@ -85,6 +85,7 @@ export default function AdminCourses() {
     thumbnail: "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
     isFree: false,
     status: "draft",
+    submissionRequired: true,
   });
 
 
@@ -106,13 +107,14 @@ export default function AdminCourses() {
           instructorId: newCourse.instructorId,
           thumbnail: newCourse.thumbnail,
           status: newCourse.status,
+          submissionRequired: newCourse.submissionRequired,
           modules: []
         }
       });
       toast.success("Course created successfully!");
       refetch();
       setIsCreateOpen(false);
-      setNewCourse({ title: "", description: "", price: 0, discountPrice: 0, level: "Beginner", category: "Development", instructorId: "", thumbnail: "https://images.unsplash.com/photo-1498050108023-c5249f4df085", isFree: false, status: "draft" });
+      setNewCourse({ title: "", description: "", price: 0, discountPrice: 0, level: "Beginner", category: "Development", instructorId: "", thumbnail: "https://images.unsplash.com/photo-1498050108023-c5249f4df085", isFree: false, status: "draft", submissionRequired: true });
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -147,6 +149,7 @@ export default function AdminCourses() {
           instructorId: updatedCourse.instructorId,
           thumbnail: updatedCourse.thumbnail,
           status: updatedCourse.status,
+          submissionRequired: updatedCourse.submissionRequired,
           modules: updatedCourse.modules
         }
       });
@@ -222,122 +225,160 @@ export default function AdminCourses() {
                 <DialogTitle>Create New Course</DialogTitle>
               </DialogHeader>
               <div className="flex-1 p-6 pt-0 overflow-y-auto custom-scrollbar">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-6 pt-4">
+                  {/* Block 1: General Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-accent border-b border-accent/10 pb-2">General Information</h3>
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Price ($) {!newCourse.isFree && <span className="text-[10px] text-accent font-normal">(Editable)</span>}</label>
+                      <label className="text-sm font-medium mb-1.5 block">Course Title *</label>
                       <Input
-                        type="number"
-                        placeholder="99.99"
-                        value={newCourse.price}
-                        onChange={(e) => setNewCourse({ ...newCourse, price: parseFloat(e.target.value) || 0 })}
-                        disabled={newCourse.isFree}
-                        className={newCourse.isFree ? "opacity-50" : ""}
+                        placeholder="e.g., Advanced JavaScript Masterclass"
+                        value={newCourse.title}
+                        onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
+                        className="bg-muted/20"
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Discount Price ($)</label>
-                      <Input
-                        type="number"
-                        placeholder="e.g. 79.99"
-                        value={newCourse.discountPrice}
-                        onChange={(e) => setNewCourse({ ...newCourse, discountPrice: parseFloat(e.target.value) || 0 })}
+                      <label className="text-sm font-medium mb-1.5 block">Description *</label>
+                      <Textarea
+                        placeholder="What will students learn in this course?"
+                        rows={3}
+                        value={newCourse.description}
+                        onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
+                        className="bg-muted/20"
                       />
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-lg">
                     <div>
-                      <p className="font-medium text-sm">Make Course Free</p>
-                      <p className="text-xs text-muted-foreground">Sets price to 0 and disables editing</p>
+                      <label className="text-sm font-medium mb-1.5 block">Thumbnail Image</label>
+                      {newCourse.thumbnail && !newCourse.thumbnail.includes('unsplash') ? (
+                        <div className="relative aspect-video rounded-xl overflow-hidden border border-accent/20 group">
+                          <img src={newCourse.thumbnail} alt="Thumbnail preview" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="h-8 gap-2"
+                              onClick={() => setNewCourse({ ...newCourse, thumbnail: "" })}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Remove
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <FileUpload
+                          folder="courses"
+                          label="Upload Course Thumbnail"
+                          onUploadComplete={(url) => setNewCourse({ ...newCourse, thumbnail: url })}
+                        />
+                      )}
                     </div>
-                    <Switch
-                      checked={newCourse.isFree}
-                      onCheckedChange={(checked) => setNewCourse({ ...newCourse, isFree: checked })}
-                    />
                   </div>
-                  <div className="flex items-center justify-between p-3 bg-muted/30 border border-border/50 rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">Course Visibility</p>
-                      <p className="text-xs text-muted-foreground">Toggle between Draft and Live</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] uppercase font-bold text-muted-foreground">{newCourse.status === 'published' ? 'Live' : 'Draft'}</span>
-                      <Switch
-                        checked={newCourse.status === 'published'}
-                        onCheckedChange={(checked) => setNewCourse({ ...newCourse, status: checked ? 'published' : 'draft' })}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Course Title *</label>
-                    <Input
-                      placeholder="e.g., Advanced JavaScript"
-                      value={newCourse.title}
-                      onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Description *</label>
-                    <Textarea
-                      placeholder="Course description..."
-                      rows={3}
-                      value={newCourse.description}
-                      onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Thumbnail</label>
-                    {newCourse.thumbnail && newCourse.thumbnail.includes('unsplash') === false ? (
-                      <div className="relative aspect-video rounded-lg overflow-hidden border">
-                        <img src={newCourse.thumbnail} alt="" className="w-full h-full object-cover" />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-2 right-2 h-8 w-8"
-                          onClick={() => setNewCourse({ ...newCourse, thumbnail: "" })}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+
+                  {/* Block 2: Pricing & Availability */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-accent border-b border-accent/10 pb-2">Pricing & Availability</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium mb-1.5 block">Base Price ($)</label>
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          value={newCourse.price}
+                          onChange={(e) => setNewCourse({ ...newCourse, price: parseFloat(e.target.value) || 0 })}
+                          disabled={newCourse.isFree}
+                          className={newCourse.isFree ? "opacity-50" : "bg-muted/20"}
+                        />
                       </div>
-                    ) : (
-                      <FileUpload
-                        folder="courses"
-                        label="Upload Course Thumbnail"
-                        onUploadComplete={(url) => setNewCourse({ ...newCourse, thumbnail: url })}
-                      />
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Level</label>
-                      <Input
-                        placeholder="Beginner"
-                        value={newCourse.level}
-                        onChange={(e) => setNewCourse({ ...newCourse, level: e.target.value })}
+                      <div>
+                        <label className="text-sm font-medium mb-1.5 block">Discount Price ($)</label>
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          value={newCourse.discountPrice}
+                          onChange={(e) => setNewCourse({ ...newCourse, discountPrice: parseFloat(e.target.value) || 0 })}
+                          className="bg-muted/20"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-xl">
+                      <div>
+                        <p className="font-bold text-sm">Free Course</p>
+                        <p className="text-[10px] text-muted-foreground">Make this course accessible to everyone for free</p>
+                      </div>
+                      <Switch
+                        checked={newCourse.isFree}
+                        onCheckedChange={(checked) => setNewCourse({ ...newCourse, isFree: checked, price: checked ? 0 : newCourse.price })}
                       />
                     </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Category</label>
-                      <Input
-                        placeholder="Development"
-                        value={newCourse.category}
-                        onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value })}
-                      />
+                    <div className="flex items-center justify-between p-3 bg-muted/30 border border-border/50 rounded-xl">
+                      <div>
+                        <p className="font-bold text-sm">Course Visibility</p>
+                        <p className="text-[10px] text-muted-foreground">Set to Live to make it visible to students</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] uppercase font-black ${newCourse.status === 'published' ? 'text-green-500' : 'text-amber-500'}`}>
+                          {newCourse.status === 'published' ? 'Live' : 'Draft'}
+                        </span>
+                        <Switch
+                          checked={newCourse.status === 'published'}
+                          onCheckedChange={(checked) => setNewCourse({ ...newCourse, status: checked ? 'published' : 'draft' })}
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Assign Instructor</label>
-                    <select
-                      className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm"
-                      value={newCourse.instructorId}
-                      onChange={(e) => setNewCourse({ ...newCourse, instructorId: e.target.value })}
-                    >
-                      <option value="">Select Instructor</option>
-                      {trainers.map((t: any) => (
-                        <option key={t.id} value={t.id}>{t.username} ({t.role})</option>
-                      ))}
-                    </select>
+
+                  {/* Block 3: Settings & Requirements */}
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-accent border-b border-accent/10 pb-2">Course Settings & Requirements</h3>
+                    <div className="flex items-center justify-between p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl">
+                      <div className="flex-1 pr-4">
+                        <p className="font-bold text-sm flex items-center gap-2">
+                          Strict Progress Enforcement
+                          <HelpCircle className="w-3 h-3 text-amber-500/50" />
+                        </p>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed">
+                          When enabled, students <b>must submit assignments</b> and wait for trainer approval before they can move to the next unit.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={newCourse.submissionRequired}
+                        onCheckedChange={(checked) => setNewCourse({ ...newCourse, submissionRequired: checked })}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium mb-1.5 block">Learning Level</label>
+                        <Input
+                          placeholder="e.g., Intermediate"
+                          value={newCourse.level}
+                          onChange={(e) => setNewCourse({ ...newCourse, level: e.target.value })}
+                          className="bg-muted/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-1.5 block">Category</label>
+                        <Input
+                          placeholder="e.g., UI/UX Design"
+                          value={newCourse.category}
+                          onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value })}
+                          className="bg-muted/20"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-1.5 block">Assign Primary Instructor</label>
+                      <select
+                        className="w-full h-11 px-3 rounded-md border border-input bg-muted/20 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/20"
+                        value={newCourse.instructorId}
+                        onChange={(e) => setNewCourse({ ...newCourse, instructorId: e.target.value })}
+                      >
+                        <option value="">Select Instructor</option>
+                        {trainers.map((t: any) => (
+                          <option key={t.id} value={t.id}>{t.username} ({t.role})</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>

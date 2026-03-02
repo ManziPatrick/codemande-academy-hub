@@ -33,58 +33,23 @@ const createLessons = (baseTitle: string, count: number) => {
   const types = ['video', 'article', 'quiz', 'pdf', 'project'];
   const lessons = [];
   for (let i = 1; i <= count; i++) {
-    const type = types[i % types.length];
+    const isActuallyAssignment = i % 5 === 0;
+    const type = isActuallyAssignment ? 'assignment' : types[i % types.length];
     const unitTitle = `${baseTitle} - Unit ${i}`;
 
     // Rich HTML Content
     const htmlContent = `
       <div class="space-y-6">
         <section>
-          <h2 class="text-2xl font-bold text-accent mb-4">Introduction to ${unitTitle}</h2>
+          <h2 class="text-2xl font-bold text-accent mb-4">${isActuallyAssignment ? 'Assignment:' : 'Introduction to'} ${unitTitle}</h2>
           <p class="text-lg leading-relaxed">
-            Welcome to this comprehensive unit where we deep dive into the core principles of <strong>${baseTitle}</strong>. 
-            In this session, we will explore the industry standards and real-world applications that make this topic essential 
-            for modern professionals.
+            ${isActuallyAssignment ? 'This is a mandatory assignment to test your skills.' : `Welcome to this comprehensive unit where we deep dive into the core principles of <strong>${baseTitle}</strong>.`} 
           </p>
         </section>
 
         <section class="bg-card p-6 rounded-xl border border-border/50">
-          <h3 class="text-xl font-semibold mb-3">Key Learning Objectives</h3>
-          <ul class="list-disc pl-6 space-y-2">
-            <li>Master the fundamental architecture of ${baseTitle.split(' ')[0]} systems.</li>
-            <li>Understand the integration patterns used by top tech companies.</li>
-            <li>Develop proficiency in troubleshooting and optimizing performance.</li>
-            <li>Learn to apply best practices for security and scalability.</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3 class="text-xl font-semibold mb-3">Industry Context</h3>
-          <p>
-            As technology evolves, the demand for expertise in ${baseTitle} has grown exponentially. 
-            This unit provides the critical foundation needed to navigate complex projects and deliver high-quality results. 
-            We will analyze several case studies from leading organizations to see these concepts in action.
-          </p>
-        </section>
-
-        <section class="border-l-4 border-accent pl-6 italic">
-          <p class="text-muted-foreground">
-            "The secret to mastering ${baseTitle.split(' ')[0]} is not just understanding the syntax, 
-            but mastering the logic behind the implementation." - Senior Academy Mentor
-          </p>
-        </section>
-
-        <section>
-          <h3 class="text-xl font-semibold mb-3">Practical Exercise</h3>
-          <p class="mb-4">
-            To solidify your understanding, please complete the following exercise:
-          </p>
-          <div class="bg-muted/30 p-4 rounded-lg font-mono text-sm">
-            1. Analyze the sample dataset provided in the resources.<br/>
-            2. Identify the top 3 performance bottlenecks.<br/>
-            3. Propose a solution using the ${baseTitle.split(' ')[0]} framework.<br/>
-            4. Submit your findings in the project portal.
-          </div>
+          <h3 class="text-xl font-semibold mb-3">Unit Context</h3>
+          <p>This unit covers advanced implementation of ${baseTitle}. ${isActuallyAssignment ? 'Successful submission is required to proceed.' : ''}</p>
         </section>
       </div>
     `;
@@ -93,9 +58,13 @@ const createLessons = (baseTitle: string, count: number) => {
       title: unitTitle,
       content: htmlContent,
       duration: 15 + (i * 5),
-      type: type,
+      type: isActuallyAssignment ? 'assignment' : type,
       videoUrl: type === 'video' ? 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' : null,
       fileUrl: type === 'pdf' ? 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf' : null,
+      isAssignment: isActuallyAssignment,
+      requiredAssignment: isActuallyAssignment,
+      assignmentDescription: isActuallyAssignment ? `Submit your project implementation for ${unitTitle}. Include all source code and documentation.` : null,
+      assignmentDeliverables: isActuallyAssignment ? ['GitHub Repository URL', 'Live Demo Link', 'Implementation Report (PDF)'] : []
     });
   }
   return lessons;

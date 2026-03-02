@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@apollo/client/react";
 import {
     GET_ASSIGNMENT_SUBMISSIONS,
@@ -9,7 +10,8 @@ import {
 import {
     GRADE_ASSIGNMENT,
     CREATE_PROJECT,
-    GRADE_PROJECT
+    GRADE_PROJECT,
+    PING_INSTRUCTOR
 } from "@/lib/graphql/mutations";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -51,7 +53,16 @@ interface AssignmentSubmission {
         fullName?: string;
         avatar?: string;
     };
-    courseId: string;
+    courseId: any;
+    course?: {
+        id: string;
+        title: string;
+        instructor?: {
+            id: string;
+            fullName: string;
+            username: string;
+        }
+    };
     lessonId: string;
     content: string;
     status: string;
@@ -92,6 +103,8 @@ export default function TrainerProjects() {
     const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
     const [gradeValue, setGradeValue] = useState("");
     const [feedbackValue, setFeedbackValue] = useState("");
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
     // Projects State
     const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
@@ -113,12 +126,52 @@ export default function TrainerProjects() {
 
     const [gradeAssignmentMutation, { loading: grading }] = useMutation(GRADE_ASSIGNMENT);
     const [createProject, { loading: creatingProject }] = useMutation(CREATE_PROJECT);
+    const [pingInstructor] = useMutation(PING_INSTRUCTOR);
+
+    const handlePingInstructor = async () => {
+        if (!selectedSubmission) return;
+        try {
+            await pingInstructor({
+                variables: {
+                    submissionId: selectedSubmission.id,
+                    message: "I am reviewing this submission."
+                }
+            });
+            toast.success("Instructor has been notified");
+        } catch (err: any) {
+            toast.error(err.message || "Failed to notify instructor");
+        }
+    };
 
     const submissions = assignmentsData?.getAssignmentSubmissions || [];
     const pendingSubmissions = submissions.filter((s: AssignmentSubmission) => s.status === "pending");
     const gradedSubmissions = submissions.filter((s: AssignmentSubmission) => s.status === "reviewed" || s.status === "graded" || s.status === "revision_requested");
 
     const projects = projectsData?.myProjects || [];
+
+    const handleQuickApprove = async () => {
+        if (!selectedSubmission) return;
+        
+        try {
+            await gradeAssignmentMutation({
+                variables: {
+                    submissionId: selectedSubmission.id,
+                    grade: 100,
+                    feedback: "Quickly approved by " + (isAdmin ? "Admin" : "Trainer")
+                },
+                refetchQueries: [{ query: GET_ASSIGNMENT_SUBMISSIONS }],
+                awaitRefetchQueries: true
+            });
+
+            toast.success("Assignment approved successfully!");
+            await refetchAssignments();
+            setSelectedSubmission(null);
+            setGradeValue("");
+            setFeedbackValue("");
+        } catch (err: any) {
+            toast.error(err.message || "Failed to approve assignment");
+        }
+    };
 
     const handleGrade = async () => {
         if (!selectedSubmission || !gradeValue) {
@@ -272,8 +325,8 @@ export default function TrainerProjects() {
                     <TabsContent value="assignments">
                         <div className="flex items-center justify-between mb-6">
                             <div>
-                                <h1 className="font-heading text-3xl font-bold">Assignment Review</h1>
-                                <p className="text-muted-foreground mt-1">Review and grade specific lesson assignments</p>
+                                <h1 className="font-heading text-3xl font-bold">{isAdmin ? "Admin Assignment Review" : "Assignment Review"}</h1>
+                                <p className="text-muted-foreground mt-1">{isAdmin ? "Review and manage all student lesson assignment submissions" : "Review and grade specific lesson assignments"}</p>
                             </div>
                             <Badge variant="outline" className="text-lg px-4 py-2">
                                 {pendingSubmissions.length} Pending
@@ -347,6 +400,22 @@ export default function TrainerProjects() {
                                                             <label className="text-sm font-bold">Student</label>
                                                             <p className="text-lg">{selectedSubmission.user?.fullName || selectedSubmission.user?.username}</p>
                                                         </div>
+                                                        {selectedSubmission.courseId?.instructor?._id !== user?.id && selectedSubmission.courseId?.instructor && (
+                                                            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-between">
+                                                                <div className="flex items-center gap-2 text-xs text-blue-500">
+                                                                    <User className="w-3 h-3" />
+                                                                    <span>Managed by: <b>{selectedSubmission.courseId.instructor.fullName || selectedSubmission.courseId.instructor.username}</b></span>
+                                                                </div>
+                                                                <Button 
+                                                                    variant="ghost" 
+                                                                    size="sm" 
+                                                                    className="h-6 text-[10px] text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                                                                    onClick={handlePingInstructor}
+                                                                >
+                                                                    Notify Instructor
+                                                                </Button>
+                                                            </div>
+                                                        )}
                                                         <div className="space-y-2">
                                                             <label className="text-sm font-bold">Submission Content</label>
                                                             <div className="p-4 bg-muted/20 rounded-lg border border-border/30">
@@ -381,14 +450,24 @@ export default function TrainerProjects() {
                                                                 rows={4}
                                                             />
                                                         </div>
-                                                        <Button
-                                                            variant="gold"
-                                                            className="w-full shadow-lg shadow-gold/20"
-                                                            onClick={handleGrade}
-                                                            disabled={grading || !gradeValue}
-                                                        >
-                                                            {grading ? "Submitting..." : "Submit Grade"}
-                                                        </Button>
+                                                        <div className="flex gap-4">
+                                                            <Button
+                                                                variant="outline"
+                                                                className="flex-1 border-green-500/50 text-green-500 hover:bg-green-500/10"
+                                                                onClick={handleQuickApprove}
+                                                                disabled={grading}
+                                                            >
+                                                                {grading ? "..." : "Quick Approve (100)"}
+                                                            </Button>
+                                                            <Button
+                                                                variant="gold"
+                                                                className="flex-[2] shadow-lg shadow-gold/20"
+                                                                onClick={handleGrade}
+                                                                disabled={grading || !gradeValue}
+                                                            >
+                                                                {grading ? "Submitting..." : "Submit Grade"}
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <div className="text-center py-12 text-muted-foreground">

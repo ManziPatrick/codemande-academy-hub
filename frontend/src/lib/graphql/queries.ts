@@ -120,6 +120,7 @@ export const GET_COURSES = gql`
       level
       category
       status
+      submissionRequired
       instructor {
         id
         username
@@ -140,6 +141,7 @@ export const GET_COURSES = gql`
           videoUrl
           fileUrl
           type
+          requiredAssignment
         }
       }
     }
@@ -157,6 +159,7 @@ export const GET_COURSE = gql`
       discountPrice
       level
       category
+      submissionRequired
       instructor {
         id
         username
@@ -173,6 +176,10 @@ export const GET_COURSE = gql`
           videoUrl
           fileUrl
           type
+          requiredAssignment
+          isAssignment
+          assignmentDescription
+          assignmentDeliverables
         }
       }
       studentsEnrolled {
@@ -1631,6 +1638,15 @@ export const GET_ASSIGNMENT_SUBMISSIONS = gql`
         avatar
       }
       courseId
+      course {
+        id
+        title
+        instructor {
+          id
+          fullName
+          username
+        }
+      }
       lessonId
       content
       status

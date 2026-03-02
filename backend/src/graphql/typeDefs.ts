@@ -179,6 +179,7 @@ export const typeDefs = `#graphql
     status: String
     modules: [Module!]!
     studentsEnrolled: [User!]!
+    submissionRequired: Boolean
     createdAt: String!
     updatedAt: String!
   }
@@ -779,6 +780,7 @@ export const typeDefs = `#graphql
       category: String
       instructorId: ID
       status: String
+      submissionRequired: Boolean
       modules: [ModuleInput!]!
     ): Course
     updateCourse(
@@ -792,6 +794,7 @@ export const typeDefs = `#graphql
       category: String
       instructorId: ID
       status: String
+      submissionRequired: Boolean
       modules: [ModuleInput!]
     ): Course
     deleteCourse(id: ID!): Boolean
@@ -1394,6 +1397,8 @@ export const typeDefs = `#graphql
       courseId: ID!
       lessonId: String!
     ): Boolean
+
+    pingInstructor(submissionId: ID!, message: String): Boolean
   }
 
   type StripePaymentIntent {

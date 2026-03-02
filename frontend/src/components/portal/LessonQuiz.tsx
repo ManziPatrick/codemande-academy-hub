@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@apollo/client/react";
 import { GET_QUESTIONS } from "@/lib/graphql/queries";
-import { CheckCircle2, ChevronRight, RefreshCcw, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronRight, RefreshCcw, Loader2, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface LessonQuizProps {
@@ -27,7 +27,22 @@ export function LessonQuiz({ courseId, lessonId, onComplete }: LessonQuizProps) 
 
   if (loading) return <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-accent" /></div>;
   if (error) return <div className="text-destructive p-4">Error loading quiz questions.</div>;
-  if (questions.length === 0) return <div className="text-muted-foreground p-8 text-center border rounded-xl border-dashed">No questions found for this quiz.</div>;
+  if (questions.length === 0) {
+    return (
+      <div className="text-center p-12 space-y-6">
+        <div className="w-20 h-20 rounded-full bg-muted/20 flex items-center justify-center mx-auto text-muted-foreground">
+          <HelpCircle className="w-10 h-10" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold">Concept Check</h3>
+          <p className="text-muted-foreground max-w-xs mx-auto">This unit doesn't have a formal assessment. You can proceed to the next module.</p>
+        </div>
+        <Button variant="gold" onClick={onComplete}>
+          Complete and Continue <ChevronRight className="w-4 h-4 ml-2" />
+        </Button>
+      </div>
+    );
+  }
 
   const currentQuestion = questions[currentQuestionIndex];
 
