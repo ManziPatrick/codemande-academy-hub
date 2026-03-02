@@ -168,13 +168,22 @@ export const resolvers = {
         }
       }
 
-      return await AssignmentSubmission.find(filter)
+      const submissions = await AssignmentSubmission.find(filter)
         .populate('userId')
         .populate({
           path: 'courseId',
           populate: { path: 'instructor' }
         })
         .sort({ createdAt: -1 });
+
+      return (submissions as any).map((sub: any) => ({
+        ...sub._doc,
+        id: sub._id,
+        user: sub.userId,
+        userId: sub.userId?._id || sub.userId,
+        course: sub.courseId,
+        courseId: sub.courseId?._id || sub.courseId
+      }));
     },
 
     myProjects: async (_: any, { status }: { status?: string }, context: any) => {
@@ -1306,7 +1315,15 @@ export const resolvers = {
         }
       }
 
-      return await submission.populate(['userId', 'courseId']);
+      const populated = await submission.populate(['userId', 'courseId']);
+      return {
+        ...populated.toObject(),
+        id: populated._id,
+        user: populated.userId,
+        userId: populated.userId?._id || populated.userId,
+        course: populated.courseId,
+        courseId: populated.courseId?._id || populated.courseId
+      };
     },
 
     gradeAssignment: async (_: any, { submissionId, grade, feedback }: any, context: any) => {
@@ -1377,7 +1394,15 @@ export const resolvers = {
         });
       }
 
-      return await submission.populate(['userId', 'courseId']);
+      const populated = await submission.populate(['userId', 'courseId']);
+      return {
+        ...populated.toObject(),
+        id: populated._id,
+        user: populated.userId,
+        userId: populated.userId?._id || populated.userId,
+        course: populated.courseId,
+        courseId: populated.courseId?._id || populated.courseId
+      };
     },
 
     chatWithAI: async (_: any, { message }: { message: string }, context: any) => {
