@@ -1090,11 +1090,16 @@ export const resolvers = {
       
       const course = submission.courseId as any;
       if (course && course.instructor) {
+        const instructor = await User.findById(course.instructor);
+        const link = instructor?.role === 'admin' || instructor?.role === 'super_admin' 
+          ? '/portal/admin/assignment-reviews' 
+          : '/portal/trainer/projects';
+
         await sendNotification(course.instructor.toString(), {
           type: 'ASSIGNMENT_REVIEW_PING',
           title: 'Review Assistance Needed',
           message: `${context.user.fullName || context.user.username} is reviewing a submission for ${course.title}: ${message || 'No additional message'}`,
-          link: `/portal/trainer/projects`
+          link: link
         });
         return true;
       }
@@ -1272,15 +1277,33 @@ export const resolvers = {
       // Log activity
       await logActivity(context.user.id, 'SUBMIT_ASSIGNMENT', 'AssignmentSubmission', submission.id, `Submitted assignment for lesson ${lessonId} in course ${courseId}`);
 
-      // Notify Instructor
+      // Notify Instructor or Admin
       const course = await Course.findById(courseId);
-      if (course && course.instructor) {
-        sendNotification(course.instructor.toString(), {
-          type: 'ASSIGNMENT_SUBMITTED',
-          title: 'New Assignment Submission',
-          message: `${context.user.fullName || context.user.username} submitted an assignment for ${course.title}.`,
-          link: `/portal/trainer/projects`
-        });
+      if (course) {
+        if (course.instructor) {
+          const instructor = await User.findById(course.instructor);
+          const link = instructor?.role === 'admin' || instructor?.role === 'super_admin' 
+            ? '/portal/admin/assignment-reviews' 
+            : '/portal/trainer/projects';
+          
+          sendNotification(course.instructor.toString(), {
+            type: 'ASSIGNMENT_SUBMITTED',
+            title: 'New Assignment Submission',
+            message: `${context.user.fullName || context.user.username} submitted an assignment for ${course.title}.`,
+            link: link
+          });
+        } else {
+          // If no instructor, notify all admins
+          const admins = await User.find({ role: { $in: ['admin', 'super_admin'] } });
+          for (const admin of admins) {
+            sendNotification(admin._id.toString(), {
+              type: 'ASSIGNMENT_SUBMITTED',
+              title: 'Unassigned Course Submission',
+              message: `${context.user.fullName || context.user.username} submitted an assignment for unassigned course ${course.title}.`,
+              link: '/portal/admin/assignment-reviews'
+            });
+          }
+        }
       }
 
       return await submission.populate(['userId', 'courseId']);
@@ -1341,11 +1364,16 @@ export const resolvers = {
       // Notify instructor if graded by someone else
       const course = await Course.findById(submission.courseId);
       if (course && course.instructor && course.instructor.toString() !== context.user.id) {
+        const instructor = await User.findById(course.instructor);
+        const link = instructor?.role === 'admin' || instructor?.role === 'super_admin' 
+          ? '/portal/admin/assignment-reviews' 
+          : '/portal/trainer/projects';
+
         sendNotification(course.instructor.toString(), {
           type: 'ASSIGNMENT_GRADED_BY_OTHERS',
           title: 'Assignment Graded by Team',
           message: `Submission from ${submission.userId} for ${course.title} was graded by ${context.user.fullName || context.user.username}.`,
-          link: `/portal/trainer/projects`
+          link: link
         });
       }
 

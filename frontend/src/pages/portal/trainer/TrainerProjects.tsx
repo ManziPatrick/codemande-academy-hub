@@ -363,15 +363,22 @@ export default function TrainerProjects() {
                                                                     <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
                                                                         <User className="w-5 h-5 text-accent" />
                                                                     </div>
-                                                                    <div>
-                                                                        <CardTitle className="text-base">{submission.user?.fullName || submission.user?.username}</CardTitle>
-                                                                        <p className="text-xs text-muted-foreground">Lesson ID: {submission.lessonId}</p>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <h4 className="font-semibold text-sm truncate">{submission.user?.fullName || submission.user?.username}</h4>
+                                                                        <div className="flex flex-col gap-0.5">
+                                                                            <p className="text-[10px] font-bold text-accent truncate">{submission.course?.title || "Course ID: " + (submission.courseId?._id || submission.courseId)}</p>
+                                                                            <p className="text-[10px] text-muted-foreground">Lesson: {submission.lessonId}</p>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-                                                                    <Clock className="w-3 h-3 mr-1" />
-                                                                    Pending
-                                                                </Badge>
+                                                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                                                    <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20 text-[10px] py-0 h-4">Pending</Badge>
+                                                                    {submission.course?.instructor?.id !== user?.id && submission.course?.instructor && (
+                                                                        <Badge variant="outline" className="text-[10px] py-0 h-4 border-blue-500/30 text-blue-500/70">
+                                                                            By: {submission.course.instructor.fullName || submission.course.instructor.username}
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </CardHeader>
                                                         <CardContent className="space-y-2">
@@ -396,9 +403,27 @@ export default function TrainerProjects() {
                                             <CardContent className="p-6">
                                                 {selectedSubmission ? (
                                                     <div className="space-y-6">
-                                                        <div className="space-y-2">
-                                                            <label className="text-sm font-bold">Student</label>
-                                                            <p className="text-lg">{selectedSubmission.user?.fullName || selectedSubmission.user?.username}</p>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="space-y-1">
+                                                                <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Course & Lesson</label>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge className="bg-accent/10 text-accent border-accent/20">{selectedSubmission.course?.title || "Course: " + selectedSubmission.courseId}</Badge>
+                                                                    <Badge variant="outline" className="border-border/50">Lesson: {selectedSubmission.lessonId}</Badge>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold block">Submitted At</label>
+                                                                <p className="text-sm">{new Date(parseInt(selectedSubmission.createdAt)).toLocaleString()}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-1 mb-4">
+                                                            <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Student</label>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center">
+                                                                    <User className="w-3.5 h-3.5 text-accent" />
+                                                                </div>
+                                                                <p className="text-base font-semibold">{selectedSubmission.user?.fullName || selectedSubmission.user?.username}</p>
+                                                            </div>
                                                         </div>
                                                         {selectedSubmission.courseId?.instructor?._id !== user?.id && selectedSubmission.courseId?.instructor && (
                                                             <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-between">
