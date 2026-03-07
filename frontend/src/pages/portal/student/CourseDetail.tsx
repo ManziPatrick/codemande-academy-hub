@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_COURSE, GET_ME, GET_ASSIGNMENT_SUBMISSIONS } from "@/lib/graphql/queries";
 import { COMPLETE_LESSON, SUBMIT_ASSIGNMENT } from "@/lib/graphql/mutations";
+import { triggerFileDownload } from "@/lib/download";
 
 export default function CourseDetail() {
   const { courseId } = useParams();
@@ -95,6 +96,23 @@ export default function CourseDetail() {
 
   const completedCount = allLessons.filter(l => completedLessons.some((cl: any) => cl.courseId === courseId && cl.lessonId === (l.id || l._id))).length;
   const progressPercent = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
+  const currentLessonRequiresAssignment = !!(currentLesson?.type === 'assignment' || currentLesson?.isAssignment);
+  const currentLessonSubmission = (submissionsData as any)?.getAssignmentSubmissions?.find((submission: any) => !me?.id || submission.userId === me.id);
+  const currentLessonSubmissionStatus = currentLessonSubmission?.status;
+  const currentLessonCompleted = completedLessons.some((cl: any) => cl.lessonId === (currentLesson?.id || currentLesson?._id));
+  const canMarkCurrentLessonComplete = !currentLessonRequiresAssignment || currentLessonCompleted || currentLessonSubmissionStatus === 'approved';
+  const currentLessonFirstSlidePreview = currentLesson?.resources?.find((resource: any) =>
+    resource?.type === 'image' && /first slide/i.test(resource?.title || '')
+  )?.url;
+
+  const handleDownloadResource = (resourceUrl?: string, filename?: string) => {
+    if (!resourceUrl) {
+      toast.error("No downloadable file available for this lesson yet.");
+      return;
+    }
+
+    triggerFileDownload(resourceUrl, filename || currentLesson?.title || "lesson-resource");
+  };
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
@@ -119,7 +137,16 @@ export default function CourseDetail() {
       });
 
       if (isNextLocked) {
-        toast.error(`Unit Locked: Finish previous requirements first.`);
+        const blockingLesson = previousRequired.find((pl) => {
+          const plId = pl.id || pl._id;
+          return !completedLessons.some((cl: any) => cl.courseId === courseId && cl.lessonId === plId);
+        });
+
+        if (blockingLesson?.type === 'assignment' || blockingLesson?.isAssignment) {
+          toast.error(`Unit Locked: Submit and get approval for assignment "${blockingLesson.title}" first.`);
+        } else {
+          toast.error(`Unit Locked: Finish previous requirements first.`);
+        }
         return;
       }
 
@@ -227,8 +254,10 @@ export default function CourseDetail() {
           <div className="lg:col-span-8 space-y-6">
             {(() => {
               const lessonIndex = allLessons.findIndex(l => (l.id || l._id) === activeLessonId);
-              const previousLessons = allLessons.slice(0, lessonIndex);
-              const isLocked = previousLessons.some(pl => {
+              const previousRequiredLessons = allLessons.slice(0, lessonIndex).filter((pl) =>
+                pl.requiredAssignment || pl.type === 'assignment' || pl.type === 'quiz' || pl.isAssignment
+              );
+              const isLocked = previousRequiredLessons.some(pl => {
                 const plId = pl.id || pl._id;
                 return !completedLessons.some((cl: any) => cl.courseId === courseId && cl.lessonId === plId);
               });
@@ -242,7 +271,7 @@ export default function CourseDetail() {
                     <div className="p-4 bg-muted/20 rounded-xl border border-border/30 text-left max-w-sm w-full">
                       <p className="text-[10px] font-bold uppercase text-accent mb-2 tracking-widest">Incomplete Requirements:</p>
                       <ul className="space-y-1">
-                        {previousLessons.filter(pl => !completedLessons.some((cl: any) => cl.lessonId === (pl.id || pl._id))).map(pl => (
+                        {previousRequiredLessons.filter(pl => !completedLessons.some((cl: any) => cl.lessonId === (pl.id || pl._id))).map(pl => (
                           <li key={pl.id || pl._id} className="text-sm flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                             {pl.title}
@@ -271,14 +300,23 @@ export default function CourseDetail() {
                   <Card className="border-border/50 overflow-hidden shadow-2xl">
                     <div className="aspect-video bg-black relative">
                       {currentLesson?.type === 'ppt' || (currentLesson?.fileUrl && (currentLesson.fileUrl.endsWith('.ppt') || currentLesson.fileUrl.endsWith('.pptx'))) ? (
-                        <PPTViewer url={currentLesson.fileUrl} title={currentLesson.title} />
+                        <PPTViewer url={currentLesson.fileUrl} title={currentLesson.title} startSlide={1} />
                       ) : currentLesson?.videoUrl ? (
                         <iframe src={currentLesson.videoUrl.replace("watch?v=", "embed/")} className="w-full h-full" allowFullScreen />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-center p-12">
                           {React.createElement(getLessonIcon(currentLesson?.type), { className: "w-16 h-16 text-accent mb-4" })}
                           <h3 className="text-xl font-bold">{currentLesson?.title}</h3>
-                          {currentLesson?.fileUrl && <Button variant="gold" className="mt-6" asChild><a href={currentLesson.fileUrl}>Open File</a></Button>}
+                          {currentLesson?.fileUrl && (
+                            <div className="mt-6 flex items-center gap-2">
+                              <Button variant="gold" asChild>
+                                <a href={currentLesson.fileUrl} target="_blank" rel="noopener noreferrer">Open File</a>
+                              </Button>
+                              <Button variant="outline" onClick={() => handleDownloadResource(currentLesson.fileUrl, `${currentLesson?.title || 'lesson'}.pptx`)}>
+                                <Download className="w-4 h-4 mr-2" /> Download
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -286,7 +324,19 @@ export default function CourseDetail() {
                       <h2 className="text-2xl font-bold mb-4">{currentLesson?.title}</h2>
                       <div className="prose prose-invert max-w-none mb-8" dangerouslySetInnerHTML={{ __html: currentLesson?.content || currentLesson?.description || "" }} />
 
-                      {currentLesson?.type === 'assignment' && (
+                      {currentLessonFirstSlidePreview && (
+                        <div className="mb-6 p-4 rounded-xl border border-border/40 bg-muted/10 flex items-center justify-between gap-3">
+                          <p className="text-xs text-muted-foreground">Start from slide 1 using the official preview image.</p>
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={currentLessonFirstSlidePreview} target="_blank" rel="noopener noreferrer">Open First Slide</a>
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDownloadResource(currentLesson?.fileUrl, `${currentLesson?.title || 'lesson'}.pptx`)}>
+                            <Download className="w-4 h-4 mr-1" /> Download Deck
+                          </Button>
+                        </div>
+                      )}
+
+                      {currentLessonRequiresAssignment && (
                         <div className="mt-8 pt-8 border-t border-border/50 space-y-6">
                           <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
@@ -296,6 +346,14 @@ export default function CourseDetail() {
                             <h4 className="font-bold flex items-center gap-2 text-accent mb-3"><Code className="w-4 h-4" /> Exercise Mission</h4>
                             <p className="text-sm text-card-foreground/90 leading-relaxed">{currentLesson.assignmentDescription || "Complete the task as described above."}</p>
                           </motion.div>
+                          {currentLessonSubmission && (
+                            <div className={`p-4 rounded-xl border text-sm ${currentLessonSubmissionStatus === 'approved' ? 'bg-green-500/10 border-green-500/30 text-green-700 dark:text-green-300' : currentLessonSubmissionStatus === 'rejected' ? 'bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300' : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300'}`}>
+                              Assignment status: <span className="font-semibold uppercase">{currentLessonSubmissionStatus}</span>
+                              {currentLessonSubmissionStatus === 'pending' && ' — waiting for trainer/admin approval before you can proceed.'}
+                              {currentLessonSubmissionStatus === 'rejected' && ' — update your submission and send again.'}
+                              {currentLessonSubmissionStatus === 'approved' && ' — approved, you can continue learning.'}
+                            </div>
+                          )}
                           <textarea
                             className="w-full h-40 p-5 bg-background border border-border/50 rounded-2xl shadow-inner focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all text-sm leading-relaxed"
                             placeholder="Paste your solution link (e.g. GitHub, Vercel) or your written answer here..."
@@ -327,10 +385,7 @@ export default function CourseDetail() {
                           variant="gold"
                           className="shadow-lg shadow-gold/10"
                           onClick={handleMarkComplete}
-                          disabled={
-                            (currentLesson?.type === 'assignment' || currentLesson?.isAssignment) &&
-                            !completedLessons.some((cl: any) => cl.lessonId === (currentLesson.id || currentLesson._id))
-                          }
+                          disabled={!canMarkCurrentLessonComplete}
                         >
                           {currentIndex === allLessons.length - 1 ? "Complete Journey" : "Mark Finalized"}
                           <ChevronRight className="w-4 h-4 ml-2" />
@@ -361,8 +416,10 @@ export default function CourseDetail() {
                               const isComp = completedLessons.some((cl: any) => cl.lessonId === lesId);
 
                               const lIdx = allLessons.findIndex(l => (l.id || l._id) === lesId);
-                              const prevLessons = allLessons.slice(0, lIdx);
-                              const isLock = prevLessons.some(pl => !completedLessons.some((cl: any) => cl.lessonId === (pl.id || pl._id)));
+                              const prevRequiredLessons = allLessons.slice(0, lIdx).filter((pl) =>
+                                pl.requiredAssignment || pl.type === 'assignment' || pl.type === 'quiz' || pl.isAssignment
+                              );
+                              const isLock = prevRequiredLessons.some(pl => !completedLessons.some((cl: any) => cl.lessonId === (pl.id || pl._id)));
 
                               return (
                                 <button

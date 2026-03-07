@@ -57,6 +57,7 @@ import { Label } from "@/components/ui/label";
 import { ViewSubmissionDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { triggerFileDownload } from "@/lib/download";
 
 const safeFormatDate = (dateString: any, formatStr: string = 'MMM d, HH:mm') => {
   if (!dateString) return 'N/A';
@@ -219,7 +220,8 @@ export default function TrainerAssignments() {
 
   const handleDownload = () => {
     if (selectedSubmission?.submissionUrl) {
-      window.open(selectedSubmission.submissionUrl, '_blank');
+      triggerFileDownload(selectedSubmission.submissionUrl, `${selectedSubmission.title || 'submission'}`);
+      toast.success('Download started (or opened in new tab).');
     } else {
       toast.error("No submission file available");
     }
