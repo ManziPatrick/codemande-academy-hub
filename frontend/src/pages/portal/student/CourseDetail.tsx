@@ -8,6 +8,14 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { TextEditor } from "@/components/ui/text-editor";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import {
   PlayCircle,
   CheckCircle,
@@ -26,6 +34,8 @@ import {
   HelpCircle,
   Video,
   FileBox,
+  Calendar,
+  AlertCircle,
 } from "lucide-react";
 import { RequestHelpDialog, BookCallDialog } from "@/components/portal/dialogs";
 import { LessonQuiz } from "@/components/portal/LessonQuiz";
@@ -43,6 +53,7 @@ export default function CourseDetail() {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [submissionContent, setSubmissionContent] = useState("");
   const [isSubmittingAssignment, setIsSubmittingAssignment] = useState(false);
+  const [isAssignmentDialogOpen, setIsAssignmentDialogOpen] = useState(false);
 
   // Queries
   const { data: userData, refetch: refetchUser } = useQuery(GET_ME);
@@ -54,13 +65,6 @@ export default function CourseDetail() {
   const me = (userData as any)?.me;
   const completedLessons = me?.completedLessons || [];
 
-  useEffect(() => {
-    if (!activeLessonId && course?.modules?.[0]?.lessons?.[0]) {
-      const firstLesson = course.modules[0].lessons[0];
-      setActiveLessonId(firstLesson.id || firstLesson._id);
-    }
-  }, [course, activeLessonId]);
-
   const [completeLessonMutation] = useMutation(COMPLETE_LESSON);
   const [submitAssignmentMutation] = useMutation(SUBMIT_ASSIGNMENT);
 
@@ -68,6 +72,23 @@ export default function CourseDetail() {
     variables: { courseId, lessonId: activeLessonId },
     skip: !activeLessonId
   });
+
+  const existingSubmission = submissionsData?.getAssignmentSubmissions?.[0];
+
+  useEffect(() => {
+    if (existingSubmission?.content) {
+      setSubmissionContent(existingSubmission.content);
+    } else {
+      setSubmissionContent("");
+    }
+  }, [existingSubmission, activeLessonId]);
+
+  useEffect(() => {
+    if (!activeLessonId && course?.modules?.[0]?.lessons?.[0]) {
+      const firstLesson = course.modules[0].lessons[0];
+      setActiveLessonId(firstLesson.id || firstLesson._id);
+    }
+  }, [course, activeLessonId]);
 
   if (loading) return (
     <PortalLayout>
@@ -286,7 +307,7 @@ export default function CourseDetail() {
                       <h2 className="text-2xl font-bold mb-4">{currentLesson?.title}</h2>
                       <div className="prose prose-invert max-w-none mb-8" dangerouslySetInnerHTML={{ __html: currentLesson?.content || currentLesson?.description || "" }} />
 
-                      {currentLesson?.type === 'assignment' && (
+                      {(currentLesson?.type === 'assignment' || currentLesson?.isAssignment) && (
                         <div className="mt-8 pt-8 border-t border-border/50 space-y-6">
                           <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
@@ -296,26 +317,84 @@ export default function CourseDetail() {
                             <h4 className="font-bold flex items-center gap-2 text-accent mb-3"><Code className="w-4 h-4" /> Exercise Mission</h4>
                             <p className="text-sm text-card-foreground/90 leading-relaxed">{currentLesson.assignmentDescription || "Complete the task as described above."}</p>
                           </motion.div>
-                          <textarea
-                            className="w-full h-40 p-5 bg-background border border-border/50 rounded-2xl shadow-inner focus:ring-2 focus:ring-accent/50 focus:border-accent transition-all text-sm leading-relaxed"
-                            placeholder="Paste your solution link (e.g. GitHub, Vercel) or your written answer here..."
-                            value={submissionContent}
-                            onChange={(e) => setSubmissionContent(e.target.value)}
-                          />
-                          <div className="flex justify-between items-center bg-muted/5 p-4 rounded-xl border border-border/20">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full bg-gold" />
-                              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Required: 70% Pass Score</p>
+                          {existingSubmission ? (
+                            <div className="space-y-4">
+                              <div className={`p-4 rounded-xl border ${existingSubmission.status === 'reviewed' ? (existingSubmission.grade >= 70 ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20') : 'bg-orange-500/10 border-orange-500/20'}`}>
+                                <h4 className={`font-bold flex items-center gap-2 mb-2 ${existingSubmission.status === 'reviewed' ? (existingSubmission.grade >= 70 ? 'text-green-500' : 'text-red-500') : 'text-orange-500'}`}>
+                                  {existingSubmission.status === 'reviewed' ?
+                                    (existingSubmission.grade >= 70 ? <><CheckCircle className="w-5 h-5 mr-1" /> Passed</> : <><AlertCircle className="w-5 h-5 mr-1" /> Revision Required</>) :
+                                    <><Clock className="w-5 h-5 mr-1" /> Waiting for Approval</>
+                                  }
+                                </h4>
+                                {existingSubmission.status === 'reviewed' && existingSubmission.grade !== undefined && (
+                                  <p className="text-sm">Grade: <strong>{existingSubmission.grade}/100</strong></p>
+                                )}
+                                {existingSubmission.feedback && (
+                                  <div className="text-sm mt-3 p-3 bg-background border border-border/50 rounded-lg text-muted-foreground">
+                                    <p className="font-semibold text-foreground mb-1">Trainer Feedback:</p>
+                                    <div dangerouslySetInnerHTML={{ __html: existingSubmission.feedback }} />
+                                  </div>
+                                )}
+                              </div>
+
+                              {existingSubmission.status !== 'reviewed' && (
+                                <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                                  <Button variant="outline" className="flex-1 border-border/50 py-6" onClick={() => setIsAssignmentDialogOpen(true)}>
+                                    <MessageSquare className="w-4 h-4 mr-2" /> Update Submission
+                                  </Button>
+                                  <Button variant="outline" className="flex-1 border-border/50 py-6" onClick={() => setBookingOpen(true)}>
+                                    <Calendar className="w-4 h-4 mr-2" /> Book Review Call
+                                  </Button>
+                                </div>
+                              )}
+                              {existingSubmission.status === 'reviewed' && existingSubmission.grade < 70 && (
+                                <div className="flex flex-col sm:flex-row gap-4 mt-4">
+                                  <Button variant="outline" className="flex-1 border-border/50 py-6" onClick={() => setIsAssignmentDialogOpen(true)}>
+                                    <MessageSquare className="w-4 h-4 mr-2" /> Resubmit Mission
+                                  </Button>
+                                  <Button variant="outline" className="flex-1 border-border/50 py-6" onClick={() => setBookingOpen(true)}>
+                                    <Calendar className="w-4 h-4 mr-2" /> Get Help (Book Call)
+                                  </Button>
+                                </div>
+                              )}
                             </div>
-                            <Button
-                              variant="gold"
-                              className="px-10 shadow-xl shadow-gold/20 hover:scale-105 transition-transform"
-                              onClick={handleSubmitAssignment}
-                              disabled={isSubmittingAssignment || !submissionContent.trim()}
-                            >
-                              {isSubmittingAssignment ? "Transmitting..." : "Submit Mission"}
+                          ) : (
+                            <Button variant="gold" className="w-full py-6 text-lg tracking-wide shadow-xl shadow-gold/20 hover:scale-[1.02] transition-transform" onClick={() => setIsAssignmentDialogOpen(true)}>
+                              <Code className="w-5 h-5 mr-2" /> Start Mission
                             </Button>
-                          </div>
+                          )}
+
+                          <Dialog open={isAssignmentDialogOpen} onOpenChange={setIsAssignmentDialogOpen}>
+                            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>{existingSubmission ? "Update Mission Submission" : "Complete Exercise Mission"}</DialogTitle>
+                              </DialogHeader>
+                              <div className="py-4 space-y-4">
+                                <TextEditor
+                                  value={submissionContent}
+                                  onChange={setSubmissionContent}
+                                  placeholder="Provide your text submission or add links here..."
+                                />
+                              </div>
+                              <div className="flex justify-between items-center bg-muted/5 p-4 rounded-xl border border-border/20 mt-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-gold" />
+                                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Required: 70% Pass Score</p>
+                                </div>
+                                <Button
+                                  variant="gold"
+                                  className="px-8 shadow-xl shadow-gold/20"
+                                  onClick={async () => {
+                                    await handleSubmitAssignment();
+                                    setIsAssignmentDialogOpen(false);
+                                  }}
+                                  disabled={isSubmittingAssignment || !submissionContent.trim()}
+                                >
+                                  {isSubmittingAssignment ? "Transmitting..." : "Submit Mission"}
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       )}
 
@@ -362,7 +441,10 @@ export default function CourseDetail() {
 
                               const lIdx = allLessons.findIndex(l => (l.id || l._id) === lesId);
                               const prevLessons = allLessons.slice(0, lIdx);
-                              const isLock = prevLessons.some(pl => !completedLessons.some((cl: any) => cl.lessonId === (pl.id || pl._id)));
+                              const isLock = prevLessons.some(pl =>
+                                (pl.type === 'assignment' || pl.isAssignment || pl.requiredAssignment) &&
+                                !completedLessons.some((cl: any) => cl.lessonId === (pl.id || pl._id))
+                              );
 
                               return (
                                 <button
@@ -387,6 +469,7 @@ export default function CourseDetail() {
           </div>
         </div>
       </div>
+      <BookCallDialog open={bookingOpen} onOpenChange={setBookingOpen} mentorId={course?.instructor?.id || course?.instructor} purpose="assignment-review" />
     </PortalLayout>
   );
 }

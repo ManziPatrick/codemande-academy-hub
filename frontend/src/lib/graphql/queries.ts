@@ -140,6 +140,9 @@ export const GET_COURSES = gql`
           videoUrl
           fileUrl
           type
+          isAssignment
+          requiredAssignment
+          assignmentDescription
         }
       }
     }
@@ -173,6 +176,9 @@ export const GET_COURSE = gql`
           videoUrl
           fileUrl
           type
+          isAssignment
+          requiredAssignment
+          assignmentDescription
         }
       }
       studentsEnrolled {
@@ -214,6 +220,9 @@ export const GET_ME = gql`
             duration
             type
             fileUrl
+            isAssignment
+            requiredAssignment
+            assignmentDescription
           }
         }
       }

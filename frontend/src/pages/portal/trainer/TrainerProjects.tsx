@@ -26,6 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { TextEditor } from "@/components/ui/text-editor";
+import { BookCallDialog } from "@/components/portal/dialogs";
 import {
     Trash2,
     Link as LinkIcon,
@@ -92,6 +93,7 @@ export default function TrainerProjects() {
     const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
     const [gradeValue, setGradeValue] = useState("");
     const [feedbackValue, setFeedbackValue] = useState("");
+    const [bookingOpen, setBookingOpen] = useState(false);
 
     // Projects State
     const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
@@ -352,12 +354,20 @@ export default function TrainerProjects() {
                                                             <div className="p-4 bg-muted/20 rounded-lg border border-border/30">
                                                                 <p className="text-sm font-mono whitespace-pre-wrap break-all">{selectedSubmission.content}</p>
                                                                 {selectedSubmission.content.startsWith("http") && (
-                                                                    <Button variant="ghost" size="sm" className="mt-2" asChild>
-                                                                        <a href={selectedSubmission.content} target="_blank" rel="noopener noreferrer">
-                                                                            <ExternalLink className="w-4 h-4 mr-2" />
-                                                                            Open Link
-                                                                        </a>
-                                                                    </Button>
+                                                                    <div className="flex gap-2 mt-2">
+                                                                        <Button variant="ghost" size="sm" asChild>
+                                                                            <a href={selectedSubmission.content} target="_blank" rel="noopener noreferrer">
+                                                                                <ExternalLink className="w-4 h-4 mr-2" />
+                                                                                Open Link
+                                                                            </a>
+                                                                        </Button>
+                                                                        <Button variant="outline" size="sm" className="border-border/50" asChild>
+                                                                            <a href={selectedSubmission.content} download target="_blank" rel="noopener noreferrer">
+                                                                                <FolderOpen className="w-4 h-4 mr-2" />
+                                                                                Download
+                                                                            </a>
+                                                                        </Button>
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -381,14 +391,24 @@ export default function TrainerProjects() {
                                                                 rows={4}
                                                             />
                                                         </div>
-                                                        <Button
-                                                            variant="gold"
-                                                            className="w-full shadow-lg shadow-gold/20"
-                                                            onClick={handleGrade}
-                                                            disabled={grading || !gradeValue}
-                                                        >
-                                                            {grading ? "Submitting..." : "Submit Grade"}
-                                                        </Button>
+                                                        <div className="flex gap-2 pt-2">
+                                                            <Button
+                                                                variant="gold"
+                                                                className="flex-1 shadow-lg shadow-gold/20"
+                                                                onClick={handleGrade}
+                                                                disabled={grading || !gradeValue}
+                                                            >
+                                                                {grading ? "Submitting..." : "Submit Grade"}
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline"
+                                                                className="flex-1 border-border/50 hover:bg-accent/10 hover:text-accent"
+                                                                onClick={() => setBookingOpen(true)}
+                                                            >
+                                                                <Calendar className="w-4 h-4 mr-2" />
+                                                                Book Call
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <div className="text-center py-12 text-muted-foreground">
@@ -812,6 +832,14 @@ export default function TrainerProjects() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog >
+
+            <BookCallDialog
+                open={bookingOpen}
+                onOpenChange={setBookingOpen}
+                mentorId={selectedSubmission?.user?.id || selectedSubmission?.userId}
+                mentorName={selectedSubmission?.user?.fullName || selectedSubmission?.user?.username}
+                purpose="assignment-review"
+            />
         </PortalLayout >
     );
 }

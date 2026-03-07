@@ -54,7 +54,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ViewSubmissionDialog } from "@/components/portal/dialogs";
+import { ViewSubmissionDialog, BookCallDialog } from "@/components/portal/dialogs";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -73,6 +73,7 @@ export default function TrainerAssignments() {
   const [feedback, setFeedback] = useState("");
   const [grade, setGrade] = useState("");
   const [viewSubmission, setViewSubmission] = useState<any | null>(null);
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   // Queries
   const { data, loading, refetch } = useQuery(GET_ALL_PROJECTS);
@@ -605,6 +606,14 @@ export default function TrainerAssignments() {
                         variant="outline"
                         size="sm"
                         className="flex-1"
+                        onClick={() => setBookingOpen(true)}
+                      >
+                        <CalendarIcon className="w-4 h-4 mr-1" /> Book Call
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
                         onClick={handleDownload}
                         disabled={!selectedSubmission.submissionUrl}
                       >
@@ -686,6 +695,14 @@ export default function TrainerAssignments() {
           description: viewSubmission.description, // Pass description if available
           submissionUrl: viewSubmission.submissionUrl
         } : null}
+      />
+
+      <BookCallDialog
+        open={bookingOpen}
+        onOpenChange={setBookingOpen}
+        mentorId={selectedSubmission?.user?.id}
+        purpose="assignment-review"
+        mentorName={selectedSubmission?.user?.username}
       />
     </PortalLayout>
   );

@@ -39,16 +39,17 @@ const timeSlots = [
 const callTypes = [
   { value: "mentorship", label: "Mentorship Session" },
   { value: "project-review", label: "Project Review" },
+  { value: "assignment-review", label: "Assignment Review" },
   { value: "career", label: "Career Guidance" },
   { value: "technical", label: "Technical Help" },
 ];
 
-export function BookCallDialog({ 
-  open, 
-  onOpenChange, 
+export function BookCallDialog({
+  open,
+  onOpenChange,
   mentorName,
   mentorId,
-  purpose 
+  purpose
 }: BookCallDialogProps) {
   const [isBooking, setIsBooking] = useState(false);
   const [formData, setFormData] = useState({
@@ -143,66 +144,66 @@ export function BookCallDialog({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="date">Date *</Label>
-              <Select
-                value={formData.date}
-                onValueChange={(value) => setFormData({ ...formData, date: value })}
-              >
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Select date" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getDateOptions().map((date) => (
-                    <SelectItem key={date.value} value={date.value}>
-                      {date.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div>
+                <Label htmlFor="date">Date *</Label>
+                <Select
+                  value={formData.date}
+                  onValueChange={(value) => setFormData({ ...formData, date: value })}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select date" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getDateOptions().map((date) => (
+                      <SelectItem key={date.value} value={date.value}>
+                        {date.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="time">Time *</Label>
+                <Select
+                  value={formData.time}
+                  onValueChange={(value) => setFormData({ ...formData, time: value })}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timeSlots.map((time) => (
+                      <SelectItem key={time} value={time}>
+                        {time}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
             <div>
-              <Label htmlFor="time">Time *</Label>
-              <Select
-                value={formData.time}
-                onValueChange={(value) => setFormData({ ...formData, time: value })}
-              >
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Select time" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeSlots.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="topic">Topic (Optional)</Label>
+              <Input
+                id="topic"
+                value={formData.topic}
+                onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
+                placeholder="What would you like to discuss?"
+                className="mt-1.5"
+              />
             </div>
-          </div>
 
-          <div>
-            <Label htmlFor="topic">Topic (Optional)</Label>
-            <Input
-              id="topic"
-              value={formData.topic}
-              onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
-              placeholder="What would you like to discuss?"
-              className="mt-1.5"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Additional Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Any additional context or preparation needed..."
-              rows={3}
-              className="mt-1.5"
-            />
-          </div>
+            <div>
+              <Label htmlFor="notes">Additional Notes</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Any additional context or preparation needed..."
+                rows={3}
+                className="mt-1.5"
+              />
+            </div>
 
             <div className="p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
               <div className="flex items-center gap-2 mb-1">
