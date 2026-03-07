@@ -123,13 +123,40 @@ const renderLessonContent = (
     `;
 };
 
-const toSlideDeckUrl = (courseTitle: string, moduleTitle: string, lessonTitle: string): string => {
-    const slug = `${courseTitle}-${moduleTitle}-${lessonTitle}`
+const CLOUDINARY_SEED_CLOUD = process.env.CLOUDINARY_CLOUD_NAME || 'codemande-academy';
+const CLOUDINARY_SEED_FOLDER = 'codemande-academy/slides';
+
+const toSeedSlug = (courseTitle: string, moduleTitle: string, lessonTitle: string): string => (
+    `${courseTitle}-${moduleTitle}-${lessonTitle}`
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
+        .replace(/^-|-$/g, '')
+);
 
-    return `https://assets.codemande.com/slides/${slug}.pptx`;
+const toSlideDeckUrl = (courseTitle: string, moduleTitle: string, lessonTitle: string): string => {
+    const slug = toSeedSlug(courseTitle, moduleTitle, lessonTitle);
+    return `https://res.cloudinary.com/${CLOUDINARY_SEED_CLOUD}/raw/upload/v1/${CLOUDINARY_SEED_FOLDER}/${slug}.pptx`;
+};
+
+const toFirstSlidePreviewUrl = (courseTitle: string, moduleTitle: string, lessonTitle: string): string => {
+    const slug = toSeedSlug(courseTitle, moduleTitle, lessonTitle);
+    return `https://res.cloudinary.com/${CLOUDINARY_SEED_CLOUD}/image/upload/f_auto,q_auto,w_1400/v1/${CLOUDINARY_SEED_FOLDER}/${slug}-slide-1.png`;
+};
+
+const addSlideUsageGuidance = (lesson: LessonData, slideUrl: string, firstSlidePreviewUrl: string): string => {
+    const baseContent = lesson.content || `<p>Study the slide deck and complete the practical checkpoints for <strong>${lesson.title}</strong>.</p>`;
+
+    return `${baseContent}
+<div class="practice-task" style="margin-top:16px;">
+  <h3>How to study this slide deck</h3>
+  <ul>
+    <li>Open the deck and begin from slide 1 for the full learning flow.</li>
+    <li>Take notes for each section and implement the mini-practice in your own project.</li>
+    <li>Use the first-slide preview to confirm you opened the correct deck version.</li>
+  </ul>
+  <p><a href="${slideUrl}" target="_blank">Open full PPT deck</a></p>
+  <p><a href="${firstSlidePreviewUrl}" target="_blank">Open first-slide preview</a></p>
+</div>`;
 };
 
 const normalizeLessonForSlides = (
@@ -137,18 +164,34 @@ const normalizeLessonForSlides = (
     courseTitle: string,
     moduleTitle: string
 ): LessonData => {
-    if (lesson.type !== 'video') return lesson;
+    const isSeededMediaLesson = lesson.type === 'video' || lesson.type === 'pdf';
+    if (!isSeededMediaLesson) return lesson;
 
-    const slideUrl = lesson.fileUrl || toSlideDeckUrl(courseTitle, moduleTitle, lesson.title);
+    const slideUrl = lesson.type === 'video' && lesson.fileUrl
+        ? lesson.fileUrl
+        : toSlideDeckUrl(courseTitle, moduleTitle, lesson.title);
+    const firstSlidePreviewUrl = toFirstSlidePreviewUrl(courseTitle, moduleTitle, lesson.title);
 
     return {
         ...lesson,
         type: 'ppt',
         fileUrl: slideUrl,
         videoUrl: undefined,
+        content: addSlideUsageGuidance(lesson, slideUrl, firstSlidePreviewUrl),
         resources: [
+            {
+                title: `${lesson.title} — Slide Deck (PPTX)`,
+                url: slideUrl,
+                type: 'ppt'
+            },
+            {
+                title: `${lesson.title} — First Slide Preview`,
+                url: firstSlidePreviewUrl,
+                type: 'image'
+            },
             ...(lesson.resources || []),
-            ...(lesson.videoUrl ? [{ title: `${lesson.title} (Reference Video)`, url: lesson.videoUrl, type: 'video' as const }] : [])
+            ...(lesson.videoUrl ? [{ title: `${lesson.title} (Reference Video)`, url: lesson.videoUrl, type: 'video' as const }] : []),
+            ...(lesson.type === 'pdf' && lesson.fileUrl ? [{ title: `${lesson.title} (Original PDF)`, url: lesson.fileUrl, type: 'pdf' as const }] : [])
         ]
     };
 };
@@ -163,6 +206,7 @@ const ensureModuleAssignment = (
 
     const lessonTitle = `${moduleData.title}: Practical Assignment`;
     const assignmentSlideUrl = toSlideDeckUrl(courseTitle, moduleData.title, `${lessonTitle}-brief`);
+    const assignmentSlidePreviewUrl = toFirstSlidePreviewUrl(courseTitle, moduleData.title, `${lessonTitle}-brief`);
 
     return {
         ...moduleData,
@@ -174,7 +218,7 @@ const ensureModuleAssignment = (
                 type: 'assignment',
                 isAssignment: true,
                 fileUrl: assignmentSlideUrl,
-                content: renderLessonContent(
+                content: `${renderLessonContent(
                     lessonTitle,
                     `Complete a real-world deliverable based on the skills from ${moduleData.title}.`,
                     [
@@ -183,7 +227,12 @@ const ensureModuleAssignment = (
                         'Submit your code and evidence for review by your trainer/admin'
                     ],
                     'Build the requested feature and submit a working repository + demo evidence.'
-                ),
+                )}
+<div class="assignment-box">
+    <h4>Submission & Approval Flow</h4>
+    <p>After submission, the assignment must be approved by a trainer or admin before the next required unit is unlocked.</p>
+    <a href="${assignmentSlidePreviewUrl}" target="_blank">View assignment first slide</a>
+</div>`,
                 assignmentDescription: `Create a production-ready solution for ${moduleData.title}. Approval is required from a trainer or admin before progressing.`,
                 assignmentDeliverables: [
                     'GitHub repository URL',
@@ -198,7 +247,8 @@ const ensureModuleAssignment = (
                     'Submission completeness (10 marks)'
                 ],
                 resources: [
-                    { title: 'Assignment Brief Slides', url: assignmentSlideUrl, type: 'ppt' }
+                    { title: 'Assignment Brief Slides (PPTX)', url: assignmentSlideUrl, type: 'ppt' },
+                    { title: 'Assignment First Slide Preview', url: assignmentSlidePreviewUrl, type: 'image' }
                 ],
                 githubClassroomLink: `https://classroom.github.com/a/${courseTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-module-${moduleIndex + 1}`
             }

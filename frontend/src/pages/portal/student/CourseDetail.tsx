@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_COURSE, GET_ME, GET_ASSIGNMENT_SUBMISSIONS } from "@/lib/graphql/queries";
 import { COMPLETE_LESSON, SUBMIT_ASSIGNMENT } from "@/lib/graphql/mutations";
+import { triggerFileDownload } from "@/lib/download";
 
 export default function CourseDetail() {
   const { courseId } = useParams();
@@ -100,6 +101,18 @@ export default function CourseDetail() {
   const currentLessonSubmissionStatus = currentLessonSubmission?.status;
   const currentLessonCompleted = completedLessons.some((cl: any) => cl.lessonId === (currentLesson?.id || currentLesson?._id));
   const canMarkCurrentLessonComplete = !currentLessonRequiresAssignment || currentLessonCompleted || currentLessonSubmissionStatus === 'approved';
+  const currentLessonFirstSlidePreview = currentLesson?.resources?.find((resource: any) =>
+    resource?.type === 'image' && /first slide/i.test(resource?.title || '')
+  )?.url;
+
+  const handleDownloadResource = (resourceUrl?: string, filename?: string) => {
+    if (!resourceUrl) {
+      toast.error("No downloadable file available for this lesson yet.");
+      return;
+    }
+
+    triggerFileDownload(resourceUrl, filename || currentLesson?.title || "lesson-resource");
+  };
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
@@ -287,20 +300,41 @@ export default function CourseDetail() {
                   <Card className="border-border/50 overflow-hidden shadow-2xl">
                     <div className="aspect-video bg-black relative">
                       {currentLesson?.type === 'ppt' || (currentLesson?.fileUrl && (currentLesson.fileUrl.endsWith('.ppt') || currentLesson.fileUrl.endsWith('.pptx'))) ? (
-                        <PPTViewer url={currentLesson.fileUrl} title={currentLesson.title} />
+                        <PPTViewer url={currentLesson.fileUrl} title={currentLesson.title} startSlide={1} />
                       ) : currentLesson?.videoUrl ? (
                         <iframe src={currentLesson.videoUrl.replace("watch?v=", "embed/")} className="w-full h-full" allowFullScreen />
                       ) : (
                         <div className="w-full h-full flex flex-col items-center justify-center text-center p-12">
                           {React.createElement(getLessonIcon(currentLesson?.type), { className: "w-16 h-16 text-accent mb-4" })}
                           <h3 className="text-xl font-bold">{currentLesson?.title}</h3>
-                          {currentLesson?.fileUrl && <Button variant="gold" className="mt-6" asChild><a href={currentLesson.fileUrl}>Open File</a></Button>}
+                          {currentLesson?.fileUrl && (
+                            <div className="mt-6 flex items-center gap-2">
+                              <Button variant="gold" asChild>
+                                <a href={currentLesson.fileUrl} target="_blank" rel="noopener noreferrer">Open File</a>
+                              </Button>
+                              <Button variant="outline" onClick={() => handleDownloadResource(currentLesson.fileUrl, `${currentLesson?.title || 'lesson'}.pptx`)}>
+                                <Download className="w-4 h-4 mr-2" /> Download
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
                     <CardContent className="p-8">
                       <h2 className="text-2xl font-bold mb-4">{currentLesson?.title}</h2>
                       <div className="prose prose-invert max-w-none mb-8" dangerouslySetInnerHTML={{ __html: currentLesson?.content || currentLesson?.description || "" }} />
+
+                      {currentLessonFirstSlidePreview && (
+                        <div className="mb-6 p-4 rounded-xl border border-border/40 bg-muted/10 flex items-center justify-between gap-3">
+                          <p className="text-xs text-muted-foreground">Start from slide 1 using the official preview image.</p>
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={currentLessonFirstSlidePreview} target="_blank" rel="noopener noreferrer">Open First Slide</a>
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleDownloadResource(currentLesson?.fileUrl, `${currentLesson?.title || 'lesson'}.pptx`)}>
+                            <Download className="w-4 h-4 mr-1" /> Download Deck
+                          </Button>
+                        </div>
+                      )}
 
                       {currentLessonRequiresAssignment && (
                         <div className="mt-8 pt-8 border-t border-border/50 space-y-6">
