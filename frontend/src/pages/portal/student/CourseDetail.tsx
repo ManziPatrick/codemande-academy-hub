@@ -44,6 +44,7 @@ export default function CourseDetail() {
   const [bookingOpen, setBookingOpen] = useState(false);
   const [submissionContent, setSubmissionContent] = useState("");
   const [isSubmittingAssignment, setIsSubmittingAssignment] = useState(false);
+  const [forcedProgressLessonIds, setForcedProgressLessonIds] = useState<string[]>([]);
 
   // Queries
   const { data: userData, refetch: refetchUser } = useQuery(GET_ME);
@@ -121,6 +122,14 @@ export default function CourseDetail() {
     }
   };
 
+  const isLessonSatisfied = (lesson: any) => {
+    const lessonId = lesson?.id || lesson?._id;
+    if (!lessonId) return false;
+
+    return completedLessons.some((cl: any) => cl.courseId === courseId && cl.lessonId === lessonId)
+      || forcedProgressLessonIds.includes(lessonId);
+  };
+
   const handleNext = () => {
     if (currentIndex < allLessons.length - 1) {
       const nextLesson = allLessons[currentIndex + 1];
@@ -131,15 +140,11 @@ export default function CourseDetail() {
       const previousRequired = allLessons.slice(0, nextIndex).filter(l =>
         l.requiredAssignment || l.type === 'assignment' || l.type === 'quiz' || l.isAssignment
       );
-      const isNextLocked = previousRequired.some(pl => {
-        const plId = pl.id || pl._id;
-        return !completedLessons.some((cl: any) => cl.courseId === courseId && cl.lessonId === plId);
-      });
+      const isNextLocked = previousRequired.some((pl) => !isLessonSatisfied(pl));
 
       if (isNextLocked) {
         const blockingLesson = previousRequired.find((pl) => {
-          const plId = pl.id || pl._id;
-          return !completedLessons.some((cl: any) => cl.courseId === courseId && cl.lessonId === plId);
+          return !isLessonSatisfied(pl);
         });
 
         if (blockingLesson?.type === 'assignment' || blockingLesson?.isAssignment) {
@@ -152,6 +157,18 @@ export default function CourseDetail() {
 
       setActiveLessonId(nextId);
     }
+  };
+
+  const handleForceProceed = () => {
+    const lessonId = currentLesson?.id || currentLesson?._id;
+    if (!lessonId) return;
+
+    if (!forcedProgressLessonIds.includes(lessonId)) {
+      setForcedProgressLessonIds((prev) => [...prev, lessonId]);
+    }
+
+    toast.warning("You forced progress. Please still submit this assignment later.");
+    handleNext();
   };
 
   const handleMarkComplete = async () => {
@@ -257,10 +274,7 @@ export default function CourseDetail() {
               const previousRequiredLessons = allLessons.slice(0, lessonIndex).filter((pl) =>
                 pl.requiredAssignment || pl.type === 'assignment' || pl.type === 'quiz' || pl.isAssignment
               );
-              const isLocked = previousRequiredLessons.some(pl => {
-                const plId = pl.id || pl._id;
-                return !completedLessons.some((cl: any) => cl.courseId === courseId && cl.lessonId === plId);
-              });
+              const isLocked = previousRequiredLessons.some((pl) => !isLessonSatisfied(pl));
 
               if (isLocked) {
                 return (
@@ -271,7 +285,7 @@ export default function CourseDetail() {
                     <div className="p-4 bg-muted/20 rounded-xl border border-border/30 text-left max-w-sm w-full">
                       <p className="text-[10px] font-bold uppercase text-accent mb-2 tracking-widest">Incomplete Requirements:</p>
                       <ul className="space-y-1">
-                        {previousRequiredLessons.filter(pl => !completedLessons.some((cl: any) => cl.lessonId === (pl.id || pl._id))).map(pl => (
+                        {previousRequiredLessons.filter((pl) => !isLessonSatisfied(pl)).map(pl => (
                           <li key={pl.id || pl._id} className="text-sm flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                             {pl.title}
@@ -377,19 +391,26 @@ export default function CourseDetail() {
                         </div>
                       )}
 
-                      <div className="flex justify-between mt-10">
+                      <div className="flex justify-between mt-10 gap-2">
                         <Button variant="outline" className="border-border/50 hover:bg-muted/10" onClick={handlePrevious} disabled={currentIndex === 0}>
                           <ChevronLeft className="w-4 h-4 mr-2" /> Previous Block
                         </Button>
-                        <Button
-                          variant="gold"
-                          className="shadow-lg shadow-gold/10"
-                          onClick={handleMarkComplete}
-                          disabled={!canMarkCurrentLessonComplete}
-                        >
-                          {currentIndex === allLessons.length - 1 ? "Complete Journey" : "Mark Finalized"}
-                          <ChevronRight className="w-4 h-4 ml-2" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          {currentLessonRequiresAssignment && !canMarkCurrentLessonComplete && (
+                            <Button variant="outline" onClick={handleForceProceed}>
+                              Force Proceed
+                            </Button>
+                          )}
+                          <Button
+                            variant="gold"
+                            className="shadow-lg shadow-gold/10"
+                            onClick={handleMarkComplete}
+                            disabled={!canMarkCurrentLessonComplete}
+                          >
+                            {currentIndex === allLessons.length - 1 ? "Complete Journey" : "Mark Finalized"}
+                            <ChevronRight className="w-4 h-4 ml-2" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -413,13 +434,13 @@ export default function CourseDetail() {
                             {mod.lessons?.map((les: any) => {
                               const lesId = les.id || les._id;
                               const isActive = lesId === activeLessonId;
-                              const isComp = completedLessons.some((cl: any) => cl.lessonId === lesId);
+                              const isComp = completedLessons.some((cl: any) => cl.lessonId === lesId) || forcedProgressLessonIds.includes(lesId);
 
                               const lIdx = allLessons.findIndex(l => (l.id || l._id) === lesId);
                               const prevRequiredLessons = allLessons.slice(0, lIdx).filter((pl) =>
                                 pl.requiredAssignment || pl.type === 'assignment' || pl.type === 'quiz' || pl.isAssignment
                               );
-                              const isLock = prevRequiredLessons.some(pl => !completedLessons.some((cl: any) => cl.lessonId === (pl.id || pl._id)));
+                              const isLock = prevRequiredLessons.some((pl) => !isLessonSatisfied(pl));
 
                               return (
                                 <button
