@@ -74,11 +74,11 @@ const trainerNavItems: NavItem[] = [
   { label: "Dashboard", href: "/portal/trainer", icon: LayoutDashboard },
   { label: "My Courses", href: "/portal/trainer/courses", icon: BookOpen },
   { label: "Students", href: "/portal/trainer/students", icon: Users },
+  { label: "Assignments", href: "/portal/trainer/projects", icon: GraduationCap },
   { label: "Projects", href: "/portal/trainer/assignments", icon: FolderOpen },
   { label: "Schedule", href: "/portal/trainer/schedule", icon: Calendar },
   { label: "Mentorship", href: "/portal/trainer/mentorship", icon: GraduationCap },
   { label: "Internships", href: "/portal/trainer/internships", icon: Briefcase },
-  { label: "Assignments", href: "/portal/trainer/projects", icon: GraduationCap },
   { label: "Messages", href: "/chat", icon: MessageSquare },
 ];
 
@@ -88,6 +88,7 @@ const adminNavItems: NavItem[] = [
   { label: "Courses", href: "/portal/admin/courses", icon: BookOpen },
   { label: "Internships", href: "/portal/admin/internships", icon: Briefcase },
   { label: "Projects", href: "/portal/admin/projects", icon: FolderOpen },
+  { label: "Assignments", href: "/portal/admin/assignment-reviews", icon: GraduationCap },
   { label: "Team", href: "/portal/admin/team", icon: UserCog },
   { label: "Payments", href: "/portal/admin/payments", icon: CreditCard },
   { label: "Badges", href: "/portal/admin/badges", icon: Award },
@@ -499,6 +500,8 @@ export function PortalLayout({ children }: PortalLayoutProps) {
                           <div className={`mt-1 p-1.5 rounded-full ${!notif.read ? 'bg-accent/20 text-accent' : 'bg-muted text-muted-foreground'}`}>
                             {notif.type === 'message' ? <MessageSquare className="w-3.5 h-3.5" /> :
                               notif.type === 'booking' ? <Calendar className="w-3.5 h-3.5" /> :
+                              notif.type.startsWith('ASSIGNMENT') ? <GraduationCap className="w-3.5 h-3.5" /> :
+                              notif.type === 'CERTIFICATE_READY' ? <Award className="w-3.5 h-3.5" /> :
                                 <Bell className="w-3.5 h-3.5" />}
                           </div>
                           <div className="flex-1 min-w-0">

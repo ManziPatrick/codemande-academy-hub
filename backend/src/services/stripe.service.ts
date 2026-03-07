@@ -1,7 +1,8 @@
 import Stripe from 'stripe';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // Initialize Stripe with secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {

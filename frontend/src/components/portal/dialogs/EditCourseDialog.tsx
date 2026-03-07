@@ -59,6 +59,7 @@ export function EditCourseDialog({
     category: "Development",
     instructorId: "",
     status: "draft",
+    submissionRequired: true,
     modules: []
   });
 
@@ -94,6 +95,7 @@ export function EditCourseDialog({
             category: course.category || "Development",
             instructorId: course.instructor?.id || course.instructor || "",
             status: course.status || "draft",
+            submissionRequired: course.submissionRequired !== false,
             modules: course.modules?.map((m: any) => ({
               ...m,
               title: m.title || "",
@@ -105,14 +107,17 @@ export function EditCourseDialog({
                 content: l.content || "",
                 videoUrl: l.videoUrl || "",
                 fileUrl: l.fileUrl || "",
-                type: l.type || "video"
+                type: l.type || "video",
+                requiredAssignment: !!l.requiredAssignment,
+                isAssignment: !!l.isAssignment || l.type === 'assignment',
+                assignmentDescription: l.assignmentDescription || "",
+                assignmentDeliverables: l.assignmentDeliverables || []
               })) || []
             })) || []
           };
         }
 
         // Subsequent background updates (e.g. curriculum arriving)
-        // We merge if the prop course has MORE modules or if our modules have NO lessons but prop has them
         const hasMoreModules = (course.modules?.length > prev.modules.length);
         const hasLessonsNow = (prev.modules.length > 0 && prev.modules.every((m: any) => !m.lessons?.length) && course.modules?.[0]?.lessons?.length > 0);
         const shouldUpdatePricing = (prev.price === "0" && course.price > 0);
@@ -137,7 +142,11 @@ export function EditCourseDialog({
                 content: l.content || "",
                 videoUrl: l.videoUrl || "",
                 fileUrl: l.fileUrl || "",
-                type: l.type || "video"
+                type: l.type || "video",
+                requiredAssignment: !!l.requiredAssignment,
+                isAssignment: !!l.isAssignment || l.type === 'assignment',
+                assignmentDescription: l.assignmentDescription || "",
+                assignmentDeliverables: l.assignmentDeliverables || []
               })) || []
             })) : prev.modules
           };
@@ -162,6 +171,7 @@ export function EditCourseDialog({
       category: formData.category,
       instructorId: formData.instructorId,
       status: formData.status,
+      submissionRequired: formData.submissionRequired,
       modules: formData.modules.map((m: any) => ({
         id: m.id || m._id,
         title: m.title,
@@ -175,6 +185,7 @@ export function EditCourseDialog({
           type: l.type || "video",
           content: l.content || "",
           isAssignment: l.type === 'assignment',
+          requiredAssignment: !!l.requiredAssignment,
           assignmentDescription: l.assignmentDescription || "",
           assignmentDeliverables: l.assignmentDeliverables || [],
           resources: l.resources?.map((r: any) => ({
@@ -262,121 +273,145 @@ export function EditCourseDialog({
 
             <ScrollArea className="h-full">
               <div className="p-6">
-                <TabsContent value="basic" className="m-0 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-bold flex items-center gap-2 mb-2">
-                          <Layout className="w-4 h-4 text-accent" />
-                          Course Title
-                          {!isAdmin && <Lock className="w-3 h-3 text-muted-foreground" />}
-                        </label>
-                        <Input
-                          placeholder="e.g., Master React with TypeScript"
-                          className="h-11 font-medium bg-background border-accent/10 focus:border-accent"
-                          value={formData.title}
-                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                          disabled={!isAdmin}
-                        />
+                <TabsContent value="basic" className="m-0 space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Block 1: General Info */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 border-b border-accent/10 pb-2">
+                        <Layout className="w-5 h-5 text-accent" />
+                        <h3 className="font-bold text-sm uppercase tracking-tight">General Information</h3>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-4">
+                      
+                      <div className="space-y-4">
                         <div>
-                          <label className="text-sm font-bold flex items-center gap-2 mb-2">
-                            Level
+                          <label className="text-xs font-bold mb-1.5 block text-muted-foreground flex items-center gap-2">
+                            Course Title
+                            {!isAdmin && <Lock className="w-2.5 h-2.5" />}
                           </label>
                           <Input
-                            placeholder="Beginner"
-                            className="bg-background border-accent/10 h-10"
-                            value={formData.level}
-                            onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                            placeholder="e.g., Master React with TypeScript"
+                            className="h-11 font-medium bg-background border-accent/10 focus:border-accent"
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                             disabled={!isAdmin}
                           />
                         </div>
-                        <div>
-                          <label className="text-sm font-bold flex items-center gap-2 mb-2">
-                            Category
-                          </label>
-                          <Input
-                            placeholder="Development"
-                            className="bg-background border-accent/10 h-10"
-                            value={formData.category}
-                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                            disabled={!isAdmin}
-                          />
-                        </div>
-                      </div>
 
-                      <div>
-                        <label className="text-sm font-bold flex items-center gap-2 mb-2">
-                          Course Visibility
-                        </label>
-                        <div className="flex gap-2 p-1 bg-muted/30 rounded-lg border border-border/50">
-                          {['draft', 'published', 'archived'].map((status) => (
-                            <Button
-                              key={status}
-                              type="button"
-                              variant={formData.status === status ? 'gold' : 'ghost'}
-                              size="sm"
-                              className="flex-1 h-8 text-[10px] font-bold uppercase transition-all"
-                              onClick={() => setFormData({ ...formData, status })}
-                            >
-                              {status === 'published' ? 'Live' : status}
-                            </Button>
-                          ))}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-xs font-bold mb-1.5 block text-muted-foreground">Difficulty Level</label>
+                            <Input
+                              placeholder="Beginner"
+                              className="bg-background border-accent/10 h-10 font-medium"
+                              value={formData.level}
+                              onChange={(e) => setFormData({ ...formData, level: e.target.value })}
+                              disabled={!isAdmin}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold mb-1.5 block text-muted-foreground">Subject Category</label>
+                            <Input
+                              placeholder="Development"
+                              className="bg-background border-accent/10 h-10 font-medium"
+                              value={formData.category}
+                              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                              disabled={!isAdmin}
+                            />
+                          </div>
                         </div>
-                      </div>
 
-                      {isAdmin && (
                         <div>
-                          <label className="text-sm font-bold flex items-center gap-2 mb-2">
-                            Assign Instructor
-                          </label>
-                          <select
-                            className="w-full h-11 px-3 rounded-md border border-accent/10 bg-background text-sm font-medium focus:ring-2 focus:ring-accent/20 outline-none"
-                            value={formData.instructorId}
-                            onChange={(e) => setFormData({ ...formData, instructorId: e.target.value })}
-                          >
-                            <option value="">Select Instructor</option>
-                            {trainers.map((t: any) => (
-                              <option key={t.id} value={t.id}>{t.username} ({t.role})</option>
+                          <label className="text-xs font-bold mb-3 block text-muted-foreground">Course Status</label>
+                          <div className="flex gap-2 p-1 bg-muted/30 rounded-xl border border-border/50">
+                            {['draft', 'published', 'archived'].map((status) => (
+                              <Button
+                                key={status}
+                                type="button"
+                                variant={formData.status === status ? 'gold' : 'ghost'}
+                                size="sm"
+                                className="flex-1 h-9 text-[10px] font-black uppercase transition-all rounded-lg"
+                                onClick={() => setFormData({ ...formData, status })}
+                              >
+                                {status === 'published' ? 'Live' : status}
+                              </Button>
                             ))}
-                          </select>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-2 italic px-1">
+                            {formData.status === 'published' ? 'Visible to students on the platform.' : 'Private and cannot be accessed by students.'}
+                          </p>
                         </div>
-                      )}
+                      </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-sm font-bold flex items-center gap-2 mb-2">
-                          Course Thumbnail
-                        </label>
+                    {/* Block 2: Settings & Media */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 border-b border-accent/10 pb-2">
+                        <CheckCircle2 className="w-5 h-5 text-accent" />
+                        <h3 className="font-bold text-sm uppercase tracking-tight">Settings & Requirements</h3>
+                      </div>
 
-                        <div className="group relative aspect-video rounded-xl overflow-hidden border-2 border-dashed border-accent/20 bg-muted/10 hover:border-accent/40 transition-all flex items-center justify-center">
-                          {formData.thumbnail ? (
-                            <>
-                              <img src={formData.thumbnail} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="destructive"
-                                  size="sm"
-                                  className="h-8 gap-2"
-                                  onClick={() => setFormData({ ...formData, thumbnail: "" })}
-                                >
-                                  <Trash2 className="w-4 h-4" /> Remove
-                                </Button>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl shadow-sm">
+                          <div className="space-y-1 pr-4">
+                            <label className="text-sm font-bold flex items-center gap-2">
+                              Strict Progress Control
+                              <Badge variant="outline" className="text-[8px] h-4 py-0 bg-amber-500/10 border-amber-500/20 text-amber-600">Pro</Badge>
+                            </label>
+                            <p className="text-[10px] text-muted-foreground leading-relaxed">
+                              Require assignment submission and <b>trainer approval</b> before students can move to the next unit.
+                            </p>
+                          </div>
+                          <Switch
+                            checked={formData.submissionRequired}
+                            onCheckedChange={(checked) => setFormData({ ...formData, submissionRequired: checked })}
+                            className="data-[state=checked]:bg-amber-500"
+                          />
+                        </div>
+
+                        {isAdmin && (
+                          <div>
+                            <label className="text-xs font-bold mb-1.5 block text-muted-foreground">Primary Instructor (Lead Trainer)</label>
+                            <select
+                              className="w-full h-11 px-3 rounded-xl border border-accent/10 bg-background text-sm font-medium focus:ring-2 focus:ring-accent/20 outline-none transition-all"
+                              value={formData.instructorId}
+                              onChange={(e) => setFormData({ ...formData, instructorId: e.target.value })}
+                            >
+                              <option value="">Choose an instructor...</option>
+                              {trainers.map((t: any) => (
+                                <option key={t.id} value={t.id}>{t.username} ({t.role})</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        <div>
+                          <label className="text-xs font-bold mb-1.5 block text-muted-foreground">Cover Thumbnail</label>
+                          <div className="group relative aspect-[21/9] rounded-2xl overflow-hidden border-2 border-dashed border-accent/10 bg-muted/5 hover:border-accent/30 transition-all flex items-center justify-center">
+                            {formData.thumbnail ? (
+                              <>
+                                <img src={formData.thumbnail} alt="" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="sm"
+                                    className="h-8 gap-2 rounded-lg"
+                                    onClick={() => setFormData({ ...formData, thumbnail: "" })}
+                                  >
+                                    <Trash2 className="w-4 h-4" /> Replace
+                                  </Button>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="w-full h-full p-2">
+                                <FileUpload
+                                  folder="courses"
+                                  label="Drag & Drop Cover Image"
+                                  onUploadComplete={(url) => setFormData({ ...formData, thumbnail: url })}
+                                />
                               </div>
-                            </>
-                          ) : (
-                            <div className="w-full h-full">
-                              <FileUpload
-                                folder="courses"
-                                label="Drop your thumbnail or click here"
-                                onUploadComplete={(url) => setFormData({ ...formData, thumbnail: url })}
-                              />
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -599,6 +634,23 @@ export function EditCourseDialog({
 
                                     {lesson.type === 'assignment' && (
                                       <div className="space-y-3 p-3 bg-accent/5 rounded-lg border border-accent/10">
+                                        <div className="flex items-center justify-between pb-2 border-b border-accent/10">
+                                          <div>
+                                            <label className="text-[10px] font-bold text-accent uppercase block">Required Submission</label>
+                                            <p className="text-[9px] text-muted-foreground">Force submission for this specific unit</p>
+                                          </div>
+                                          <Switch
+                                            checked={lesson.requiredAssignment || false}
+                                            onCheckedChange={(checked) => {
+                                              const newModules = [...formData.modules];
+                                              const newLessons = [...module.lessons];
+                                              newLessons[lIdx] = { ...lesson, requiredAssignment: checked };
+                                              newModules[mIdx] = { ...module, lessons: newLessons };
+                                              setFormData({ ...formData, modules: newModules });
+                                            }}
+                                            className="scale-75"
+                                          />
+                                        </div>
                                         <div>
                                           <label className="text-[10px] font-bold text-accent uppercase block mb-1">Assignment Description</label>
                                           <Input

@@ -81,6 +81,11 @@ export function ViewCourseDialog({ open, onOpenChange, course }: ViewCourseDialo
               <Badge variant="default">
                 Active
               </Badge>
+              {course.submissionRequired !== false && (
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/20">
+                  Submission Required
+                </Badge>
+              )}
             </div>
 
             {/* Curriculum Section */}

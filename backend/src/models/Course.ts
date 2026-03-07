@@ -69,7 +69,8 @@ const courseSchema = new mongoose.Schema({
     rqfLevel: { type: String },
     competencyBased: { type: Boolean, default: true },
     tvetCode: { type: String }
-  }
+  },
+  submissionRequired: { type: Boolean, default: true },
 }, { timestamps: true });
 
 export const Course = mongoose.model('Course', courseSchema);

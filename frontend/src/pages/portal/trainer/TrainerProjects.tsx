@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation } from "@apollo/client/react";
 import {
     GET_ASSIGNMENT_SUBMISSIONS,
@@ -9,7 +10,8 @@ import {
 import {
     GRADE_ASSIGNMENT,
     CREATE_PROJECT,
-    GRADE_PROJECT
+    GRADE_PROJECT,
+    PING_INSTRUCTOR
 } from "@/lib/graphql/mutations";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -52,7 +54,16 @@ interface AssignmentSubmission {
         fullName?: string;
         avatar?: string;
     };
-    courseId: string;
+    courseId: any;
+    course?: {
+        id: string;
+        title: string;
+        instructor?: {
+            id: string;
+            fullName: string;
+            username: string;
+        }
+    };
     lessonId: string;
     content: string;
     status: string;
@@ -94,6 +105,8 @@ export default function TrainerProjects() {
     const [gradeValue, setGradeValue] = useState("");
     const [feedbackValue, setFeedbackValue] = useState("");
     const [bookingOpen, setBookingOpen] = useState(false);
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
     // Projects State
     const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
@@ -115,12 +128,52 @@ export default function TrainerProjects() {
 
     const [gradeAssignmentMutation, { loading: grading }] = useMutation(GRADE_ASSIGNMENT);
     const [createProject, { loading: creatingProject }] = useMutation(CREATE_PROJECT);
+    const [pingInstructor] = useMutation(PING_INSTRUCTOR);
+
+    const handlePingInstructor = async () => {
+        if (!selectedSubmission) return;
+        try {
+            await pingInstructor({
+                variables: {
+                    submissionId: selectedSubmission.id,
+                    message: "I am reviewing this submission."
+                }
+            });
+            toast.success("Instructor has been notified");
+        } catch (err: any) {
+            toast.error(err.message || "Failed to notify instructor");
+        }
+    };
 
     const submissions = assignmentsData?.getAssignmentSubmissions || [];
     const pendingSubmissions = submissions.filter((s: AssignmentSubmission) => s.status === "pending");
     const gradedSubmissions = submissions.filter((s: AssignmentSubmission) => s.status === "reviewed" || s.status === "graded" || s.status === "revision_requested");
 
     const projects = projectsData?.myProjects || [];
+
+    const handleQuickApprove = async () => {
+        if (!selectedSubmission) return;
+
+        try {
+            await gradeAssignmentMutation({
+                variables: {
+                    submissionId: selectedSubmission.id,
+                    grade: 100,
+                    feedback: "Quickly approved by " + (isAdmin ? "Admin" : "Trainer")
+                },
+                refetchQueries: [{ query: GET_ASSIGNMENT_SUBMISSIONS }],
+                awaitRefetchQueries: true
+            });
+
+            toast.success("Assignment approved successfully!");
+            await refetchAssignments();
+            setSelectedSubmission(null);
+            setGradeValue("");
+            setFeedbackValue("");
+        } catch (err: any) {
+            toast.error(err.message || "Failed to approve assignment");
+        }
+    };
 
     const handleGrade = async () => {
         if (!selectedSubmission || !gradeValue) {
@@ -274,8 +327,8 @@ export default function TrainerProjects() {
                     <TabsContent value="assignments">
                         <div className="flex items-center justify-between mb-6">
                             <div>
-                                <h1 className="font-heading text-3xl font-bold">Assignment Review</h1>
-                                <p className="text-muted-foreground mt-1">Review and grade specific lesson assignments</p>
+                                <h1 className="font-heading text-3xl font-bold">{isAdmin ? "Admin Assignment Review" : "Assignment Review"}</h1>
+                                <p className="text-muted-foreground mt-1">{isAdmin ? "Review and manage all student lesson assignment submissions" : "Review and grade specific lesson assignments"}</p>
                             </div>
                             <Badge variant="outline" className="text-lg px-4 py-2">
                                 {pendingSubmissions.length} Pending
@@ -312,15 +365,22 @@ export default function TrainerProjects() {
                                                                     <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
                                                                         <User className="w-5 h-5 text-accent" />
                                                                     </div>
-                                                                    <div>
-                                                                        <CardTitle className="text-base">{submission.user?.fullName || submission.user?.username}</CardTitle>
-                                                                        <p className="text-xs text-muted-foreground">Lesson ID: {submission.lessonId}</p>
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <h4 className="font-semibold text-sm truncate">{submission.user?.fullName || submission.user?.username}</h4>
+                                                                        <div className="flex flex-col gap-0.5">
+                                                                            <p className="text-[10px] font-bold text-accent truncate">{submission.course?.title || "Course ID: " + (submission.courseId?._id || submission.courseId)}</p>
+                                                                            <p className="text-[10px] text-muted-foreground">Lesson: {submission.lessonId}</p>
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
-                                                                    <Clock className="w-3 h-3 mr-1" />
-                                                                    Pending
-                                                                </Badge>
+                                                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                                                    <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20 text-[10px] py-0 h-4">Pending</Badge>
+                                                                    {submission.course?.instructor?.id !== user?.id && submission.course?.instructor && (
+                                                                        <Badge variant="outline" className="text-[10px] py-0 h-4 border-blue-500/30 text-blue-500/70">
+                                                                            By: {submission.course.instructor.fullName || submission.course.instructor.username}
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </CardHeader>
                                                         <CardContent className="space-y-2">
@@ -345,10 +405,44 @@ export default function TrainerProjects() {
                                             <CardContent className="p-6">
                                                 {selectedSubmission ? (
                                                     <div className="space-y-6">
-                                                        <div className="space-y-2">
-                                                            <label className="text-sm font-bold">Student</label>
-                                                            <p className="text-lg">{selectedSubmission.user?.fullName || selectedSubmission.user?.username}</p>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div className="space-y-1">
+                                                                <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Course & Lesson</label>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Badge className="bg-accent/10 text-accent border-accent/20">{selectedSubmission.course?.title || "Course: " + selectedSubmission.courseId}</Badge>
+                                                                    <Badge variant="outline" className="border-border/50">Lesson: {selectedSubmission.lessonId}</Badge>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold block">Submitted At</label>
+                                                                <p className="text-sm">{new Date(parseInt(selectedSubmission.createdAt)).toLocaleString()}</p>
+                                                            </div>
                                                         </div>
+                                                        <div className="space-y-1 mb-4">
+                                                            <label className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Student</label>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-6 h-6 rounded-full bg-accent/10 flex items-center justify-center">
+                                                                    <User className="w-3.5 h-3.5 text-accent" />
+                                                                </div>
+                                                                <p className="text-base font-semibold">{selectedSubmission.user?.fullName || selectedSubmission.user?.username}</p>
+                                                            </div>
+                                                        </div>
+                                                        {selectedSubmission.courseId?.instructor?._id !== user?.id && selectedSubmission.courseId?.instructor && (
+                                                            <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-between">
+                                                                <div className="flex items-center gap-2 text-xs text-blue-500">
+                                                                    <User className="w-3 h-3" />
+                                                                    <span>Managed by: <b>{selectedSubmission.courseId.instructor.fullName || selectedSubmission.courseId.instructor.username}</b></span>
+                                                                </div>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="h-6 text-[10px] text-blue-500 hover:text-blue-600 hover:bg-blue-500/10"
+                                                                    onClick={handlePingInstructor}
+                                                                >
+                                                                    Notify Instructor
+                                                                </Button>
+                                                            </div>
+                                                        )}
                                                         <div className="space-y-2">
                                                             <label className="text-sm font-bold">Submission Content</label>
                                                             <div className="p-4 bg-muted/20 rounded-lg border border-border/30">
@@ -391,10 +485,18 @@ export default function TrainerProjects() {
                                                                 rows={4}
                                                             />
                                                         </div>
-                                                        <div className="flex gap-2 pt-2">
+                                                        <div className="flex gap-4 pt-2">
+                                                            <Button
+                                                                variant="outline"
+                                                                className="flex-1 border-green-500/50 text-green-500 hover:bg-green-500/10"
+                                                                onClick={handleQuickApprove}
+                                                                disabled={grading}
+                                                            >
+                                                                {grading ? "..." : "Quick Approve"}
+                                                            </Button>
                                                             <Button
                                                                 variant="gold"
-                                                                className="flex-1 shadow-lg shadow-gold/20"
+                                                                className="flex-[2] shadow-lg shadow-gold/20"
                                                                 onClick={handleGrade}
                                                                 disabled={grading || !gradeValue}
                                                             >
@@ -410,436 +512,438 @@ export default function TrainerProjects() {
                                                             </Button>
                                                         </div>
                                                     </div>
-                                                ) : (
-                                                    <div className="text-center py-12 text-muted-foreground">
-                                                        <FolderOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                                                        <p>Select a submission to grade</p>
                                                     </div>
+                                            ) : (
+                                            <div className="text-center py-12 text-muted-foreground">
+                                                <FolderOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                                                <p>Select a submission to grade</p>
+                                            </div>
                                                 )}
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-                                )}
-                            </TabsContent>
-
-                            <TabsContent value="graded" className="space-y-4">
-                                {gradedSubmissions.length === 0 ? (
-                                    <Card className="border-border/50">
-                                        <CardContent className="p-12 text-center">
-                                            <p className="text-muted-foreground">No graded submissions yet.</p>
                                         </CardContent>
                                     </Card>
-                                ) : (
-                                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {gradedSubmissions.map((submission: AssignmentSubmission) => (
-                                            <Card key={submission.id} className="border-border/50">
-                                                <CardHeader>
-                                                    <div className="flex items-start justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
-                                                                <User className="w-5 h-5 text-accent" />
-                                                            </div>
-                                                            <div>
-                                                                <CardTitle className="text-base">{submission.user?.fullName || submission.user?.username}</CardTitle>
-                                                                <p className="text-xs text-muted-foreground">Lesson: {submission.lessonId}</p>
-                                                            </div>
-                                                        </div>
-                                                        <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
-                                                            {submission.grade}/100
-                                                        </Badge>
-                                                    </div>
-                                                </CardHeader>
-                                                <CardContent className="space-y-2">
-                                                    {submission.feedback && (
-                                                        <div className="p-3 bg-muted/20 rounded-lg border border-border/30">
-                                                            <p className="text-xs font-bold text-accent mb-1">Feedback</p>
-                                                            <p className="text-sm italic text-muted-foreground">"{submission.feedback}"</p>
-                                                        </div>
-                                                    )}
-                                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                        <Calendar className="w-3 h-3" />
-                                                        {new Date(parseInt(submission.createdAt)).toLocaleDateString()}
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))}
                                     </div>
                                 )}
-                            </TabsContent>
-                        </Tabs>
                     </TabsContent>
 
-                    {/* PROJECTS TAB */}
-                    <TabsContent value="projects">
-                        <div className="flex items-center justify-between mb-6">
-                            <div>
-                                <h1 className="font-heading text-3xl font-bold">Project Management</h1>
-                                <p className="text-muted-foreground mt-1">Manage student projects, teams, and progress</p>
-                            </div>
-                            <Dialog open={isCreateProjectOpen} onOpenChange={setIsCreateProjectOpen}>
-                                <DialogTrigger asChild>
-                                    <Button variant="gold" className="shadow-lg shadow-gold/20">
-                                        <Plus className="w-4 h-4 mr-2" />
-                                        Create Project
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[425px]">
-                                    <DialogHeader>
-                                        <DialogTitle>Create New Project</DialogTitle>
-                                        <DialogDescription>
-                                            Define a new project for your students.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="grid gap-4 py-4">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="title">Project Title</Label>
-                                            <Input
-                                                id="title"
-                                                value={newProject.title}
-                                                onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                                                placeholder="e.g. E-commerce Platform"
-                                            />
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="course">Course</Label>
-                                            <Select
-                                                value={newProject.course}
-                                                onValueChange={(value) => setNewProject({ ...newProject, course: value })}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue placeholder="Select a course" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {(coursesData as any)?.courses?.map((course: any) => (
-                                                        <SelectItem key={course.id} value={course.title}>
-                                                            {course.title}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="type">Type</Label>
-                                            <Select
-                                                value={newProject.type}
-                                                onValueChange={(value) => setNewProject({ ...newProject, type: value })}
-                                            >
-                                                <SelectTrigger>
-                                                    <SelectValue />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="individual">Individual</SelectItem>
-                                                    <SelectItem value="team">Team</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <Label>Assign To ({newProject.type === 'individual' ? 'Student' : 'Team Members'})</Label>
-                                            {newProject.type === 'individual' ? (
-                                                <Select
-                                                    value={selectedStudentIds[0] || ""}
-                                                    onValueChange={(value) => setSelectedStudentIds([value])}
-                                                >
-                                                    <SelectTrigger>
-                                                        <SelectValue placeholder="Select a student" />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                        {(studentsData as any)?.getAllStudents?.map((student: any) => (
-                                                            <SelectItem key={student.id} value={student.id}>
-                                                                {student.fullName || student.username}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectContent>
-                                                </Select>
-                                            ) : (
-                                                <ScrollArea className="h-[150px] w-full border rounded-md p-2">
-                                                    <div className="space-y-2">
-                                                        {(studentsData as any)?.getAllStudents?.map((student: any) => (
-                                                            <div key={student.id} className="flex items-center space-x-2">
-                                                                <Checkbox
-                                                                    id={`student-${student.id}`}
-                                                                    checked={selectedStudentIds.includes(student.id)}
-                                                                    onCheckedChange={(checked) => {
-                                                                        if (checked) {
-                                                                            setSelectedStudentIds([...selectedStudentIds, student.id]);
-                                                                        } else {
-                                                                            setSelectedStudentIds(selectedStudentIds.filter(id => id !== student.id));
-                                                                        }
-                                                                    }}
-                                                                />
-                                                                <label
-                                                                    htmlFor={`student-${student.id}`}
-                                                                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                                                >
-                                                                    {student.fullName || student.username}
-                                                                </label>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </ScrollArea>
-                                            )}
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="deadline">Deadline (Optional)</Label>
-                                            <Input
-                                                id="deadline"
-                                                type="date"
-                                                value={newProject.deadline}
-                                                onChange={(e) => setNewProject({ ...newProject, deadline: e.target.value })}
-                                            />
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <Label>Project Deliverables / Tasks</Label>
-                                            <div className="space-y-2">
-                                                {newProject.tasks.map((task, index) => (
-                                                    <div key={index} className="flex gap-2">
-                                                        <Input
-                                                            placeholder="e.g. Design Database Schema"
-                                                            value={task.title}
-                                                            onChange={(e) => {
-                                                                const updated = [...newProject.tasks];
-                                                                updated[index].title = e.target.value;
-                                                                setNewProject({ ...newProject, tasks: updated });
-                                                            }}
-                                                        />
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => {
-                                                                const updated = newProject.tasks.filter((_, i) => i !== index);
-                                                                setNewProject({ ...newProject, tasks: updated.length ? updated : [{ title: "", completed: false }] });
-                                                            }}
-                                                            disabled={newProject.tasks.length === 1 && !task.title}
-                                                        >
-                                                            <Trash2 className="w-4 h-4 text-red-500" />
-                                                        </Button>
-                                                    </div>
-                                                ))}
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="w-full border-dashed"
-                                                    onClick={() => setNewProject({ ...newProject, tasks: [...newProject.tasks, { title: "", completed: false }] })}
-                                                >
-                                                    <Plus className="w-3 h-3 mr-2" />
-                                                    Add Task
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <Label>Resource Links (Toolbox)</Label>
-                                            <div className="space-y-2">
-                                                {newProject.links.map((link, index) => (
-                                                    <div key={index} className="flex gap-2">
-                                                        <Input
-                                                            placeholder="Title"
-                                                            className="flex-1"
-                                                            value={link.title}
-                                                            onChange={(e) => {
-                                                                const updated = [...newProject.links];
-                                                                updated[index].title = e.target.value;
-                                                                setNewProject({ ...newProject, links: updated });
-                                                            }}
-                                                        />
-                                                        <Input
-                                                            placeholder="URL"
-                                                            className="flex-[2]"
-                                                            value={link.url}
-                                                            onChange={(e) => {
-                                                                const updated = [...newProject.links];
-                                                                updated[index].url = e.target.value;
-                                                                setNewProject({ ...newProject, links: updated });
-                                                            }}
-                                                        />
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => {
-                                                                const updated = newProject.links.filter((_, i) => i !== index);
-                                                                setNewProject({ ...newProject, links: updated.length ? updated : [{ title: "", url: "" }] });
-                                                            }}
-                                                            disabled={newProject.links.length === 1 && !link.title && !link.url}
-                                                        >
-                                                            <Trash2 className="w-4 h-4 text-red-500" />
-                                                        </Button>
-                                                    </div>
-                                                ))}
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="w-full border-dashed"
-                                                    onClick={() => setNewProject({ ...newProject, links: [...newProject.links, { title: "", url: "" }] })}
-                                                >
-                                                    <Plus className="w-3 h-3 mr-2" />
-                                                    Add Link
-                                                </Button>
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="description">Detailed Instructions (README style)</Label>
-                                            <TextEditor
-                                                value={newProject.description}
-                                                onChange={(content) => setNewProject({ ...newProject, description: content })}
-                                                placeholder="Write detailed project instructions, expectations, and guidelines..."
-                                            />
-                                        </div>
-                                    </div>
-                                    <DialogFooter>
-                                        <Button onClick={handleCreateProject} disabled={creatingProject}>
-                                            {creatingProject ? "Creating..." : "Create Project"}
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                        </div>
-
-                        {projects.length === 0 ? (
+                    <TabsContent value="graded" className="space-y-4">
+                        {gradedSubmissions.length === 0 ? (
                             <Card className="border-border/50">
                                 <CardContent className="p-12 text-center">
-                                    <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground opacity-50 mb-4" />
-                                    <h3 className="text-lg font-bold mb-2">No Projects Found</h3>
-                                    <p className="text-muted-foreground mb-4">Create your first project to get started.</p>
-                                    <Button variant="outline" onClick={() => setIsCreateProjectOpen(true)}>Create Project</Button>
+                                    <p className="text-muted-foreground">No graded submissions yet.</p>
                                 </CardContent>
                             </Card>
                         ) : (
-                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {projects.map((project: Project) => (
-                                    <Card key={project.id} className="border-border/50 hover:border-accent/50 transition-all group">
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {gradedSubmissions.map((submission: AssignmentSubmission) => (
+                                    <Card key={submission.id} className="border-border/50">
                                         <CardHeader>
-                                            <div className="flex justify-between items-start">
-                                                <Badge>{project.type}</Badge>
-                                                {project.status === 'completed' && <Badge variant="secondary" className="bg-green-500/10 text-green-500">Completed</Badge>}
-                                                {project.status === 'in_progress' && <Badge variant="secondary" className="bg-blue-500/10 text-blue-500">In Progress</Badge>}
-                                            </div>
-                                            <CardTitle className="line-clamp-1">{project.title}</CardTitle>
-                                            <CardDescription className="line-clamp-1">{project.course}</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="space-y-4">
-                                                <div className="flex justify-between text-sm">
-                                                    <span className="text-muted-foreground">Progress</span>
-                                                    <span>{project.progress}%</span>
-                                                </div>
-                                                <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-accent transition-all duration-500"
-                                                        style={{ width: `${project.progress}%` }}
-                                                    />
-                                                </div>
-                                                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                                    <div className="flex items-center gap-1">
-                                                        <Users className="w-4 h-4" />
-                                                        <span>{project.team.length} Members</span>
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
+                                                        <User className="w-5 h-5 text-accent" />
                                                     </div>
-                                                    {project.deadline && (
-                                                        <div className="flex items-center gap-1">
-                                                            <Calendar className="w-4 h-4" />
-                                                            <span>{new Date(parseInt(project.deadline)).toLocaleDateString()}</span>
-                                                        </div>
-                                                    )}
+                                                    <div>
+                                                        <CardTitle className="text-base">{submission.user?.fullName || submission.user?.username}</CardTitle>
+                                                        <p className="text-xs text-muted-foreground">Lesson: {submission.lessonId}</p>
+                                                    </div>
                                                 </div>
+                                                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20">
+                                                    {submission.grade}/100
+                                                </Badge>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="space-y-2">
+                                            {submission.feedback && (
+                                                <div className="p-3 bg-muted/20 rounded-lg border border-border/30">
+                                                    <p className="text-xs font-bold text-accent mb-1">Feedback</p>
+                                                    <p className="text-sm italic text-muted-foreground">"{submission.feedback}"</p>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <Calendar className="w-3 h-3" />
+                                                {new Date(parseInt(submission.createdAt)).toLocaleDateString()}
                                             </div>
                                         </CardContent>
-                                        <CardFooter className="pt-0">
-                                            <Button
-                                                variant="outline"
-                                                className="w-full group-hover:bg-accent group-hover:text-accent-foreground"
-                                                onClick={() => setManagingProject(project)}
-                                            >
-                                                Manage Project
-                                            </Button>
-                                        </CardFooter>
                                     </Card>
                                 ))}
                             </div>
                         )}
                     </TabsContent>
                 </Tabs>
-            </div>
+            </TabsContent>
 
-            {/* Manage Project Dialog */}
-            <Dialog open={!!managingProject} onOpenChange={(open) => !open && setManagingProject(null)}>
-                <DialogContent className="sm:max-w-[500px]">
-                    <DialogHeader>
-                        <DialogTitle>Manage Project: {managingProject?.title}</DialogTitle>
-                        <DialogDescription>
-                            Review details and grade the project.
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* PROJECTS TAB */}
+            <TabsContent value="projects">
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 className="font-heading text-3xl font-bold">Project Management</h1>
+                        <p className="text-muted-foreground mt-1">Manage student projects, teams, and progress</p>
+                    </div>
+                    <Dialog open={isCreateProjectOpen} onOpenChange={setIsCreateProjectOpen}>
+                        <DialogTrigger asChild>
+                            <Button variant="gold" className="shadow-lg shadow-gold/20">
+                                <Plus className="w-4 h-4 mr-2" />
+                                Create Project
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                                <DialogTitle>Create New Project</DialogTitle>
+                                <DialogDescription>
+                                    Define a new project for your students.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="title">Project Title</Label>
+                                    <Input
+                                        id="title"
+                                        value={newProject.title}
+                                        onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                                        placeholder="e.g. E-commerce Platform"
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="course">Course</Label>
+                                    <Select
+                                        value={newProject.course}
+                                        onValueChange={(value) => setNewProject({ ...newProject, course: value })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a course" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {(coursesData as any)?.courses?.map((course: any) => (
+                                                <SelectItem key={course.id} value={course.title}>
+                                                    {course.title}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="type">Type</Label>
+                                    <Select
+                                        value={newProject.type}
+                                        onValueChange={(value) => setNewProject({ ...newProject, type: value })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="individual">Individual</SelectItem>
+                                            <SelectItem value="team">Team</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
-                    {managingProject && (
-                        <div className="space-y-4 py-4">
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                                <div>
-                                    <span className="font-semibold block">Status</span>
-                                    <Badge variant="outline">{managingProject.status}</Badge>
+                                <div className="grid gap-2">
+                                    <Label>Assign To ({newProject.type === 'individual' ? 'Student' : 'Team Members'})</Label>
+                                    {newProject.type === 'individual' ? (
+                                        <Select
+                                            value={selectedStudentIds[0] || ""}
+                                            onValueChange={(value) => setSelectedStudentIds([value])}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select a student" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {(studentsData as any)?.getAllStudents?.map((student: any) => (
+                                                    <SelectItem key={student.id} value={student.id}>
+                                                        {student.fullName || student.username}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    ) : (
+                                        <ScrollArea className="h-[150px] w-full border rounded-md p-2">
+                                            <div className="space-y-2">
+                                                {(studentsData as any)?.getAllStudents?.map((student: any) => (
+                                                    <div key={student.id} className="flex items-center space-x-2">
+                                                        <Checkbox
+                                                            id={`student-${student.id}`}
+                                                            checked={selectedStudentIds.includes(student.id)}
+                                                            onCheckedChange={(checked) => {
+                                                                if (checked) {
+                                                                    setSelectedStudentIds([...selectedStudentIds, student.id]);
+                                                                } else {
+                                                                    setSelectedStudentIds(selectedStudentIds.filter(id => id !== student.id));
+                                                                }
+                                                            }}
+                                                        />
+                                                        <label
+                                                            htmlFor={`student-${student.id}`}
+                                                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                                        >
+                                                            {student.fullName || student.username}
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </ScrollArea>
+                                    )}
                                 </div>
-                                <div>
-                                    <span className="font-semibold block">Type</span>
-                                    <span className="capitalize">{managingProject.type}</span>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="deadline">Deadline (Optional)</Label>
+                                    <Input
+                                        id="deadline"
+                                        type="date"
+                                        value={newProject.deadline}
+                                        onChange={(e) => setNewProject({ ...newProject, deadline: e.target.value })}
+                                    />
                                 </div>
-                                <div>
-                                    <span className="font-semibold block">Course</span>
-                                    <span className="line-clamp-1">{managingProject.course}</span>
+
+                                <div className="grid gap-2">
+                                    <Label>Project Deliverables / Tasks</Label>
+                                    <div className="space-y-2">
+                                        {newProject.tasks.map((task, index) => (
+                                            <div key={index} className="flex gap-2">
+                                                <Input
+                                                    placeholder="e.g. Design Database Schema"
+                                                    value={task.title}
+                                                    onChange={(e) => {
+                                                        const updated = [...newProject.tasks];
+                                                        updated[index].title = e.target.value;
+                                                        setNewProject({ ...newProject, tasks: updated });
+                                                    }}
+                                                />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => {
+                                                        const updated = newProject.tasks.filter((_, i) => i !== index);
+                                                        setNewProject({ ...newProject, tasks: updated.length ? updated : [{ title: "", completed: false }] });
+                                                    }}
+                                                    disabled={newProject.tasks.length === 1 && !task.title}
+                                                >
+                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full border-dashed"
+                                            onClick={() => setNewProject({ ...newProject, tasks: [...newProject.tasks, { title: "", completed: false }] })}
+                                        >
+                                            <Plus className="w-3 h-3 mr-2" />
+                                            Add Task
+                                        </Button>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="font-semibold block">Team Size</span>
-                                    <span>{managingProject.team.length} Members</span>
+
+                                <div className="grid gap-2">
+                                    <Label>Resource Links (Toolbox)</Label>
+                                    <div className="space-y-2">
+                                        {newProject.links.map((link, index) => (
+                                            <div key={index} className="flex gap-2">
+                                                <Input
+                                                    placeholder="Title"
+                                                    className="flex-1"
+                                                    value={link.title}
+                                                    onChange={(e) => {
+                                                        const updated = [...newProject.links];
+                                                        updated[index].title = e.target.value;
+                                                        setNewProject({ ...newProject, links: updated });
+                                                    }}
+                                                />
+                                                <Input
+                                                    placeholder="URL"
+                                                    className="flex-[2]"
+                                                    value={link.url}
+                                                    onChange={(e) => {
+                                                        const updated = [...newProject.links];
+                                                        updated[index].url = e.target.value;
+                                                        setNewProject({ ...newProject, links: updated });
+                                                    }}
+                                                />
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => {
+                                                        const updated = newProject.links.filter((_, i) => i !== index);
+                                                        setNewProject({ ...newProject, links: updated.length ? updated : [{ title: "", url: "" }] });
+                                                    }}
+                                                    disabled={newProject.links.length === 1 && !link.title && !link.url}
+                                                >
+                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="w-full border-dashed"
+                                            onClick={() => setNewProject({ ...newProject, links: [...newProject.links, { title: "", url: "" }] })}
+                                        >
+                                            <Plus className="w-3 h-3 mr-2" />
+                                            Add Link
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="description">Detailed Instructions (README style)</Label>
+                                    <TextEditor
+                                        value={newProject.description}
+                                        onChange={(content) => setNewProject({ ...newProject, description: content })}
+                                        placeholder="Write detailed project instructions, expectations, and guidelines..."
+                                    />
                                 </div>
                             </div>
+                            <DialogFooter>
+                                <Button onClick={handleCreateProject} disabled={creatingProject}>
+                                    {creatingProject ? "Creating..." : "Create Project"}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+                </div>
 
-                            <div className="border-t pt-4 mt-4">
-                                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                                    <FileCode className="w-4 h-4 text-gold" />
-                                    Grading
-                                </h4>
-                                <div className="space-y-3">
-                                    <div className="grid gap-2">
-                                        <Label>Grade (0-100)</Label>
-                                        <Input
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            placeholder="Enter grade..."
-                                            value={projectGrade}
-                                            onChange={(e) => setProjectGrade(e.target.value)}
-                                        />
+                {projects.length === 0 ? (
+                    <Card className="border-border/50">
+                        <CardContent className="p-12 text-center">
+                            <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground opacity-50 mb-4" />
+                            <h3 className="text-lg font-bold mb-2">No Projects Found</h3>
+                            <p className="text-muted-foreground mb-4">Create your first project to get started.</p>
+                            <Button variant="outline" onClick={() => setIsCreateProjectOpen(true)}>Create Project</Button>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {projects.map((project: Project) => (
+                            <Card key={project.id} className="border-border/50 hover:border-accent/50 transition-all group">
+                                <CardHeader>
+                                    <div className="flex justify-between items-start">
+                                        <Badge>{project.type}</Badge>
+                                        {project.status === 'completed' && <Badge variant="secondary" className="bg-green-500/10 text-green-500">Completed</Badge>}
+                                        {project.status === 'in_progress' && <Badge variant="secondary" className="bg-blue-500/10 text-blue-500">In Progress</Badge>}
                                     </div>
-                                    <div className="grid gap-2">
-                                        <Label>Feedback</Label>
-                                        <Textarea
-                                            placeholder="Provide detailed feedback..."
-                                            value={projectFeedback}
-                                            onChange={(e) => setProjectFeedback(e.target.value)}
-                                            rows={3}
-                                        />
+                                    <CardTitle className="line-clamp-1">{project.title}</CardTitle>
+                                    <CardDescription className="line-clamp-1">{project.course}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Progress</span>
+                                            <span>{project.progress}%</span>
+                                        </div>
+                                        <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-accent transition-all duration-500"
+                                                style={{ width: `${project.progress}%` }}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                            <div className="flex items-center gap-1">
+                                                <Users className="w-4 h-4" />
+                                                <span>{project.team.length} Members</span>
+                                            </div>
+                                            {project.deadline && (
+                                                <div className="flex items-center gap-1">
+                                                    <Calendar className="w-4 h-4" />
+                                                    <span>{new Date(parseInt(project.deadline)).toLocaleDateString()}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            </div>
+                                </CardContent>
+                                <CardFooter className="pt-0">
+                                    <Button
+                                        variant="outline"
+                                        className="w-full group-hover:bg-accent group-hover:text-accent-foreground"
+                                        onClick={() => setManagingProject(project)}
+                                    >
+                                        Manage Project
+                                    </Button>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </TabsContent>
+        </Tabs>
+            </div >
+
+        {/* Manage Project Dialog */ }
+        < Dialog open = {!!managingProject
+} onOpenChange = {(open) => !open && setManagingProject(null)}>
+    <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+            <DialogTitle>Manage Project: {managingProject?.title}</DialogTitle>
+            <DialogDescription>
+                Review details and grade the project.
+            </DialogDescription>
+        </DialogHeader>
+
+        {managingProject && (
+            <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span className="font-semibold block">Status</span>
+                        <Badge variant="outline">{managingProject.status}</Badge>
+                    </div>
+                    <div>
+                        <span className="font-semibold block">Type</span>
+                        <span className="capitalize">{managingProject.type}</span>
+                    </div>
+                    <div>
+                        <span className="font-semibold block">Course</span>
+                        <span className="line-clamp-1">{managingProject.course}</span>
+                    </div>
+                    <div>
+                        <span className="font-semibold block">Team Size</span>
+                        <span>{managingProject.team.length} Members</span>
+                    </div>
+                </div>
+
+                <div className="border-t pt-4 mt-4">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                        <FileCode className="w-4 h-4 text-gold" />
+                        Grading
+                    </h4>
+                    <div className="space-y-3">
+                        <div className="grid gap-2">
+                            <Label>Grade (0-100)</Label>
+                            <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                placeholder="Enter grade..."
+                                value={projectGrade}
+                                onChange={(e) => setProjectGrade(e.target.value)}
+                            />
                         </div>
-                    )}
+                        <div className="grid gap-2">
+                            <Label>Feedback</Label>
+                            <Textarea
+                                placeholder="Provide detailed feedback..."
+                                value={projectFeedback}
+                                onChange={(e) => setProjectFeedback(e.target.value)}
+                                rows={3}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
 
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setManagingProject(null)}>Cancel</Button>
-                        <Button variant="gold" onClick={handleGradeProject} disabled={gradingProject}>
-                            {gradingProject ? "Grading..." : "Submit Grade"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
+        <DialogFooter>
+            <Button variant="outline" onClick={() => setManagingProject(null)}>Cancel</Button>
+            <Button variant="gold" onClick={handleGradeProject} disabled={gradingProject}>
+                {gradingProject ? "Grading..." : "Submit Grade"}
+            </Button>
+        </DialogFooter>
+    </DialogContent>
             </Dialog >
 
-            <BookCallDialog
-                open={bookingOpen}
-                onOpenChange={setBookingOpen}
-                mentorId={selectedSubmission?.user?.id || selectedSubmission?.userId}
-                mentorName={selectedSubmission?.user?.fullName || selectedSubmission?.user?.username}
-                purpose="assignment-review"
-            />
+    <BookCallDialog
+        open={bookingOpen}
+        onOpenChange={setBookingOpen}
+        mentorId={selectedSubmission?.user?.id || selectedSubmission?.userId}
+        mentorName={selectedSubmission?.user?.fullName || selectedSubmission?.user?.username}
+        purpose="assignment-review"
+    />
         </PortalLayout >
     );
 }
