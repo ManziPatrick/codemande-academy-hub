@@ -123,6 +123,139 @@ const renderLessonContent = (
     `;
 };
 
+const CLOUDINARY_SEED_CLOUD = process.env.CLOUDINARY_CLOUD_NAME || 'codemande-academy';
+const CLOUDINARY_SEED_FOLDER = 'codemande-academy/slides';
+
+const toSeedSlug = (courseTitle: string, moduleTitle: string, lessonTitle: string): string => (
+    `${courseTitle}-${moduleTitle}-${lessonTitle}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '')
+);
+
+const toSlideDeckUrl = (courseTitle: string, moduleTitle: string, lessonTitle: string): string => {
+    const slug = toSeedSlug(courseTitle, moduleTitle, lessonTitle);
+    return `https://res.cloudinary.com/${CLOUDINARY_SEED_CLOUD}/raw/upload/v1/${CLOUDINARY_SEED_FOLDER}/${slug}.pptx`;
+};
+
+const toFirstSlidePreviewUrl = (courseTitle: string, moduleTitle: string, lessonTitle: string): string => {
+    const slug = toSeedSlug(courseTitle, moduleTitle, lessonTitle);
+    return `https://res.cloudinary.com/${CLOUDINARY_SEED_CLOUD}/image/upload/f_auto,q_auto,w_1400/v1/${CLOUDINARY_SEED_FOLDER}/${slug}-slide-1.png`;
+};
+
+const addSlideUsageGuidance = (lesson: LessonData, slideUrl: string, firstSlidePreviewUrl: string): string => {
+    const baseContent = lesson.content || `<p>Study the slide deck and complete the practical checkpoints for <strong>${lesson.title}</strong>.</p>`;
+
+    return `${baseContent}
+<div class="practice-task" style="margin-top:16px;">
+  <h3>How to study this slide deck</h3>
+  <ul>
+    <li>Open the deck and begin from slide 1 for the full learning flow.</li>
+    <li>Take notes for each section and implement the mini-practice in your own project.</li>
+    <li>Use the first-slide preview to confirm you opened the correct deck version.</li>
+  </ul>
+  <p><a href="${slideUrl}" target="_blank">Open full PPT deck</a></p>
+  <p><a href="${firstSlidePreviewUrl}" target="_blank">Open first-slide preview</a></p>
+</div>`;
+};
+
+const normalizeLessonForSlides = (
+    lesson: LessonData,
+    courseTitle: string,
+    moduleTitle: string
+): LessonData => {
+    const isSeededMediaLesson = lesson.type === 'video' || lesson.type === 'pdf';
+    if (!isSeededMediaLesson) return lesson;
+
+    const slideUrl = lesson.type === 'video' && lesson.fileUrl
+        ? lesson.fileUrl
+        : toSlideDeckUrl(courseTitle, moduleTitle, lesson.title);
+    const firstSlidePreviewUrl = toFirstSlidePreviewUrl(courseTitle, moduleTitle, lesson.title);
+
+    return {
+        ...lesson,
+        type: 'ppt',
+        fileUrl: slideUrl,
+        videoUrl: undefined,
+        content: addSlideUsageGuidance(lesson, slideUrl, firstSlidePreviewUrl),
+        resources: [
+            {
+                title: `${lesson.title} — Slide Deck (PPTX)`,
+                url: slideUrl,
+                type: 'ppt'
+            },
+            {
+                title: `${lesson.title} — First Slide Preview`,
+                url: firstSlidePreviewUrl,
+                type: 'image'
+            },
+            ...(lesson.resources || []),
+            ...(lesson.videoUrl ? [{ title: `${lesson.title} (Reference Video)`, url: lesson.videoUrl, type: 'video' as const }] : []),
+            ...(lesson.type === 'pdf' && lesson.fileUrl ? [{ title: `${lesson.title} (Original PDF)`, url: lesson.fileUrl, type: 'pdf' as const }] : [])
+        ]
+    };
+};
+
+const ensureModuleAssignment = (
+    moduleData: ModuleData,
+    courseTitle: string,
+    moduleIndex: number
+): ModuleData => {
+    const hasAssignment = moduleData.lessons.some((lesson) => lesson.isAssignment || lesson.type === 'assignment');
+    if (hasAssignment) return moduleData;
+
+    const lessonTitle = `${moduleData.title}: Practical Assignment`;
+    const assignmentSlideUrl = toSlideDeckUrl(courseTitle, moduleData.title, `${lessonTitle}-brief`);
+    const assignmentSlidePreviewUrl = toFirstSlidePreviewUrl(courseTitle, moduleData.title, `${lessonTitle}-brief`);
+
+    return {
+        ...moduleData,
+        lessons: [
+            ...moduleData.lessons,
+            {
+                title: lessonTitle,
+                duration: 90,
+                type: 'assignment',
+                isAssignment: true,
+                fileUrl: assignmentSlideUrl,
+                content: `${renderLessonContent(
+                    lessonTitle,
+                    `Complete a real-world deliverable based on the skills from ${moduleData.title}.`,
+                    [
+                        'Apply the concepts covered in this module to a real scenario',
+                        'Document your implementation decisions clearly',
+                        'Submit your code and evidence for review by your trainer/admin'
+                    ],
+                    'Build the requested feature and submit a working repository + demo evidence.'
+                )}
+<div class="assignment-box">
+    <h4>Submission & Approval Flow</h4>
+    <p>After submission, the assignment must be approved by a trainer or admin before the next required unit is unlocked.</p>
+    <a href="${assignmentSlidePreviewUrl}" target="_blank">View assignment first slide</a>
+</div>`,
+                assignmentDescription: `Create a production-ready solution for ${moduleData.title}. Approval is required from a trainer or admin before progressing.`,
+                assignmentDeliverables: [
+                    'GitHub repository URL',
+                    'Demo/deployment URL or screenshots',
+                    'Short implementation notes (README)'
+                ],
+                assessmentCriteria: [
+                    'Meets functional requirements (30 marks)',
+                    'Code quality and structure (25 marks)',
+                    'UI/UX or API usability (20 marks)',
+                    'Documentation and setup clarity (15 marks)',
+                    'Submission completeness (10 marks)'
+                ],
+                resources: [
+                    { title: 'Assignment Brief Slides (PPTX)', url: assignmentSlideUrl, type: 'ppt' },
+                    { title: 'Assignment First Slide Preview', url: assignmentSlidePreviewUrl, type: 'image' }
+                ],
+                githubClassroomLink: `https://classroom.github.com/a/${courseTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-module-${moduleIndex + 1}`
+            }
+        ]
+    };
+};
+
 /**
  * SEED USERS - Trainers and Students (using correct enum values)
  */
@@ -1354,6 +1487,17 @@ const seedCourses = async () => {
                 ]
             }
         ];
+        const preparedCoursesData: CourseData[] = coursesData.map((courseData) => ({
+            ...courseData,
+            modules: courseData.modules.map((moduleData, moduleIndex) => {
+                const withSlides = {
+                    ...moduleData,
+                    lessons: moduleData.lessons.map((lesson) => normalizeLessonForSlides(lesson, courseData.title, moduleData.title))
+                };
+
+                return ensureModuleAssignment(withSlides, courseData.title, moduleIndex);
+            })
+        }));
 
         console.log('\n🚀 STARTING COURSE CREATION...\n');
 
@@ -1361,7 +1505,7 @@ const seedCourses = async () => {
         const allProjects: mongoose.Document[] = [];
 
         // Create/Update courses and their associated projects
-        for (const courseData of coursesData) {
+        for (const courseData of preparedCoursesData) {
             let course = await Course.findOne({ title: courseData.title });
 
             if (course) {
@@ -1722,17 +1866,17 @@ Build a complete e-commerce backend API with the following requirements:
         console.log(`
 📊 SEEDING SUMMARY:
 ────────────────────────────────────────────────
-Courses Created        : ${coursesData.length}
-Modules Created        : ${coursesData.reduce((acc, c) => acc + c.modules.length, 0)}
-Lessons Created        : ${coursesData.reduce((acc, c) =>
+Courses Created        : ${preparedCoursesData.length}
+Modules Created        : ${preparedCoursesData.reduce((acc, c) => acc + c.modules.length, 0)}
+Lessons Created        : ${preparedCoursesData.reduce((acc, c) =>
             acc + c.modules.reduce((acc2, m) => acc2 + m.lessons.length, 0), 0)}
-Assignments Created    : ${coursesData.reduce((acc, c) =>
+Assignments Created    : ${preparedCoursesData.reduce((acc, c) =>
                 acc + c.modules.reduce((acc2, m) =>
                     acc2 + m.lessons.filter(l => l.isAssignment).length, 0), 0)}
 Projects Created       : ${allProjects.length}
 Trainers               : 1
 Students Enrolled      : ${students.length}
-Capstone Projects      : ${students.length * coursesData.length}
+Capstone Projects      : ${students.length * preparedCoursesData.length}
 
 🔐 ACCESS CREDENTIALS:
 ────────────────────────────────────────────────

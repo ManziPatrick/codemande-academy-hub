@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, ExternalLink, FileText, Clock, User, Link as LinkIcon, AlignLeft } from "lucide-react";
 import { toast } from "sonner";
+import { triggerFileDownload, openInNewTab } from "@/lib/download";
 
 interface Submission {
   id: string | number;
@@ -27,8 +28,8 @@ export function ViewSubmissionDialog({ open, onOpenChange, submission }: ViewSub
 
   const handleDownload = () => {
     if (submission.submissionUrl) {
-      window.open(submission.submissionUrl, '_blank');
-      toast.success("Opening submission URL...");
+      triggerFileDownload(submission.submissionUrl, `${submission.assignment || 'submission'}`);
+      toast.success("Download started (or opened in new tab).");
     } else {
       toast.error("No submission URL available.");
     }
@@ -36,7 +37,7 @@ export function ViewSubmissionDialog({ open, onOpenChange, submission }: ViewSub
 
   const handleOpenExternal = () => {
     if (submission.submissionUrl) {
-      window.open(submission.submissionUrl, '_blank');
+      openInNewTab(submission.submissionUrl);
     } else {
       toast.error("No preview URL available.");
     }

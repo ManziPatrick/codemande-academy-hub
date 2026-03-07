@@ -2,14 +2,16 @@ import React, { useState, useEffect } from "react";
 import { Loader2, Download, Maximize2, Minimize2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { triggerFileDownload } from "@/lib/download";
 
 interface PPTViewerProps {
     url: string;
     title?: string;
     className?: string;
+    startSlide?: number;
 }
 
-export function PPTViewer({ url, title, className }: PPTViewerProps) {
+export function PPTViewer({ url, title, className, startSlide = 1 }: PPTViewerProps) {
     const [loading, setLoading] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -27,10 +29,16 @@ export function PPTViewer({ url, title, className }: PPTViewerProps) {
 
     // Microsoft Office Viewer URL
     // Optimized for both .ppt and .pptx
-    const viewerUrl = url ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}&wdAr=1.7777777777777777` : '';
+    const viewerUrl = url ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}&wdAr=1.7777777777777777&wdSlideIndex=${Math.max(startSlide - 1, 0)}` : '';
 
     const toggleFullscreen = () => {
         setIsFullscreen(!isFullscreen);
+    };
+
+    const handleDownload = () => {
+        if (!url) return;
+
+        triggerFileDownload(url, title || 'presentation');
     };
 
     return (
@@ -39,10 +47,8 @@ export function PPTViewer({ url, title, className }: PPTViewerProps) {
             {/* Minimal Floating Controls */}
             <div className="absolute top-4 right-4 z-50 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 {url && (
-                    <Button variant="ghost" size="icon" className="h-9 w-9 bg-black/50 backdrop-blur-md text-white/70 hover:text-white hover:bg-black/70 rounded-xl" asChild>
-                        <a href={url} target="_blank" rel="noopener noreferrer" download title="Download Presentation">
-                            <Download className="w-4 h-4" />
-                        </a>
+                    <Button variant="ghost" size="icon" className="h-9 w-9 bg-black/50 backdrop-blur-md text-white/70 hover:text-white hover:bg-black/70 rounded-xl" onClick={handleDownload} title="Download Presentation">
+                        <Download className="w-4 h-4" />
                     </Button>
                 )}
                 <Button variant="ghost" size="icon" className="h-9 w-9 bg-black/50 backdrop-blur-md text-white/70 hover:text-white hover:bg-black/70 rounded-xl" onClick={toggleFullscreen} title={isFullscreen ? "Exit Fullscreen" : "Maximize"}>
