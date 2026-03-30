@@ -46,6 +46,19 @@ import { GET_COURSE, GET_ME, GET_ASSIGNMENT_SUBMISSIONS } from "@/lib/graphql/qu
 import { COMPLETE_LESSON, SUBMIT_ASSIGNMENT } from "@/lib/graphql/mutations";
 import { triggerFileDownload } from "@/lib/download";
 
+interface AssignmentSubmission {
+  id: string;
+  userId: string;
+  content: string;
+  status: string;
+  grade?: number;
+  feedback?: string;
+}
+
+interface GetAssignmentSubmissionsData {
+  getAssignmentSubmissions: AssignmentSubmission[];
+}
+
 export default function CourseDetail() {
   const { courseId } = useParams();
   const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
@@ -70,7 +83,7 @@ export default function CourseDetail() {
   const [completeLessonMutation] = useMutation(COMPLETE_LESSON);
   const [submitAssignmentMutation] = useMutation(SUBMIT_ASSIGNMENT);
 
-  const { data: submissionsData, refetch: refetchSubmissions } = useQuery(GET_ASSIGNMENT_SUBMISSIONS, {
+  const { data: submissionsData, refetch: refetchSubmissions } = useQuery<GetAssignmentSubmissionsData>(GET_ASSIGNMENT_SUBMISSIONS, {
     variables: { courseId, lessonId: activeLessonId },
     skip: !activeLessonId
   });
@@ -119,7 +132,7 @@ export default function CourseDetail() {
   const completedCount = allLessons.filter(l => completedLessons.some((cl: any) => cl.courseId === courseId && cl.lessonId === (l.id || l._id))).length;
   const progressPercent = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
   const currentLessonRequiresAssignment = !!(currentLesson?.type === 'assignment' || currentLesson?.isAssignment);
-  const currentLessonSubmission = (submissionsData as any)?.getAssignmentSubmissions?.find((submission: any) => !me?.id || submission.userId === me.id);
+  const currentLessonSubmission = submissionsData?.getAssignmentSubmissions?.find((submission) => !me?.id || submission.userId === me.id);
   const currentLessonSubmissionStatus = currentLessonSubmission?.status;
   const currentLessonCompleted = completedLessons.some((cl: any) => cl.lessonId === (currentLesson?.id || currentLesson?._id));
   const canMarkCurrentLessonComplete = !currentLessonRequiresAssignment || currentLessonCompleted || currentLessonSubmissionStatus === 'approved';

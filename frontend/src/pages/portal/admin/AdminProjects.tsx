@@ -26,6 +26,7 @@ import {
   FileText,
   Eye,
   Stars,
+  User,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -41,6 +42,7 @@ import { DELETE_PROJECT, UPDATE_PROJECT, GRADE_ASSIGNMENT } from "@/lib/graphql/
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { TeamChatDialog, ManageProjectTasksDialog, ProjectDetailsDialog, CreateAgileProjectDialog, CreateProjectDialog, GradeProjectDialog, BookCallDialog } from "@/components/portal/dialogs";
+import { Textarea } from "@/components/ui/textarea";
 
 interface AssignmentSubmission {
   id: string;
@@ -58,6 +60,10 @@ interface AssignmentSubmission {
   grade?: number;
   feedback?: string;
   createdAt: string;
+}
+
+interface GetAssignmentSubmissionsData {
+  getAssignmentSubmissions: AssignmentSubmission[];
 }
 
 export default function AdminProjects() {
@@ -81,7 +87,7 @@ export default function AdminProjects() {
   const [bookingOpen, setBookingOpen] = useState(false);
 
   // Queries handling
-  const { data: assignmentsData, refetch: refetchAssignments } = useQuery(GET_ASSIGNMENT_SUBMISSIONS);
+  const { data: assignmentsData, refetch: refetchAssignments } = useQuery<GetAssignmentSubmissionsData>(GET_ASSIGNMENT_SUBMISSIONS);
   const [gradeAssignmentMutation, { loading: grading }] = useMutation(GRADE_ASSIGNMENT);
 
   const submissions = assignmentsData?.getAssignmentSubmissions || [];

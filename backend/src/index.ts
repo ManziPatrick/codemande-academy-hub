@@ -24,6 +24,7 @@ import uploadRoutes from './routes/UploadRoutes';
 import teamRoutes from './routes/TeamRoutes';
 import aiCourseRoutes from './routes/AICourseRoutes';
 import moduleAccessRoutes from './routes/ModuleAccessRoutes';
+import paymentRoutes from './routes/PaymentRoutes';
 import { authMiddleware } from './middleware/auth';
 
 dotenv.config();
@@ -98,7 +99,14 @@ const startServer = async () => {
         maxFileSize: 100 * 1024 * 1024, // 100MB
         maxFiles: 5
     }));
-    app.use(bodyParser.json({ limit: '100mb' }));
+    app.use(bodyParser.json({
+        limit: '100mb',
+        verify: (req: any, _res, buf) => {
+            if ((req.originalUrl || '').startsWith('/api/payments/webhook')) {
+                req.rawBody = Buffer.from(buf);
+            }
+        }
+    }));
     app.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
 
     // =============================
@@ -183,6 +191,7 @@ const startServer = async () => {
     app.use('/api/upload', uploadRoutes);
     app.use('/api/team', teamRoutes);
     app.use('/api/module-access', moduleAccessRoutes);
+    app.use('/api/payments', paymentRoutes);
     // app.use('/api/ai-courses', aiCourseRoutes); // Disabled for deployment
 
     // =============================

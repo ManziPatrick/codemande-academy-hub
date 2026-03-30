@@ -512,12 +512,11 @@ export default function TrainerProjects() {
                                                             </Button>
                                                         </div>
                                                     </div>
+                                                ) : (
+                                                    <div className="text-center py-12 text-muted-foreground">
+                                                        <FolderOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                                                        <p>Select a submission to grade</p>
                                                     </div>
-                                            ) : (
-                                            <div className="text-center py-12 text-muted-foreground">
-                                                <FolderOpen className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                                                <p>Select a submission to grade</p>
-                                            </div>
                                                 )}
                                         </CardContent>
                                     </Card>
@@ -863,11 +862,13 @@ export default function TrainerProjects() {
                 )}
             </TabsContent>
         </Tabs>
-            </div >
+            </div>
 
-        {/* Manage Project Dialog */ }
-        < Dialog open = {!!managingProject
-} onOpenChange = {(open) => !open && setManagingProject(null)}>
+        {/* Manage Project Dialog */}
+        <Dialog
+            open={!!managingProject}
+            onOpenChange={(open) => !open && setManagingProject(null)}
+        >
     <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
             <DialogTitle>Manage Project: {managingProject?.title}</DialogTitle>
@@ -935,7 +936,7 @@ export default function TrainerProjects() {
             </Button>
         </DialogFooter>
     </DialogContent>
-            </Dialog >
+        </Dialog>
 
     <BookCallDialog
         open={bookingOpen}
@@ -944,6 +945,6 @@ export default function TrainerProjects() {
         mentorName={selectedSubmission?.user?.fullName || selectedSubmission?.user?.username}
         purpose="assignment-review"
     />
-        </PortalLayout >
+        </PortalLayout>
     );
 }

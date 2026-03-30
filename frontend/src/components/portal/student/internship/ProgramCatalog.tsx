@@ -24,11 +24,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { PaymentForm } from "@/components/PaymentForm";
 
 export function ProgramCatalog() {
   const { data, loading, refetch } = useQuery(GET_INTERNSHIP_PROGRAMS);
   const { data: profileData } = useQuery(GET_MY_STUDENT_PROFILE);
   const [applyingTo, setApplyingTo] = useState<any>(null);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   const programs = (data as any)?.internshipPrograms || [];
   const profile = (profileData as any)?.myStudentProfile;
@@ -44,6 +46,13 @@ export function ProgramCatalog() {
 
   const handleApply = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    const requiresPayment = Number(applyingTo?.price || 0) > 0;
+    if (requiresPayment && !paymentCompleted) {
+      toast.error("Please complete payment before submitting your internship application.");
+      return;
+    }
+
     const formData = new FormData(e.currentTarget);
     const skills = (formData.get("skills") as string).split(",").map(s => s.trim());
 
@@ -149,11 +158,43 @@ export function ProgramCatalog() {
       </div>
 
       {/* Application Dialog */}
-      <Dialog open={!!applyingTo} onOpenChange={() => setApplyingTo(null)}>
+      <Dialog
+        open={!!applyingTo}
+        onOpenChange={() => {
+          setApplyingTo(null);
+          setPaymentCompleted(false);
+        }}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Apply to {applyingTo?.title}</DialogTitle>
           </DialogHeader>
+
+          {Number(applyingTo?.price || 0) > 0 && !paymentCompleted && (
+            <div className="space-y-3 rounded-lg border border-accent/20 bg-accent/5 p-4">
+              <p className="text-sm font-medium">
+                Complete Internship Fee Payment First
+              </p>
+              <p className="text-xs text-muted-foreground">
+                This internship track requires payment before application submission.
+              </p>
+              <PaymentForm
+                amount={Number(applyingTo?.price || 0)}
+                description={`Internship application fee - ${applyingTo?.title || "Program"}`}
+                onSuccess={() => {
+                  setPaymentCompleted(true);
+                  toast.success("Payment verified. You can now submit your application.");
+                }}
+              />
+            </div>
+          )}
+
+          {Number(applyingTo?.price || 0) > 0 && paymentCompleted && (
+            <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-300">
+              Payment completed. Please continue with your application details below.
+            </div>
+          )}
+
           <form onSubmit={handleApply} className="space-y-4 py-4">
             <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 space-y-2">
               <p className="text-sm font-medium flex items-center gap-2">
@@ -211,6 +252,7 @@ export function ProgramCatalog() {
                 type="submit"
                 variant="default"
                 className="gap-2"
+                disabled={Number(applyingTo?.price || 0) > 0 && !paymentCompleted}
               >
                 <Send className="w-4 h-4" />
                 Submit Application
