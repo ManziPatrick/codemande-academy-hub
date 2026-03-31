@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Phone, DollarSign } from 'lucide-react';
+import { Loader2, Phone, DollarSign, CheckCircle, Smartphone, Star } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/env';
 
 interface PaymentFormProps {
@@ -12,6 +12,7 @@ interface PaymentFormProps {
   description: string;
   courseId?: string;
   subscriptionId?: string;
+  internshipProgramId?: string;
   onSuccess?: () => void;
 }
 
@@ -20,6 +21,7 @@ export function PaymentForm({
   description,
   courseId,
   subscriptionId,
+  internshipProgramId,
   onSuccess,
 }: PaymentFormProps) {
   const { user } = useAuth();
@@ -77,6 +79,7 @@ export function PaymentForm({
           description,
           courseId: courseId || undefined,
           subscriptionId: subscriptionId || undefined,
+          internshipProgramId: internshipProgramId || undefined,
         }),
       });
 
@@ -123,124 +126,178 @@ export function PaymentForm({
       }
 
       const data = await response.json();
+      console.log('Payment status check:', data.status);
 
+      const terminalStatuses = ['successful', 'failed', 'cancelled', 'expired'];
+      
       if (data.status === 'successful') {
         setPaymentStatus(null);
         toast.success('Payment successful! 🎉');
         onSuccess?.();
-      } else if (data.status === 'failed') {
+      } else if (data.status === 'failed' || data.status === 'cancelled' || data.status === 'expired') {
         setPaymentStatus(null);
-        toast.error('Payment failed. Please try again.');
-      } else if (data.status === 'pending') {
-        // Keep polling
+        toast.error(`Payment ${data.status}. Please try again.`);
+      } else {
+        // Still pending or unknown, keep polling
+        setPaymentStatus('pending');
         setTimeout(() => {
           pollPaymentStatus(txId);
-        }, 5000);
+        }, 4000);
       }
     } catch (error) {
       console.error('Status check error:', error);
-      // Don't show error - just stop polling
-      setPaymentStatus(null);
+      // Keep polling on error (might be transient network issue)
+      setTimeout(() => {
+        pollPaymentStatus(txId);
+      }, 6000);
     }
-  };
+  }
 
   // Show status message while payment is pending
   if (transactionId && paymentStatus) {
     return (
-      <div className="w-full max-w-md mx-auto p-6 border rounded-lg bg-blue-50 border-blue-200">
-        <div className="flex items-center justify-center mb-4">
-          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+      <div className="w-full max-w-sm mx-auto p-6 border rounded-2xl bg-white shadow-xl relative overflow-hidden">
+        <div className="relative flex flex-col items-center justify-center mb-6">
+          <div className="relative w-14 h-14 bg-[#ffcc00] rounded-2xl flex items-center justify-center shadow-lg mb-4 transform rotate-3 hover:rotate-0 transition-transform duration-500">
+            <img 
+               src="https://momo.mtn.com/wp-content/uploads/sites/15/2022/07/Group-360.png" 
+               alt="MTN" 
+               className="w-8 h-8 object-contain rounded"
+            />
+          </div>
+          
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-[#ffcc00]" />
+              <h3 className="text-lg font-black text-gray-900 tracking-tight">Authorization Sent</h3>
+            </div>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Checking...</p>
+          </div>
         </div>
-        <h3 className="text-center font-semibold text-blue-900 mb-2">
-          Payment Processing
-        </h3>
-        <p className="text-center text-sm text-blue-700 mb-4">
-          Please complete the payment on your phone. This page will automatically update once payment is confirmed.
-        </p>
-        <p className="text-center text-xs text-blue-600">
-          Transaction ID: {transactionId.substring(0, 8)}...
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => {
-            setTransactionId(null);
-            setPaymentStatus(null);
-          }}
-          className="w-full mt-4"
-        >
-          Dismiss
-        </Button>
+
+        <div className="relative bg-gray-50/80 border border-gray-100 rounded-xl p-4 text-center space-y-3 backdrop-blur-sm">
+          <p className="text-[11px] text-gray-600 leading-normal">
+            Enter your PIN on the <strong>MoMo prompt</strong><br/>
+            to authorize <strong>{amount.toLocaleString()} RWF</strong>.
+          </p>
+          
+          <div className="py-1.5 px-3 bg-white rounded-lg shadow-xs inline-block border border-gray-100">
+             <span className="text-[9px] uppercase font-bold text-gray-300 block mb-0.5">Reference</span>
+             <span className="font-mono text-[10px] font-bold text-gray-700">{transactionId.substring(transactionId.length - 8).toUpperCase()}</span>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setTransactionId(null);
+              setPaymentStatus(null);
+            }}
+            className="w-full border border-gray-100 hover:bg-gray-50 font-bold transition-all h-10 rounded-xl text-xs"
+          >
+            I've completed payment
+          </Button>
+          
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="w-full text-[10px] font-bold text-gray-400 hover:text-gray-600 transition-colors uppercase tracking-widest text-center"
+          >
+            Refresh if prompt didn't appear
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleInitiatePayment} className="w-full max-w-md space-y-4">
-      {/* Amount Display */}
-      <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-        <div className="flex items-center justify-between">
-          <span className="text-gray-600">Amount to Pay:</span>
+    <form onSubmit={handleInitiatePayment} className="w-full max-w-sm space-y-4 flex flex-col items-center">
+      {/* Light MoMo Header - Reduced Yellow */}
+      <div className="w-full relative overflow-hidden bg-white border-2 border-[#ffcc00]/30 rounded-2xl p-4 shadow-sm text-center">
+        <div className="relative flex flex-col items-center gap-3">
           <div className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-blue-600" />
-            <span className="text-2xl font-bold text-blue-600">
-              {amount.toLocaleString()}
-            </span>
-            <span className="text-gray-500">RWF</span>
+            <div className="w-8 h-8 bg-[#ffcc00]/10 rounded-lg flex items-center justify-center p-1.5 border border-[#ffcc00]/20">
+              <img 
+                src="https://momo.mtn.com/wp-content/uploads/sites/15/2022/07/Group-360.png" 
+                alt="MTN" 
+                className="w-full h-full object-contain mix-blend-multiply"
+              />
+            </div>
+            <span className="text-lg font-black text-gray-800 tracking-tight">MoMo Pay</span>
+          </div>
+
+          <div className="flex flex-col items-center scale-95">
+            <div className="flex items-center gap-1.5 mb-1 justify-center opacity-40">
+               <img src="https://flagcdn.com/w40/rw.png" alt="RW Flag" className="w-3.5 h-2.5 object-cover rounded-sm shadow-xs grayscale-[0.3]" />
+               <span className="text-[9px] font-black text-gray-900 uppercase tracking-widest">Amount Due</span>
+            </div>
+            <div className="flex items-baseline gap-1.5 px-4 py-1.5 rounded-xl border border-gray-100 bg-gray-50/50">
+              <span className="text-2xl font-black text-gray-900 tabular-nums">{amount.toLocaleString()}</span>
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">RWF</span>
+            </div>
           </div>
         </div>
-        <p className="text-sm text-gray-500 mt-2">{description}</p>
       </div>
 
-      {/* Phone Number Input */}
-      <div className="space-y-2">
-        <Label htmlFor="phone" className="text-gray-700 font-medium">
+      {/* Description Box - Minimalist */}
+      <div className="w-full px-3 py-1.5 bg-muted/20 border border-border/40 rounded-xl flex items-center justify-center gap-2">
+        <DollarSign className="w-3 h-3 text-primary/70" />
+        <p className="text-[10px] text-muted-foreground font-semibold text-center">{description}</p>
+      </div>
+
+      {/* Transparent Input - Visible Border */}
+      <div className="w-full space-y-2 text-center flex flex-col items-center">
+        <Label htmlFor="phone" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
           Mobile Money Phone Number
         </Label>
-        <div className="relative">
-          <Phone className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+        
+        <div className="relative group w-full max-w-[240px]">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+            <Smartphone className="w-3.5 h-3.5 text-gray-300 group-focus-within:text-[#ffcc00] transition-colors" />
+          </div>
           <Input
             id="phone"
             type="tel"
-            placeholder="078xxxxxxx"
+            placeholder="078 / 079..."
             value={phoneNumber}
             onChange={handlePhoneChange}
             disabled={isLoading}
-            className="pl-10"
+            className="pl-10 h-11 bg-transparent border-2 border-gray-200 focus:border-[#ffcc00] focus:ring-0 rounded-xl text-lg font-black tracking-widest placeholder:tracking-normal placeholder:font-medium placeholder:text-gray-200 text-center transition-all shadow-none"
             maxLength={10}
           />
         </div>
-        <p className="text-xs text-gray-500">
-          Enter your MTN or Airtel phone number (078/079xxxxxxx)
+        <p className="text-[9px] text-gray-300 font-bold flex items-center gap-1 justify-center tracking-tighter">
+           <CheckCircle className="w-2.5 h-2.5 text-gray-200" /> MTN, AIRTEL OR MoMo
         </p>
       </div>
 
-      {/* Submit Button */}
-      <Button
-        type="submit"
-        disabled={isLoading || !phoneNumber}
-        className="w-full bg-blue-600 hover:bg-blue-700"
-      >
-        {isLoading ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Initiating Payment...
-          </>
-        ) : (
-          <>
-            <Phone className="w-4 h-4 mr-2" />
-            Initiate Payment
-          </>
-        )}
-      </Button>
+      {/* Submit Button - Focused Action */}
+      <div className="pt-1 w-full flex justify-center">
+        <Button
+          type="submit"
+          disabled={isLoading || !phoneNumber}
+          className="w-full max-w-[240px] bg-[#ffcc00] hover:bg-black hover:text-[#ffcc00] text-black font-black h-11 rounded-xl shadow-md transition-all active:scale-[0.98] text-xs border border-transparent"
+        >
+          {isLoading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Checking...</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Smartphone className="w-4 h-4" />
+              <span>Initiate Pay</span>
+            </div>
+          )}
+        </Button>
+      </div>
 
-      {/* Info Box */}
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-sm text-amber-900">
-          <strong>How it works:</strong> After clicking the button, you'll receive a USSD
-          prompt on your phone. Follow the on-screen instructions to enter your PIN and
-          complete the payment. Your browser will automatically update when payment is
-          confirmed.
+      {/* Semi-Info Box - Site Colors Smaller */}
+      <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 relative overflow-hidden text-center">
+        <p className="text-[10px] text-muted-foreground leading-tight font-medium">
+          Confirm the <strong>MoMo prompt</strong> on your phone to complete. Success is automatic.
         </p>
       </div>
     </form>

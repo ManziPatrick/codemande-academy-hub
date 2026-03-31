@@ -111,8 +111,10 @@ const startServer = async () => {
     app.use(bodyParser.json({
         limit: '100mb',
         verify: (req: any, _res, buf) => {
-            if ((req.originalUrl || '').startsWith('/api/payments/webhook')) {
-                req.rawBody = Buffer.from(buf);
+            const url = req.originalUrl || '';
+            if (url.includes('/payments/webhook')) {
+                req.rawBody = buf.toString();
+                console.log('--- Webhook Raw Body Captured ---');
             }
         }
     }));

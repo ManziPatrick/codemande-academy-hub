@@ -80,19 +80,27 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
   };
 
   const handlePaypackSuccess = async () => {
+    // Optimistically set to step 4 (Success) immediately when payment is confirmed
+    setStep(4);
     setIsProcessing(true);
+    
     try {
       const targetCourseId = course.id || course._id;
       if (!targetCourseId) throw new Error("Course ID missing");
 
+      console.log('Payment successful, confirming enrollment in background...');
+      
+      // The backend should have already enrolled the user via the webhook/poll responder
+      // Mutation is used here to ensure we refetch all relevant data for the UI
       await enrollMutation({
         variables: { courseId: targetCourseId }
       });
 
-      setStep(4);
-      toast.success(`Payment successful. You're now enrolled in ${course.title}!`);
+      toast.success(`Welcome to the course: ${course.title}!`);
     } catch (err: any) {
-      toast.error(err.message || "Payment succeeded but enrollment failed. Please contact support.");
+      console.error('Refetch/Enrollment confirmation error:', err);
+      // Don't revert the step - the user definitely paid
+      toast.info("Enrolled! Please refresh if the course doesn't appear in your dashboard.");
     } finally {
       setIsProcessing(false);
     }
@@ -139,18 +147,17 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
       }
 
     }}>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6">
-          <DialogTitle>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col p-0 overflow-hidden border-2 border-accent/20 shadow-2xl">
+        <DialogHeader className="px-6 pt-6 pb-2 border-b bg-muted/20">
+          <DialogTitle className="text-xl font-bold">
             {step === 1 && "Course Enrollment"}
-            {step === 3 && (paymentMethod === "manual" ? "Submit Proof of Payment" : "Pay with Paypack")}
+            {step === 3 && (paymentMethod === "manual" ? "Submit Proof of Payment" : "Mobile Money Payment")}
             {step === 4 && (paymentMethod === "manual" ? "Enrollment Pending" : "Enrollment Complete")}
           </DialogTitle>
         </DialogHeader>
 
-
-        <ScrollArea className="flex-1 px-6 custom-scrollbar">
-          <div className="py-6">
+        <div className="flex-1 px-6 py-2 overflow-y-auto custom-scrollbar">
+          <div className="py-2">
             {step === 1 && (
               <div className="space-y-6">
                 <div className="p-4 bg-muted/30 rounded-xl border border-border/50">
@@ -212,15 +219,16 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
                         type="button"
                         variant={paymentMethod === "paypack" ? "gold" : "outline"}
                         onClick={() => setPaymentMethod("paypack")}
+                        className={paymentMethod === "paypack" ? "bg-[#ffcc00] text-black hover:bg-[#e6b800] border-none" : ""}
                       >
-                        Paypack
+                        Mobile Money
                       </Button>
                       <Button
                         type="button"
                         variant={paymentMethod === "manual" ? "gold" : "outline"}
                         onClick={() => setPaymentMethod("manual")}
                       >
-                        Manual
+                        Manual Payment
                       </Button>
                     </div>
                   </div>
@@ -302,10 +310,10 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
 
             {step === 3 && paymentMethod === "paypack" && (
               <div className="space-y-4">
-                <div className="p-4 bg-accent/5 rounded-xl border border-accent/20">
-                  <p className="text-sm font-semibold text-foreground mb-1">Pay with Paypack</p>
-                  <p className="text-xs text-muted-foreground">
-                    Enter your mobile money number to receive a USSD prompt and complete payment instantly.
+                <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-200">
+                  <p className="text-sm font-semibold text-yellow-900 mb-1">MTN / Airtel Mobile Money</p>
+                  <p className="text-xs text-yellow-800">
+                    Pay securely using your mobile wallet. You will receive an automated USSD prompt on your phone.
                   </p>
                 </div>
                 <PaymentForm
@@ -337,9 +345,9 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
                   </>
                 ) : (
                   <>
-                    <h2 className="text-2xl font-bold">Enrollment Complete</h2>
+                    <h2 className="text-2xl font-bold text-green-600">Payment Successful!</h2>
                     <p className="text-muted-foreground max-w-xs mx-auto">
-                      Your Paypack payment was successful and you are now enrolled in <span className="text-foreground font-semibold">{course.title}</span>.
+                      Your MoMo payment for <span className="text-foreground font-semibold">{course.title}</span> was successful. You now have full access!
                     </p>
                   </>
                 )}
@@ -347,7 +355,7 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
             )}
 
           </div>
-        </ScrollArea>
+        </div>
 
         <div className="p-6 border-t border-border bg-muted/5">
           {step === 1 && (

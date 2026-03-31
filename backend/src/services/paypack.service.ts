@@ -31,6 +31,8 @@ interface CashinResponse {
   kind: 'CASHIN';
   ref: string;
   status: 'pending' | 'success' | 'failed';
+  instructions?: string;
+  user_message?: string;
 }
 
 interface TransactionStatus {
@@ -229,6 +231,7 @@ export class PaypackService {
     const token = await this.getAccessToken();
 
     try {
+      console.log(`Fetching Paypack status for ref: ${ref}`);
       const response = await fetch(
         `${this.config.baseUrl}/transactions/find/${ref}`,
         {
@@ -242,13 +245,27 @@ export class PaypackService {
       );
 
       if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('NOT_FOUND');
+        }
         throw new Error(`Failed to get transaction status: ${response.statusText}`);
       }
 
-      const data = (await response.json()) as TransactionStatus;
+      const rawData = await response.json() as any;
+      console.log('Raw Paypack response:', JSON.stringify(rawData));
+
+      // Paypack sometimes wraps the response in a data property or returns it directly
+      const data = (rawData?.data || rawData) as TransactionStatus;
+      
+      if (!data || (!data.status && !data.ref)) {
+        throw new Error('Invalid response structure from Paypack');
+      }
+
       return data;
     } catch (error) {
-      console.error('Failed to fetch transaction status:', error);
+      if (error instanceof Error && error.message !== 'NOT_FOUND') {
+        console.error('Failed to fetch transaction status:', error);
+      }
       throw error;
     }
   }

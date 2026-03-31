@@ -6,6 +6,10 @@
 import { Request, Response } from 'express';
 import { PaymentTransaction } from '../models/PaymentTransaction';
 import { createPaypackService } from '../services/paypack.service';
+import { User } from '../models/User';
+import { Course } from '../models/Course';
+import { Internship } from '../models/Internship';
+import { Payment } from '../models/Payment';
 
 // Extend Express Request to include user property
 declare global {
@@ -23,6 +27,7 @@ interface PaymentInitiateBody {
   description?: string;
   courseId?: string;
   subscriptionId?: string;
+  internshipProgramId?: string;
 }
 
 class PaymentController {
@@ -39,7 +44,7 @@ class PaymentController {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const { amount, phoneNumber, description, courseId, subscriptionId } =
+      const { amount, phoneNumber, description, courseId, subscriptionId, internshipProgramId } =
         req.body as PaymentInitiateBody;
 
       // Validate input
@@ -77,9 +82,25 @@ class PaymentController {
         description,
         courseId: courseId || null,
         subscriptionId: subscriptionId || null,
+        internshipProgramId: internshipProgramId || null,
       });
 
       await paymentTransaction.save();
+
+      // 3. Create a PENDING Payment record for immediate visibility in "Bills"
+      const pendingPayment = new Payment({
+        userId,
+        amount: Math.floor(amount),
+        currency: 'RWF',
+        status: 'pending',
+        paymentMethod: 'Paypack Mobile Money',
+        transactionId: paypackResponse.ref, // Use Paypack ref as unique identifier
+        type: courseId ? 'Course Enrollment' : (internshipProgramId ? 'Internship Fee' : 'Subscription Fee'),
+        itemTitle: description || (courseId ? 'Course' : (internshipProgramId ? 'Internship' : 'Subscription')),
+        courseId: courseId || undefined,
+        internshipId: subscriptionId || undefined,
+      });
+      await pendingPayment.save();
 
       return res.status(201).json({
         message: 'Payment initiated successfully',
@@ -87,8 +108,7 @@ class PaymentController {
         paypackRef: paypackResponse.ref,
         amount: paypackResponse.amount,
         status: normalizedInitialStatus,
-        instructions:
-          'You will receive a USSD prompt on your phone. Please follow the on-screen instructions to complete the payment.',
+        instructions: paypackResponse.user_message || paypackResponse.instructions || 'Follow the USSD prompt on your phone.',
       });
     } catch (error) {
       console.error('Payment initiation error:', error);
@@ -103,17 +123,17 @@ class PaymentController {
    * Get payment transaction status
    * GET /api/payments/:transactionId
    */
-  async getPaymentStatus(req: Request, res: Response) {
+  public getPaymentStatus = async (req: Request, res: Response) => {
     try {
       const { transactionId } = req.params;
-      const userId = req.user?.id || req.user?._id;
+      const userId = (req as any).user?.id || (req as any).user?._id;
 
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      // Find transaction
       const transaction = await PaymentTransaction.findById(transactionId);
+
       if (!transaction) {
         return res.status(404).json({ error: 'Transaction not found' });
       }
@@ -123,58 +143,73 @@ class PaymentController {
         return res.status(403).json({ error: 'Forbidden' });
       }
 
-      // Get latest status from Paypack
-      try {
-        const paypackStatus = await this.paypackService.getTransactionStatus(
-          transaction.paypackRef
-        );
-
-        // Update local status if different
-        const normalizedStatus = this.paypackService.normalizeStatus(
-          paypackStatus.status
-        );
-
-        if (normalizedStatus !== transaction.status) {
-          transaction.status = normalizedStatus as any;
-          transaction.processedAt = new Date();
-          await transaction.save();
-
-          // Handle post-payment actions
-          if (normalizedStatus === 'successful') {
-            await this.handleSuccessfulPayment(transaction);
-          }
+      // If status is already terminal, return it
+      const terminalStatuses = ['successful', 'failed', 'cancelled', 'expired'];
+      if (terminalStatuses.includes(transaction.status)) {
+        // Double check if post-processing was done for successful payments
+        if (transaction.status === 'successful' && !transaction.processedAt) {
+          console.log(`Retrying post-payment processing for transaction ${transactionId}`);
+          await this.handleSuccessfulPayment(transaction);
         }
-
-        return res.json({
-          transactionId,
-          amount: transaction.amount,
-          fee: transaction.fee,
-          status: transaction.status,
-          paypackRef: transaction.paypackRef,
-          createdAt: transaction.createdAt,
-          processedAt: transaction.processedAt,
-        });
-      } catch (paypackError) {
-        // If Paypack API fails, return local status
-        console.error('Failed to fetch Paypack status:', paypackError);
-        return res.json({
-          transactionId,
-          amount: transaction.amount,
-          fee: transaction.fee,
-          status: transaction.status,
-          paypackRef: transaction.paypackRef,
-          createdAt: transaction.createdAt,
-          processedAt: transaction.processedAt,
-          note: 'Status from local cache (real-time check unavailable)',
-        });
+        return res.json(this.formatTransactionResponse(transaction));
       }
+
+        try {
+          console.log(`Checking status for Paypack ref: ${transaction.paypackRef}`);
+          const paypackStatus = await this.paypackService.getTransactionStatus(
+            transaction.paypackRef
+          );
+          
+          const normalizedStatus = this.paypackService.normalizeStatus(
+            paypackStatus.status
+          );
+
+          console.log(`Paypack API status for ${transaction.paypackRef}: ${paypackStatus.status} -> ${normalizedStatus}`);
+
+          if (normalizedStatus !== transaction.status) {
+            transaction.status = normalizedStatus as any;
+            
+            if (normalizedStatus === 'successful') {
+              await this.handleSuccessfulPayment(transaction);
+            }
+            
+            if (terminalStatuses.includes(normalizedStatus)) {
+              transaction.processedAt = new Date();
+            }
+            
+            await transaction.save();
+          }
+
+          return res.json(this.formatTransactionResponse(transaction));
+        } catch (error: any) {
+          if (error.message === 'NOT_FOUND') {
+            console.log(`Paypack ref ${transaction.paypackRef} not indexed yet. Returning current status: ${transaction.status}`);
+          } else {
+            console.error('Error fetching status from Paypack:', error.message);
+          }
+          // Fallback to current database status if API call or indexing fails
+          return res.json({
+            ...this.formatTransactionResponse(transaction),
+            note: 'Real-time check currently unavailable (local cache used)',
+          });
+        }
     } catch (error) {
-      console.error('Get payment status error:', error);
-      return res.status(500).json({
-        error: 'Failed to get payment status',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      });
+      console.error('Error in getPaymentStatus:', error);
+      return res.status(500).json({ error: 'Internal server error' });
     }
+  };
+
+  private formatTransactionResponse(transaction: any) {
+    return {
+      transactionId: transaction._id,
+      amount: transaction.amount,
+      fee: transaction.fee,
+      status: transaction.status,
+      paypackRef: transaction.paypackRef,
+      createdAt: transaction.createdAt,
+      processedAt: transaction.processedAt,
+      description: transaction.description,
+    };
   }
 
   /**
@@ -205,9 +240,11 @@ class PaymentController {
       );
 
       if (!isValid) {
-        console.warn('Invalid webhook signature');
+        console.warn('Invalid webhook signature. Signing failed for body:', rawBody.substring(0, 50));
         return res.status(401).json({ error: 'Invalid signature' });
       }
+
+      console.log('Webhook signature valid. Processing payload...');
 
       // Parse webhook payload
       const webhookData = this.paypackService.parseWebhookPayload(req.body as any);
@@ -266,24 +303,111 @@ class PaymentController {
    */
   private async handleSuccessfulPayment(transaction: any): Promise<void> {
     try {
-      // TODO: Implement your business logic here:
-      // - If courseId: Enroll user in course
-      // - If subscriptionId: Activate subscription
-      // - Send success notification to user
-      // - Send receipt email
+      const { userId, courseId, subscriptionId, internshipProgramId, amount, description } = transaction;
 
       console.log(`Handling successful payment for transaction:`, {
         transactionId: transaction._id,
-        userId: transaction.userId,
-        courseId: transaction.courseId,
-        subscriptionId: transaction.subscriptionId,
+        userId,
+        courseId,
+        subscriptionId,
+        internshipProgramId
       });
 
-      // Example: Emit event for other services to handle
-      // eventEmitter.emit('payment:success', transaction);
+      // 1. Update the Payment record (for accounting/history)
+      try {
+        // Find existing pending payment first (created during initiation)
+        let paymentRecord = await Payment.findOne({ transactionId: transaction.paypackRef });
+        
+        if (paymentRecord) {
+          paymentRecord.status = 'completed';
+          await paymentRecord.save();
+          console.log(`Payment record ${paymentRecord._id} updated to completed`);
+        } else {
+          // Fallback: create if it doesn't exist for some reason
+          paymentRecord = new Payment({
+            userId,
+            amount,
+            currency: 'RWF',
+            status: 'completed',
+            paymentMethod: 'Paypack Mobile Money',
+            transactionId: transaction.paypackRef,
+            type: courseId ? 'Course Enrollment' : (internshipProgramId ? 'Internship Fee' : 'Subscription Fee'),
+            itemTitle: description || (courseId ? 'Course' : (internshipProgramId ? 'Internship' : 'Subscription')),
+            courseId: courseId || undefined,
+            internshipId: subscriptionId || undefined, 
+          });
+          await paymentRecord.save();
+          console.log(`New payment record created for transaction ${transaction._id}`);
+        }
+      } catch (err) {
+        console.error('Failed to update/create Payment record:', err);
+      }
+
+      // 2. Handle Course Enrollment
+      if (courseId) {
+        const [user, course] = await Promise.all([
+          User.findById(userId),
+          Course.findById(courseId)
+        ]);
+
+        if (user && course) {
+          // Add course to user's enrolledCourses if not already there
+          const courseIdStr = courseId.toString();
+          const isEnrolled = user.enrolledCourses.some(id => id.toString() === courseIdStr);
+          
+          if (!isEnrolled) {
+            user.enrolledCourses.push(courseId);
+            await user.save();
+          }
+
+          // Add user to course's studentsEnrolled if not already there
+          const userIdStr = userId.toString();
+          const isUserInCourse = course.studentsEnrolled.some(id => id.toString() === userIdStr);
+          
+          if (!isUserInCourse) {
+            course.studentsEnrolled.push(userId);
+            await course.save();
+          }
+
+          console.log(`User ${userId} successfully enrolled in course ${courseId}`);
+        }
+      }
+
+      // 3. Handle Internship / Program
+      if (subscriptionId) {
+        const internship = await Internship.findById(subscriptionId);
+        if (internship) {
+          internship.payment = {
+            ...internship.payment,
+            status: 'paid',
+            paidAt: new Date(),
+            amount: amount,
+          };
+          internship.status = 'enrolled'; 
+          await internship.save();
+          console.log(`Internship ${subscriptionId} marked as paid and enrolled`);
+        }
+      }
+      
+      // If payment was for a program fee (during application)
+      if (internshipProgramId) {
+        // Any logic for program-level payments?
+        // E.g. we might want to flag the user as having paid for this program in their metadata
+        await User.findByIdAndUpdate(userId, {
+          $push: {
+            activityLog: {
+              action: 'PAID_PROGRAM_FEE',
+              details: `Paid ${amount} RWF for program ${internshipProgramId}`,
+              timestamp: new Date()
+            }
+          }
+        });
+      }
+
+      transaction.processedAt = new Date();
+      await transaction.save();
     } catch (error) {
       console.error('Error handling successful payment:', error);
-      // Don't throw - payment is already marked successful
     }
   }
 

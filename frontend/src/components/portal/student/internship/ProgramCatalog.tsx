@@ -206,6 +206,7 @@ export function ProgramCatalog() {
                 <PaymentForm
                   amount={Number(applyingTo?.price || 0)}
                   description={`Internship application fee - ${applyingTo?.title || "Program"}`}
+                  internshipProgramId={applyingTo.id || applyingTo._id}
                   onSuccess={() => {
                     setPaymentCompleted(true);
                     toast.success("Paypack payment successful. You can now submit your application.");

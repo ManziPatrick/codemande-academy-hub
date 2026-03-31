@@ -12,6 +12,7 @@ export interface IPaymentTransaction extends Document {
   description?: string; // What the payment is for (course, subscription, etc)
   courseId?: mongoose.Types.ObjectId | null;
   subscriptionId?: mongoose.Types.ObjectId | null;
+  internshipProgramId?: mongoose.Types.ObjectId | null;
   createdAt: Date;
   processedAt?: Date;
   metadata?: Record<string, any>;
@@ -79,6 +80,11 @@ const PaymentTransactionSchema = new Schema<IPaymentTransaction>(
     subscriptionId: {
       type: Schema.Types.ObjectId,
       ref: 'Subscription',
+      default: null,
+    },
+    internshipProgramId: {
+      type: Schema.Types.ObjectId,
+      ref: 'InternshipProgram',
       default: null,
     },
     createdAt: {
