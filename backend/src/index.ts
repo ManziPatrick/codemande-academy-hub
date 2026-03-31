@@ -33,6 +33,15 @@ const startServer = async () => {
     initKronos();
 
     const app = express();
+
+    // Redirect www.codemande.com to codemande.com
+    app.use((req, res, next) => {
+        if (req.headers.host === 'www.codemande.com') {
+            return res.redirect(301, 'https://codemande.com' + req.url);
+        }
+        next();
+    });
+
     const httpServer = http.createServer(app);
 
     await connectDB();
