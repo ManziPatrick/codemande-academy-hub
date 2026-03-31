@@ -63,12 +63,16 @@ class PaymentController {
       });
 
       // Persist transaction with Paypack reference from the start.
+      const normalizedInitialStatus = this.paypackService.normalizeStatus(
+        paypackResponse.status
+      );
+
       const paymentTransaction = new PaymentTransaction({
         userId,
         type: 'CASHIN',
         amount,
         phoneNumber: normalizedPhone,
-        status: paypackResponse.status === 'failed' ? 'failed' : 'pending',
+        status: normalizedInitialStatus,
         paypackRef: paypackResponse.ref,
         description,
         courseId: courseId || null,
@@ -82,7 +86,7 @@ class PaymentController {
         transactionId: paymentTransaction._id,
         paypackRef: paypackResponse.ref,
         amount: paypackResponse.amount,
-        status: paypackResponse.status,
+        status: normalizedInitialStatus,
         instructions:
           'You will receive a USSD prompt on your phone. Please follow the on-screen instructions to complete the payment.',
       });
@@ -126,13 +130,17 @@ class PaymentController {
         );
 
         // Update local status if different
-        if (paypackStatus.status !== transaction.status) {
-          transaction.status = paypackStatus.status as any;
+        const normalizedStatus = this.paypackService.normalizeStatus(
+          paypackStatus.status
+        );
+
+        if (normalizedStatus !== transaction.status) {
+          transaction.status = normalizedStatus as any;
           transaction.processedAt = new Date();
           await transaction.save();
 
           // Handle post-payment actions
-          if (paypackStatus.status === 'successful') {
+          if (normalizedStatus === 'successful') {
             await this.handleSuccessfulPayment(transaction);
           }
         }
