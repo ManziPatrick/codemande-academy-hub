@@ -4,9 +4,13 @@ import "./index.css";
 
 import { ApolloProvider } from "@apollo/client/react";
 import client from "./lib/apolloClient";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { env } from "./lib/env";
 
 createRoot(document.getElementById("root")!).render(
   <ApolloProvider client={client}>
-    <App />
+    <GoogleOAuthProvider clientId={env.GOOGLE_CLIENT_ID || ""}>
+      <App />
+    </GoogleOAuthProvider>
   </ApolloProvider>
 );

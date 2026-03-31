@@ -8,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Eye, EyeOff, Loader2, ArrowLeft, GraduationCap, BookOpen, Users, Award } from "lucide-react";
 import { getGraphqlUrl } from "@/lib/env";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebase";
+import { GoogleLogin } from "@react-oauth/google";
 import { useMutation } from "@apollo/client/react";
 import { GOOGLE_LOGIN } from "@/lib/graphql/mutations";
 
@@ -56,11 +55,10 @@ export default function Auth() {
     return null;
   }
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = async (credentialResponse: any) => {
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const token = await user.getIdToken();
+      const token = credentialResponse.credential;
+      if (!token) throw new Error("No credential received from Google");
 
       setIsLoading(true);
       const { data } = await googleLoginMutation({
@@ -468,18 +466,16 @@ export default function Auth() {
                 </div>
               </div>
 
-              <div className="flex justify-center">
-                <Button
-                  variant="outline"
-                  className="w-full h-12 relative"
-                  onClick={handleGoogleLogin}
-                  disabled={isLoading}
-                >
-                  <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                    <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
-                  </svg>
-                  Sign in with Google
-                </Button>
+              <div className="flex justify-center w-full [&>div]:w-full [&>div]:flex [&>div]:justify-center">
+                <GoogleLogin 
+                  onSuccess={handleGoogleLogin} 
+                  onError={() => toast.error("Google Login Failed")}
+                  useOneTap={false}
+                  size="large"
+                  theme="outline"
+                  shape="rectangular"
+                  text="signin_with"
+                />
               </div>
 
               <p className="mt-6 text-center text-sm text-muted-foreground">

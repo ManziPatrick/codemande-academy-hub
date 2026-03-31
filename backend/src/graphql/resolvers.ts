@@ -4,6 +4,9 @@ import { Resource } from '../models/Resource';
 import * as admin from 'firebase-admin';
 import * as fs from 'fs';
 import { file as tmpFile } from 'tmp-promise';
+import { OAuth2Client } from 'google-auth-library';
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 if (!admin.apps.length) {
   const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
@@ -2026,10 +2029,14 @@ export const resolvers = {
     },
     googleLogin: async (_: any, { token }: { token: string }) => {
       try {
-        const decodedToken = await admin.auth().verifyIdToken(token);
+        const ticket = await googleClient.verifyIdToken({
+            idToken: token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const decodedToken = ticket.getPayload();
 
         if (!decodedToken || !decodedToken.email) {
-          throw new Error('Invalid Firebase token');
+          throw new Error('Invalid Google token');
         }
 
         const { email, name, picture } = decodedToken as any;

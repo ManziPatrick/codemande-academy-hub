@@ -4,12 +4,10 @@ import { useMutation } from '@apollo/client/react';
 import { gql } from "@apollo/client";
 import { toast } from 'sonner';
 import { env } from '@/lib/env';
-import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 
 const GOOGLE_LOGIN = gql`
-  mutation GoogleLogin($idToken: String!) {
-    googleLogin(idToken: $idToken) {
+  mutation GoogleLogin($token: String!) {
+    googleLogin(token: $token) {
       token
       user {
         id
@@ -45,13 +43,9 @@ export function GoogleOneTap() {
 
         const handleCredentialResponse = async (response: any) => {
             try {
-                // 1. Sync with local Firebase instance
-                const credential = GoogleAuthProvider.credential(response.credential);
-                await signInWithCredential(auth, credential);
-
-                // 2. Sync with Backend
+                // Sync with Backend using Google Credential
                 const { data } = await googleLogin({
-                    variables: { idToken: response.credential }
+                    variables: { token: response.credential }
                 });
 
                 if (data?.googleLogin) {
