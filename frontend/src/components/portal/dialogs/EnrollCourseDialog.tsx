@@ -11,6 +11,7 @@ import { useMutation } from "@apollo/client/react";
 import { ENROLL_COURSE, PAY_FOR_COURSE, SUBMIT_PAYMENT_PROOF } from "@/lib/graphql/mutations";
 import { GET_ME, GET_COURSES } from "@/lib/graphql/queries";
 import { FileUpload } from "@/components/FileUpload";
+import { PaymentForm } from "@/components/PaymentForm";
 
 
 export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
@@ -18,6 +19,7 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"paypack" | "manual">("paypack");
 
 
   const [enrollMutation] = useMutation(ENROLL_COURSE, {
@@ -48,26 +50,49 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
         toast.success(`Successfully enrolled in ${course.title}!`);
         onOpenChange(false);
       } else {
-        const targetCourseId = course.id || course._id;
-        if (!targetCourseId) throw new Error("Course ID missing");
+        if (paymentMethod === "manual") {
+          const targetCourseId = course.id || course._id;
+          if (!targetCourseId) throw new Error("Course ID missing");
 
-        const { data } = await payForCourseMutation({
-          variables: {
-            courseId: targetCourseId,
-            amount: finalPrice,
-            paymentMethod: 'Manual Payment (MoMo/PayPal)'
+          const { data } = await payForCourseMutation({
+            variables: {
+              courseId: targetCourseId,
+              amount: finalPrice,
+              paymentMethod: 'Manual Payment (MoMo/PayPal)'
+            }
+          });
+
+          if ((data as any)?.payForCourse?.id) {
+            setPaymentId((data as any).payForCourse.id);
+            setStep(3); // Go to proof upload
+          } else {
+            throw new Error("Failed to initiate payment");
           }
-        });
-
-        if ((data as any)?.payForCourse?.id) {
-          setPaymentId((data as any).payForCourse.id);
-          setStep(3); // Go to proof upload
         } else {
-          throw new Error("Failed to initiate payment");
+          setStep(3); // Go to Paypack payment
         }
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to proceed with enrollment");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePaypackSuccess = async () => {
+    setIsProcessing(true);
+    try {
+      const targetCourseId = course.id || course._id;
+      if (!targetCourseId) throw new Error("Course ID missing");
+
+      await enrollMutation({
+        variables: { courseId: targetCourseId }
+      });
+
+      setStep(4);
+      toast.success(`Payment successful. You're now enrolled in ${course.title}!`);
+    } catch (err: any) {
+      toast.error(err.message || "Payment succeeded but enrollment failed. Please contact support.");
     } finally {
       setIsProcessing(false);
     }
@@ -107,6 +132,9 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
       if (!val) {
         setTimeout(() => {
           setStep(1);
+          setPaymentMethod("paypack");
+          setPaymentId(null);
+          setProofUrl(null);
         }, 300);
       }
 
@@ -115,8 +143,8 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
         <DialogHeader className="px-6 pt-6">
           <DialogTitle>
             {step === 1 && "Course Enrollment"}
-            {step === 3 && "Submit Proof of Payment"}
-            {step === 4 && "Enrollment Pending"}
+            {step === 3 && (paymentMethod === "manual" ? "Submit Proof of Payment" : "Pay with Paypack")}
+            {step === 4 && (paymentMethod === "manual" ? "Enrollment Pending" : "Enrollment Complete")}
           </DialogTitle>
         </DialogHeader>
 
@@ -175,11 +203,33 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
                     <p className="text-xs text-muted-foreground">Lifetime access + Certificate of completion</p>
                   </div>
                 </div>
+
+                {!isFree && (
+                  <div className="space-y-3">
+                    <p className="text-sm font-semibold text-foreground">Choose payment method</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        type="button"
+                        variant={paymentMethod === "paypack" ? "gold" : "outline"}
+                        onClick={() => setPaymentMethod("paypack")}
+                      >
+                        Paypack
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={paymentMethod === "manual" ? "gold" : "outline"}
+                        onClick={() => setPaymentMethod("manual")}
+                      >
+                        Manual
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
 
-            {step === 3 && (
+            {step === 3 && paymentMethod === "manual" && (
               <div className="space-y-6">
                 <div className="p-4 bg-accent/5 rounded-xl border border-accent/20">
                   <p className="text-sm font-bold text-accent mb-3 text-center uppercase tracking-wider">Manual Payment Instructions</p>
@@ -250,17 +300,49 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
               </div>
             )}
 
+            {step === 3 && paymentMethod === "paypack" && (
+              <div className="space-y-4">
+                <div className="p-4 bg-accent/5 rounded-xl border border-accent/20">
+                  <p className="text-sm font-semibold text-foreground mb-1">Pay with Paypack</p>
+                  <p className="text-xs text-muted-foreground">
+                    Enter your mobile money number to receive a USSD prompt and complete payment instantly.
+                  </p>
+                </div>
+                <PaymentForm
+                  amount={finalPrice}
+                  description={`Course enrollment - ${course.title}`}
+                  courseId={course.id || course._id}
+                  onSuccess={handlePaypackSuccess}
+                />
+              </div>
+            )}
+
 
             {step === 4 && (
               <div className="py-10 text-center space-y-4">
                 <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Clock className="w-10 h-10 text-accent animate-pulse" />
+                  {paymentMethod === "manual" ? (
+                    <Clock className="w-10 h-10 text-accent animate-pulse" />
+                  ) : (
+                    <Check className="w-10 h-10 text-accent" />
+                  )}
                 </div>
-                <h2 className="text-2xl font-bold">Verification Pending</h2>
-                <p className="text-muted-foreground max-w-xs mx-auto">
-                  We've received your proof of payment for <span className="text-foreground font-semibold">{course.title}</span>.
-                  Our team will verify it within 24 hours. You'll receive a notification once approved.
-                </p>
+                {paymentMethod === "manual" ? (
+                  <>
+                    <h2 className="text-2xl font-bold">Verification Pending</h2>
+                    <p className="text-muted-foreground max-w-xs mx-auto">
+                      We've received your proof of payment for <span className="text-foreground font-semibold">{course.title}</span>.
+                      Our team will verify it within 24 hours. You'll receive a notification once approved.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-2xl font-bold">Enrollment Complete</h2>
+                    <p className="text-muted-foreground max-w-xs mx-auto">
+                      Your Paypack payment was successful and you are now enrolled in <span className="text-foreground font-semibold">{course.title}</span>.
+                    </p>
+                  </>
+                )}
               </div>
             )}
 
@@ -281,7 +363,7 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
 
 
 
-          {step === 3 && (
+          {step === 3 && paymentMethod === "manual" && (
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setStep(1)} disabled={isProcessing}>
                 Back
@@ -294,7 +376,7 @@ export function EnrollCourseDialog({ open, onOpenChange, course }: any) {
 
           {step === 4 && (
             <Button variant="gold" className="w-full" onClick={() => onOpenChange(false)}>
-              Got it
+              {paymentMethod === "manual" ? "Got it" : "Start Learning"}
             </Button>
           )}
         </div>
