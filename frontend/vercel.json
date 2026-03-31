@@ -2,6 +2,19 @@
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
     "framework": "vite",
+    "redirects": [
+        {
+            "source": "/(.*)",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "www.codemande.com"
+                }
+            ],
+            "destination": "https://codemande.com/$1",
+            "permanent": true
+        }
+    ],
     "rewrites": [
         {
             "source": "/(.*)",
