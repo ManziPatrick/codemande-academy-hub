@@ -24,13 +24,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PaymentForm } from "@/components/PaymentForm";
+import { FileUpload } from "@/components/FileUpload";
 
 export function ProgramCatalog() {
   const { data, loading, refetch } = useQuery(GET_INTERNSHIP_PROGRAMS);
   const { data: profileData } = useQuery(GET_MY_STUDENT_PROFILE);
   const [applyingTo, setApplyingTo] = useState<any>(null);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [paymentProofUrl, setPaymentProofUrl] = useState<string | null>(null);
 
   const programs = (data as any)?.internshipPrograms || [];
   const profile = (profileData as any)?.myStudentProfile;
@@ -40,6 +41,7 @@ export function ProgramCatalog() {
       toast.success("Application submitted successfully! You'll hear back soon.");
       refetch();
       setApplyingTo(null);
+      setPaymentProofUrl(null);
     },
     onError: (err) => toast.error(err.message)
   });
@@ -163,6 +165,7 @@ export function ProgramCatalog() {
         onOpenChange={() => {
           setApplyingTo(null);
           setPaymentCompleted(false);
+          setPaymentProofUrl(null);
         }}
       >
         <DialogContent className="max-w-2xl">
@@ -178,14 +181,45 @@ export function ProgramCatalog() {
               <p className="text-xs text-muted-foreground">
                 This internship track requires payment before application submission.
               </p>
-              <PaymentForm
-                amount={Number(applyingTo?.price || 0)}
-                description={`Internship application fee - ${applyingTo?.title || "Program"}`}
-                onSuccess={() => {
-                  setPaymentCompleted(true);
-                  toast.success("Payment verified. You can now submit your application.");
-                }}
-              />
+              <div className="rounded-lg border border-accent/20 bg-background p-4 space-y-4">
+                <p className="text-sm font-bold text-accent mb-1 text-center uppercase tracking-wider">
+                  Manual Payment Instructions
+                </p>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between items-center p-2 bg-muted/20 rounded-md border border-border/40">
+                    <span className="text-muted-foreground">MTN MoMo</span>
+                    <span className="font-mono font-bold select-all">250790706170</span>
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-muted/20 rounded-md border border-border/40">
+                    <span className="text-muted-foreground">PayPal</span>
+                    <span className="font-mono font-bold select-all">munyeshurimanzi@gmail.com</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Send{" "}
+                  <span className="font-semibold text-foreground">
+                    {Number(applyingTo?.price || 0).toLocaleString()} RWF
+                  </span>{" "}
+                  using one of the methods above, then upload confirmation below.
+                </p>
+                <FileUpload
+                  onUploadComplete={(url) => setPaymentProofUrl(url)}
+                  label="Upload Confirmation Screenshot/PDF"
+                  folder="payment-proofs"
+                />
+                <Button
+                  type="button"
+                  variant="gold"
+                  className="w-full"
+                  disabled={!paymentProofUrl}
+                  onClick={() => {
+                    setPaymentCompleted(true);
+                    toast.success("Payment proof uploaded. You can now submit your application.");
+                  }}
+                >
+                  I Have Submitted Payment Proof
+                </Button>
+              </div>
             </div>
           )}
 

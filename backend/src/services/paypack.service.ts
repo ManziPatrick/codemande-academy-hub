@@ -44,6 +44,8 @@ interface TransactionStatus {
   timestamp: string;
 }
 
+export type NormalizedPaymentStatus = 'pending' | 'successful' | 'failed';
+
 export class PaypackService {
   private tokenCache: TokenCache | null = null;
   private config: PaypackConfig;
@@ -57,6 +59,29 @@ export class PaypackService {
    */
   private generateIdempotencyKey(): string {
     return crypto.randomBytes(16).toString('hex');
+  }
+
+  /**
+   * Normalize Paypack status variants to our DB enum values
+   */
+  normalizeStatus(status?: string): NormalizedPaymentStatus {
+    const value = (status || '').toLowerCase().trim();
+
+    if (value === 'success' || value === 'successful') {
+      return 'successful';
+    }
+
+    if (
+      value === 'fail' ||
+      value === 'failed' ||
+      value === 'error' ||
+      value === 'cancelled' ||
+      value === 'canceled'
+    ) {
+      return 'failed';
+    }
+
+    return 'pending';
   }
 
   /**
@@ -275,17 +300,24 @@ export class PaypackService {
    * Verify webhook signature
    * This ensures the webhook is actually from Paypack
    */
-  verifyWebhookSignature(
-    payload: string,
-    signature: string
-  ): boolean {
+  verifyWebhookSignature(payload: string, signature: string): boolean {
     try {
-      const hash = crypto
+      const base64Hash = crypto
         .createHmac('sha256', this.config.webhookSecret)
         .update(payload)
         .digest('base64');
 
-      return hash === signature;
+      const hexHash = crypto
+        .createHmac('sha256', this.config.webhookSecret)
+        .update(payload)
+        .digest('hex');
+
+      const normalizedSignature = signature.replace(/^sha256=/i, '').trim();
+
+      return (
+        normalizedSignature === base64Hash ||
+        normalizedSignature === hexHash
+      );
     } catch (error) {
       console.error('Failed to verify webhook signature:', error);
       return false;
@@ -297,13 +329,13 @@ export class PaypackService {
    */
   parseWebhookPayload(payload: any): {
     transactionRef: string;
-    status: 'successful' | 'failed';
+    status: NormalizedPaymentStatus;
     amount: number;
     clientNumber: string;
     fee: number;
   } {
     try {
-      const transaction = payload?.data as any;
+      const transaction = (payload?.data || payload) as any;
 
       if (!transaction?.ref) {
         throw new Error('Missing transaction reference in webhook');
@@ -311,7 +343,7 @@ export class PaypackService {
 
       return {
         transactionRef: transaction.ref as string,
-        status: transaction.status as 'successful' | 'failed',
+        status: this.normalizeStatus(transaction.status),
         amount: transaction.amount as number,
         clientNumber: transaction.client as string,
         fee: transaction.fee || 0,
