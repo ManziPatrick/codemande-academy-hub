@@ -25,7 +25,8 @@ export function CreateInternshipProgramDialog({ open, onOpenChange }: CreateInte
     applicationDeadline: '',
     price: 0,
     currency: 'RWF',
-    image: ''
+    image: '',
+    applicationQuestions: [] as { label: string, type: string, required: boolean }[]
   });
 
   const [createProgram, { loading }] = useMutation(CREATE_INTERNSHIP_PROGRAM, {
@@ -42,7 +43,8 @@ export function CreateInternshipProgramDialog({ open, onOpenChange }: CreateInte
         applicationDeadline: '',
         price: 0,
         currency: 'RWF',
-        image: ''
+        image: '',
+        applicationQuestions: []
       });
     },
     onError: (err) => toast.error(err.message)
@@ -90,12 +92,12 @@ export function CreateInternshipProgramDialog({ open, onOpenChange }: CreateInte
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title">Program Title</Label>
+            <Label htmlFor="title">Program Program Title</Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g. Full Stack Web Development"
+              placeholder="e.g. Graphic Design or Web Development"
               required
             />
           </div>
@@ -162,6 +164,97 @@ export function CreateInternshipProgramDialog({ open, onOpenChange }: CreateInte
               onChange={(e) => setFormData({ ...formData, applicationDeadline: e.target.value })}
               required
             />
+          </div>
+
+          <div className="space-y-4 pt-4 border-t border-border/50">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-bold">Custom Application Questions</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setFormData({
+                  ...formData,
+                  applicationQuestions: [...formData.applicationQuestions, { label: '', type: 'text', required: true }]
+                })}
+              >
+                Add Question
+              </Button>
+            </div>
+            
+            {formData.applicationQuestions.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4 border border-dashed rounded-lg">
+                No custom questions added yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {formData.applicationQuestions.map((q, idx) => (
+                  <div key={idx} className="p-3 bg-muted/30 rounded-lg border border-border/50 space-y-3 relative group">
+                    <div className="flex gap-2">
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Question Label</Label>
+                        <Input
+                          value={q.label}
+                          onChange={(e) => {
+                            const newQs = [...formData.applicationQuestions];
+                            newQs[idx].label = e.target.value;
+                            setFormData({ ...formData, applicationQuestions: newQs });
+                          }}
+                          placeholder="e.g. Years of Experience"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="w-24 space-y-1">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Type</Label>
+                        <select
+                          className="w-full h-8 px-2 rounded-md border border-input bg-background text-xs"
+                          value={q.type}
+                          onChange={(e) => {
+                            const newQs = [...formData.applicationQuestions];
+                            newQs[idx].type = e.target.value;
+                            setFormData({ ...formData, applicationQuestions: newQs });
+                          }}
+                        >
+                          <option value="text">Short Text</option>
+                          <option value="textarea">Long Text</option>
+                          <option value="select">Select</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`req-${idx}`}
+                          checked={q.required}
+                          onChange={(e) => {
+                            const newQs = [...formData.applicationQuestions];
+                            newQs[idx].required = e.target.checked;
+                            setFormData({ ...formData, applicationQuestions: newQs });
+                          }}
+                          className="w-3 h-3 rounded border-gray-300 text-accent focus:ring-accent"
+                        />
+                        <Label htmlFor={`req-${idx}`} className="text-xs text-muted-foreground">Required</Label>
+                      </div>
+                      
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="h-7 px-2 text-[10px]"
+                        onClick={() => {
+                          const newQs = formData.applicationQuestions.filter((_, i) => i !== idx);
+                          setFormData({ ...formData, applicationQuestions: newQs });
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>

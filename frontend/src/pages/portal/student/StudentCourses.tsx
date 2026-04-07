@@ -107,14 +107,15 @@ export default function StudentCourses() {
               Track your progress and explore new learning opportunities
             </p>
           </div>
-          <Button 
-            variant="gold" 
-            className="shadow-lg shadow-gold/20"
-            onClick={() => setApplyInternshipOpen(true)}
-          >
-            <Briefcase className="w-4 h-4 mr-2" />
-            Apply for Internship
-          </Button>
+          <Link to="/portal/student/internships">
+            <Button 
+                variant="gold" 
+                className="shadow-lg shadow-gold/20"
+            >
+                <Briefcase className="w-4 h-4 mr-2" />
+                Apply for Internship
+            </Button>
+          </Link>
         </motion.div>
 
         {/* Search & Filters */}
@@ -372,10 +373,6 @@ export default function StudentCourses() {
         open={!!viewCourse}
         onOpenChange={(open) => !open && setViewCourse(null)}
         course={viewCourse}
-      />
-      <ApplyInternshipDialog
-        open={applyInternshipOpen}
-        onOpenChange={setApplyInternshipOpen}
       />
     </PortalLayout>
   );

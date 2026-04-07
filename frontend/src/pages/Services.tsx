@@ -175,11 +175,11 @@ const Services = () => {
                 Our Services
               </span>
               <h1 className="font-heading text-3xl lg:text-5xl font-medium text-card-foreground mb-6">
-                Comprehensive Technology Training & Solutions
+                Comprehensive Skills Development & Professional Solutions
               </h1>
               <p className="text-card-foreground/80 max-w-3xl mx-auto text-lg leading-relaxed">
-                From foundational digital skills to advanced AI and IoT solutions, we provide
-                end-to-end technology education and services for individuals, businesses, and institutions.
+                From foundational digital skills to advanced professional solutions, we provide
+                end-to-end education and services for individuals, businesses, and institutions.
               </p>
               <div className="flex flex-wrap justify-center gap-4 mt-8">
                 <Link to="/training">
@@ -302,10 +302,10 @@ const Services = () => {
             >
               <span className="text-accent text-sm font-medium uppercase tracking-wider">For Organizations</span>
               <h2 className="font-heading text-2xl lg:text-3xl font-medium text-card-foreground mt-2 mb-4">
-                Technology Services & Solutions
+                Professional Services & Solutions
               </h2>
               <p className="text-card-foreground/80 max-w-2xl mx-auto">
-                End-to-end technology solutions to help your business innovate, automate,
+                End-to-end strategic solutions to help your business innovate, automate,
                 and thrive in the digital economy.
               </p>
             </motion.div>

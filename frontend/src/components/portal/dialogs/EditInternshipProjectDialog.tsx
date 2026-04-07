@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from "@apollo/client/react";
-import { CREATE_INTERNSHIP_PROJECT_NEW } from '@/lib/graphql/mutations';
+import { UPDATE_INTERNSHIP_PROJECT_NEW } from '@/lib/graphql/mutations';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,13 +14,14 @@ import { Link as LinkIcon, Plus, Trash2, Code, Users, ChevronRight, ChevronLeft,
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-interface CreateInternshipProjectDialogProps {
+interface EditInternshipProjectDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     refetch?: () => void;
+    project: any;
 }
 
-export function CreateInternshipProjectDialog({ open, onOpenChange, refetch }: CreateInternshipProjectDialogProps) {
+export function EditInternshipProjectDialog({ open, onOpenChange, refetch, project }: EditInternshipProjectDialogProps) {
     const [step, setStep] = useState(1);
     const [formData, setFormData] = useState({
         title: '',
@@ -30,30 +31,35 @@ export function CreateInternshipProjectDialog({ open, onOpenChange, refetch }: C
         requiredSkills: '',
         minTeamSize: 1,
         maxTeamSize: 5,
-        defaultTickets: [] as { title: string; description: string; taskType?: string; priority?: string; labels?: string[] }[]
+        defaultTickets: [] as { title: string; description: string }[]
     });
     const [links, setLinks] = useState<{ title: string; url: string }[]>([]);
+
+    useEffect(() => {
+        if (open && project) {
+            setFormData({
+                title: project.title || '',
+                description: project.description || '',
+                document: project.document || '',
+                internshipProgramId: project.internshipProgram?.id || project.internshipProgramId || '',
+                requiredSkills: project.requiredSkills?.join(', ') || '',
+                minTeamSize: project.teamSizeRange?.min || 1,
+                maxTeamSize: project.teamSizeRange?.max || 5,
+                defaultTickets: project.defaultTickets || []
+            });
+            setLinks(project.documentation?.links || []);
+            setStep(1);
+        }
+    }, [open, project]);
 
     const { data: programsData } = useQuery(GET_INTERNSHIP_PROGRAMS);
     const programs = (programsData as any)?.internshipPrograms || [];
 
-    const [createProject, { loading }] = useMutation(CREATE_INTERNSHIP_PROJECT_NEW, {
+    const [updateProject, { loading }] = useMutation(UPDATE_INTERNSHIP_PROJECT_NEW, {
         onCompleted: () => {
-            toast.success('Internship project created successfully');
+            toast.success('Internship project updated successfully');
             onOpenChange(false);
             refetch?.();
-            setFormData({
-                title: '',
-                description: '',
-                document: '',
-                internshipProgramId: '',
-                requiredSkills: '',
-                minTeamSize: 1,
-                maxTeamSize: 5,
-                defaultTickets: []
-            });
-            setLinks([]);
-            setStep(1);
         },
         onError: (err) => toast.error(err.message)
     });
@@ -65,8 +71,9 @@ export function CreateInternshipProjectDialog({ open, onOpenChange, refetch }: C
             return;
         }
 
-        createProject({
+        updateProject({
             variables: {
+                id: project.id,
                 ...formData,
                 requiredSkills: formData.requiredSkills.split(',').map(s => s.trim()).filter(s => s),
                 minTeamSize: parseInt(formData.minTeamSize as any),
@@ -106,7 +113,7 @@ export function CreateInternshipProjectDialog({ open, onOpenChange, refetch }: C
         }));
     };
 
-    const handleTicketChange = (idx: number, field: string, val: any) => {
+    const handleTicketChange = (idx: number, field: 'title' | 'description', val: string) => {
         const newTickets = [...formData.defaultTickets];
         newTickets[idx][field] = val;
         setFormData(prev => ({ ...prev, defaultTickets: newTickets }));
@@ -143,7 +150,7 @@ export function CreateInternshipProjectDialog({ open, onOpenChange, refetch }: C
                                     <Code className="w-5 h-5" />
                                 </div>
                                 <div>
-                                    <DialogTitle className="text-xl font-black tracking-tight">Create Project Pool Template</DialogTitle>
+                                    <DialogTitle className="text-xl font-black tracking-tight">Edit Project Template</DialogTitle>
                                     <p className="text-xs text-muted-foreground font-medium">Step {step} of 4: {steps.find(s => s.id === step)?.title}</p>
                                 </div>
                             </div>
@@ -311,55 +318,17 @@ export function CreateInternshipProjectDialog({ open, onOpenChange, refetch }: C
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
                                                     <div className="grid gap-3">
-                                                        <div className="grid grid-cols-2 gap-3">
-                                                            <Input
-                                                                placeholder="Ticket Title (e.g. Set up CI/CD Pipeline)"
-                                                                value={ticket.title}
-                                                                onChange={(e) => handleTicketChange(idx, 'title', e.target.value)}
-                                                                className="h-10 bg-background/50 border-border/30 rounded-lg text-sm font-bold placeholder:font-medium"
-                                                            />
-                                                            <div className="flex gap-2">
-                                                                <Select
-                                                                    value={ticket.taskType || 'task'}
-                                                                    onValueChange={(val) => handleTicketChange(idx, 'taskType', val)}
-                                                                >
-                                                                    <SelectTrigger className="h-10 bg-background/50 border-border/30 rounded-lg text-[10px] font-bold">
-                                                                        <SelectValue placeholder="Type" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="task" className="text-xs">Task</SelectItem>
-                                                                        <SelectItem value="bug" className="text-xs text-destructive">Bug</SelectItem>
-                                                                        <SelectItem value="feature" className="text-xs text-primary">Feature</SelectItem>
-                                                                        <SelectItem value="improvement" className="text-xs">Improvement</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                                <Select
-                                                                    value={ticket.priority || 'medium'}
-                                                                    onValueChange={(val) => handleTicketChange(idx, 'priority', val)}
-                                                                >
-                                                                    <SelectTrigger className="h-10 bg-background/50 border-border/30 rounded-lg text-[10px] font-bold">
-                                                                        <SelectValue placeholder="Priority" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        <SelectItem value="critical" className="text-xs text-destructive font-black">CRITICAL</SelectItem>
-                                                                        <SelectItem value="high" className="text-xs text-orange-500 font-bold">HIGH</SelectItem>
-                                                                        <SelectItem value="medium" className="text-xs">MEDIUM</SelectItem>
-                                                                        <SelectItem value="low" className="text-xs text-muted-foreground">LOW</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                        </div>
+                                                        <Input
+                                                            placeholder="Ticket Title (e.g. Set up CI/CD Pipeline)"
+                                                            value={ticket.title}
+                                                            onChange={(e) => handleTicketChange(idx, 'title', e.target.value)}
+                                                            className="h-10 bg-background/50 border-border/30 rounded-lg text-sm font-bold placeholder:font-medium"
+                                                        />
                                                         <Textarea
-                                                            placeholder="Detailed requirements for this blueprint ticket..."
+                                                            placeholder="Brief task description or requirements..."
                                                             value={ticket.description}
                                                             onChange={(e) => handleTicketChange(idx, 'description', e.target.value)}
-                                                            className="min-h-[80px] bg-background/50 border-border/30 rounded-lg text-xs py-2"
-                                                        />
-                                                        <Input
-                                                            placeholder="Labels (e.g. Frontend, API, Design - comma separated)"
-                                                            value={ticket.labels?.join(', ') || ''}
-                                                            onChange={(e) => handleTicketChange(idx, 'labels', e.target.value.split(',').map(l => l.trim()))}
-                                                            className="h-8 bg-background/50 border-border/30 rounded-lg text-[10px]"
+                                                            className="min-h-[60px] bg-background/50 border-border/30 rounded-lg text-xs py-2"
                                                         />
                                                     </div>
                                                 </div>
@@ -442,7 +411,7 @@ export function CreateInternshipProjectDialog({ open, onOpenChange, refetch }: C
                             >
                                 {loading ? (
                                     <div className="w-5 h-5 border-2 border-background border-t-transparent rounded-full animate-spin" />
-                                ) : <><CheckCircle className="w-4 h-4" /> Finalize Blueprint</>}
+                                ) : <><CheckCircle className="w-4 h-4" /> Update Blueprint</>}
                             </Button>
                         )}
                     </div>

@@ -96,7 +96,7 @@ export function Footer() {
               )}
             </Link>
             <p className="text-card-foreground/70 text-sm leading-relaxed mb-6 max-w-xs">
-              Empowering Africa through technology education and innovation. Building the next generation of digital professionals with {branding.siteName}.
+              Empowering Africa through skills development and innovation. Building the next generation of industry-leading professionals with {branding.siteName}.
             </p>
 
             {/* Contact Info Block */}
@@ -205,7 +205,7 @@ export function Footer() {
                 Stay Updated
               </h4>
               <p className="text-sm text-card-foreground/70">
-                Subscribe to our newsletter for the latest courses, tech insights, and opportunities.
+                Subscribe to our newsletter for the latest courses, professional insights, and opportunities.
               </p>
             </div>
             <form onSubmit={handleSubscribe} className="flex gap-2">
@@ -238,7 +238,7 @@ export function Footer() {
                 © {new Date().getFullYear()} CODEMANDE. All rights reserved.
               </p>
               <p className="text-xs text-card-foreground/40 mt-1">
-                Leading Technology Education & Innovation in Rwanda and Beyond.
+                Leading Professional Education & Excellence in Rwanda and Beyond.
               </p>
             </div>
 

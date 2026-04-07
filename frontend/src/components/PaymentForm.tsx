@@ -213,93 +213,70 @@ export function PaymentForm({
   }
 
   return (
-    <form onSubmit={handleInitiatePayment} className="w-full max-w-sm space-y-4 flex flex-col items-center">
-      {/* Light MoMo Header - Reduced Yellow */}
-      <div className="w-full relative overflow-hidden bg-white border-2 border-[#ffcc00]/30 rounded-2xl p-4 shadow-sm text-center">
-        <div className="relative flex flex-col items-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-[#ffcc00]/10 rounded-lg flex items-center justify-center p-1.5 border border-[#ffcc00]/20">
+    <form onSubmit={handleInitiatePayment} className="w-full space-y-4 px-1">
+      {/* Visual Context Bar */}
+      <div className="w-full flex items-center justify-between px-3 py-2 bg-background border border-border/50 rounded-xl shadow-inner-sm">
+        <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-[#ffcc00]/10 rounded-md flex items-center justify-center p-1 border border-[#ffcc00]/20">
               <img 
                 src="https://momo.mtn.com/wp-content/uploads/sites/15/2022/07/Group-360.png" 
                 alt="MTN" 
-                className="w-full h-full object-contain mix-blend-multiply"
+                className="w-full h-full object-contain"
               />
             </div>
-            <span className="text-lg font-black text-gray-800 tracking-tight">MoMo Pay</span>
-          </div>
-
-          <div className="flex flex-col items-center scale-95">
-            <div className="flex items-center gap-1.5 mb-1 justify-center opacity-40">
-               <img src="https://flagcdn.com/w40/rw.png" alt="RW Flag" className="w-3.5 h-2.5 object-cover rounded-sm shadow-xs grayscale-[0.3]" />
-               <span className="text-[9px] font-black text-gray-900 uppercase tracking-widest">Amount Due</span>
-            </div>
-            <div className="flex items-baseline gap-1.5 px-4 py-1.5 rounded-xl border border-gray-100 bg-gray-50/50">
-              <span className="text-2xl font-black text-gray-900 tabular-nums">{amount.toLocaleString()}</span>
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">RWF</span>
-            </div>
-          </div>
+            <span className="text-[11px] font-black text-foreground tracking-tight">MoMo Pay</span>
+        </div>
+        <div className="flex items-center gap-1.5 opacity-60">
+            <img src="https://flagcdn.com/w40/rw.png" alt="RW Flag" className="w-3 h-2 object-cover rounded-px grayscale-[0.2]" />
+            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-tighter">Verified Connection</span>
         </div>
       </div>
 
-      {/* Description Box - Minimalist */}
-      <div className="w-full px-3 py-1.5 bg-muted/20 border border-border/40 rounded-xl flex items-center justify-center gap-2">
-        <DollarSign className="w-3 h-3 text-primary/70" />
-        <p className="text-[10px] text-muted-foreground font-semibold text-center">{description}</p>
-      </div>
-
-      {/* Transparent Input - Visible Border */}
-      <div className="w-full space-y-2 text-center flex flex-col items-center">
-        <Label htmlFor="phone" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-          Mobile Money Phone Number
-        </Label>
-        
-        <div className="relative group w-full max-w-[240px]">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-            <Smartphone className="w-3.5 h-3.5 text-gray-300 group-focus-within:text-[#ffcc00] transition-colors" />
-          </div>
-          <Input
-            id="phone"
-            type="tel"
-            placeholder="078 / 079..."
-            value={phoneNumber}
-            onChange={handlePhoneChange}
-            disabled={isLoading}
-            className="pl-10 h-11 bg-transparent border-2 border-gray-200 focus:border-[#ffcc00] focus:ring-0 rounded-xl text-lg font-black tracking-widest placeholder:tracking-normal placeholder:font-medium placeholder:text-gray-200 text-center transition-all shadow-none"
-            maxLength={10}
-          />
+      {/* Primary Input Section */}
+      <div className="space-y-3">
+        <div className="space-y-1.5 container flex flex-col items-center">
+            <Label htmlFor="phone" className="text-[9px] font-black text-muted-foreground uppercase tracking-[0.1em] text-center">
+                Mobile Money Number
+            </Label>
+            <div className="relative group w-full max-w-[200px]">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                    <Phone className="w-3.5 h-3.5 text-muted-foreground/30 group-focus-within:text-[#ffcc00] transition-colors" />
+                </div>
+                <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="078 / 079..."
+                    value={phoneNumber}
+                    onChange={handlePhoneChange}
+                    disabled={isLoading}
+                    className="pl-9 h-10 bg-muted/20 border-none focus-visible:ring-1 focus-visible:ring-accent/40 rounded-xl text-base font-black tracking-widest placeholder:tracking-normal placeholder:font-medium placeholder:text-muted-foreground/20 text-center transition-all shadow-none"
+                    maxLength={10}
+                />
+            </div>
         </div>
-        <p className="text-[9px] text-gray-300 font-bold flex items-center gap-1 justify-center tracking-tighter">
-           <CheckCircle className="w-2.5 h-2.5 text-gray-200" /> MTN, AIRTEL OR MoMo
-        </p>
-      </div>
 
-      {/* Submit Button - Focused Action */}
-      <div className="pt-1 w-full flex justify-center">
         <Button
-          type="submit"
-          disabled={isLoading || !phoneNumber}
-          className="w-full max-w-[240px] bg-[#ffcc00] hover:bg-black hover:text-[#ffcc00] text-black font-black h-11 rounded-xl shadow-md transition-all active:scale-[0.98] text-xs border border-transparent"
+            type="submit"
+            disabled={isLoading || !phoneNumber}
+            className="w-full bg-[#ffcc00] hover:bg-black hover:text-[#ffcc00] text-black font-black h-10 rounded-xl shadow-md transition-all active:scale-[0.98] text-[11px] uppercase tracking-wider border-none"
         >
-          {isLoading ? (
-            <div className="flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Checking...</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Smartphone className="w-4 h-4" />
-              <span>Initiate Pay</span>
-            </div>
-          )}
+            {isLoading ? (
+                <div className="flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Processing...</span>
+                </div>
+            ) : (
+                <div className="flex items-center gap-2">
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Pay {amount.toLocaleString()} RWF</span>
+                </div>
+            )}
         </Button>
       </div>
 
-      {/* Semi-Info Box - Site Colors Smaller */}
-      <div className="bg-primary/5 border border-primary/10 rounded-xl p-3 relative overflow-hidden text-center">
-        <p className="text-[10px] text-muted-foreground leading-tight font-medium">
-          Confirm the <strong>MoMo prompt</strong> on your phone to complete. Success is automatic.
-        </p>
-      </div>
+      <p className="text-[9px] text-muted-foreground/60 text-center font-medium leading-tight px-4">
+        Success is automatic once you confirm the <strong>MoMo prompt</strong> sent to your device.
+      </p>
     </form>
   );
 }

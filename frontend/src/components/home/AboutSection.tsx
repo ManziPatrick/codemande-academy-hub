@@ -25,7 +25,7 @@ export function AboutSection() {
             transition={{ duration: 0.6 }}
           >
             <h3 className="font-heading text-xl lg:text-3xl text-foreground mb-4 leading-tight">
-              A Center of Excellence in technology & Skills Development
+              A Center of Excellence in Professional Growth & Skills Mastery
             </h3>
 
             <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-8">
@@ -56,7 +56,7 @@ export function AboutSection() {
                   <h4 className="font-heading font-semibold text-card-foreground">Our Vision</h4>
                 </div>
                 <p className="text-sm text-card-foreground/70 leading-relaxed">
-                  To be Africa's leading center of excellence in professional tech training and innovation.
+                  To be Africa's leading center of excellence in professional education and innovation.
                 </p>
               </div>
             </div>

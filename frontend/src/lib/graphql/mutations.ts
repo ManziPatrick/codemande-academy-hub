@@ -664,6 +664,60 @@ export const PROMOTE_INTERN = gql`
   }
 `;
 
+export const UPDATE_INTERNSHIP_STAGE = gql`
+  mutation UpdateInternshipStage($id: ID!, $stage: String!, $currentStage: Int!) {
+    updateInternshipStage(id: $id, stage: $stage, currentStage: $currentStage) {
+      id
+      stage
+      currentStage
+      progress
+      status
+    }
+  }
+`;
+
+export const SUBMIT_STANDUP = gql`
+  mutation SubmitStandup($internshipId: ID!, $yesterday: String!, $today: String!, $blockers: String, $workLink: String) {
+    submitStandup(internshipId: $internshipId, yesterday: $yesterday, today: $today, blockers: $blockers, workLink: $workLink) {
+      id
+      yesterday
+      today
+      blockers
+      workLink
+      attendanceStatus
+      date
+    }
+  }
+`;
+
+export const GRADE_SPRINT_MILESTONE = gql`
+  mutation GradeSprintMilestone($internshipId: ID!, $week: Int!, $grade: Int!, $feedback: String!) {
+    gradeSprintMilestone(internshipId: $internshipId, week: $week, grade: $grade, feedback: $feedback) {
+      id
+      sprintReviews {
+        week
+        grade
+        feedback
+      }
+    }
+  }
+`;
+
+export const SCHEDULE_MEETING = gql`
+  mutation ScheduleMeeting($internshipId: ID!, $title: String!, $time: String!, $type: String!, $url: String, $attendees: [String]) {
+    scheduleMeeting(internshipId: $internshipId, title: $title, time: $time, type: $type, url: $url, attendees: $attendees) {
+      id
+      meetings {
+        title
+        time
+        type
+        url
+        attendees
+      }
+    }
+  }
+`;
+
 export const ADD_INTERNSHIP_TASK = gql`
   mutation AddInternshipTask($internshipId: ID!, $title: String!, $priority: String) {
     addInternshipTask(internshipId: $internshipId, title: $title, priority: $priority) {
@@ -679,9 +733,9 @@ export const ADD_INTERNSHIP_TASK = gql`
   }
 `;
 
-export const UPDATE_INTERNSHIP_TASK = gql`
-  mutation UpdateInternshipTask($internshipId: ID!, $taskId: ID!, $status: String!) {
-    updateInternshipTask(internshipId: $internshipId, taskId: $taskId, status: $status) {
+export const UPDATE_INTERNSHIP_TASK_LEGACY = gql`
+  mutation UpdateInternshipTaskLegacy($internshipId: ID!, $taskId: ID!, $status: String!) {
+    updateInternshipTaskLegacy(internshipId: $internshipId, taskId: $taskId, status: $status) {
       id
       progress
       tasks {
@@ -770,22 +824,40 @@ export const SEND_MESSAGE_TO_PROJECT = gql`
 // --- New Internship Module Mutations ---
 
 export const CREATE_INTERNSHIP_PROGRAM = gql`
-  mutation CreateInternshipProgram($title: String!, $description: String!, $duration: String!, $startDate: String!, $endDate: String!, $applicationDeadline: String!, $eligibility: [String], $rules: String, $price: Float, $currency: String, $image: String) {
-    createInternshipProgram(title: $title, description: $description, duration: $duration, startDate: $startDate, endDate: $endDate, applicationDeadline: $applicationDeadline, eligibility: $eligibility, rules: $rules, price: $price, currency: $currency, image: $image) {
+  mutation CreateInternshipProgram($title: String!, $description: String!, $duration: String!, $startDate: String!, $endDate: String!, $applicationDeadline: String!, $eligibility: [String], $rules: String, $price: Float, $currency: String, $image: String, $applicationQuestions: [ApplicationQuestionInput]) {
+    createInternshipProgram(title: $title, description: $description, duration: $duration, startDate: $startDate, endDate: $endDate, applicationDeadline: $applicationDeadline, eligibility: $eligibility, rules: $rules, price: $price, currency: $currency, image: $image, applicationQuestions: $applicationQuestions) {
       id
       title
       image
+      applicationQuestions {
+        label
+        type
+        required
+        options
+      }
     }
   }
 `;
 
 export const UPDATE_INTERNSHIP_PROGRAM_NEW = gql`
-  mutation UpdateInternshipProgram($id: ID!, $title: String, $description: String, $duration: String, $startDate: String, $endDate: String, $applicationDeadline: String, $status: String, $eligibility: [String], $rules: String, $price: Float, $currency: String, $image: String) {
-    updateInternshipProgram(id: $id, title: $title, description: $description, duration: $duration, startDate: $startDate, endDate: $endDate, applicationDeadline: $applicationDeadline, status: $status, eligibility: $eligibility, rules: $rules, price: $price, currency: $currency, image: $image) {
+  mutation UpdateInternshipProgram($id: ID!, $title: String, $description: String, $duration: String, $startDate: String, $endDate: String, $applicationDeadline: String, $status: String, $eligibility: [String], $rules: String, $price: Float, $discount: Float, $currency: String, $image: String, $maxSpots: Int, $applicationQuestions: [ApplicationQuestionInput]) {
+    updateInternshipProgram(id: $id, title: $title, description: $description, duration: $duration, startDate: $startDate, endDate: $endDate, applicationDeadline: $applicationDeadline, status: $status, eligibility: $eligibility, rules: $rules, price: $price, discount: $discount, currency: $currency, image: $image, maxSpots: $maxSpots, applicationQuestions: $applicationQuestions) {
       id
       title
       status
+      price
+      discount
+      maxSpots
       image
+      startDate
+      endDate
+      applicationDeadline
+      applicationQuestions {
+        label
+        type
+        required
+        options
+      }
     }
   }
 `;
@@ -797,10 +869,20 @@ export const DELETE_INTERNSHIP_PROGRAM_NEW = gql`
 `;
 
 export const APPLY_TO_INTERNSHIP_PROGRAM = gql`
-  mutation ApplyToInternshipProgram($internshipProgramId: ID!, $skills: [String!]!, $availability: String!, $portfolioUrl: String) {
-    applyToInternshipProgram(internshipProgramId: $internshipProgramId, skills: $skills, availability: $availability, portfolioUrl: $portfolioUrl) {
+  mutation ApplyToInternshipProgram($internshipProgramId: ID!, $skills: [String!]!, $availability: String!, $portfolioUrl: String, $applicationAnswers: [ApplicationAnswerInput]) {
+    applyToInternshipProgram(internshipProgramId: $internshipProgramId, skills: $skills, availability: $availability, portfolioUrl: $portfolioUrl, applicationAnswers: $applicationAnswers) {
       id
       status
+      payment {
+        id
+        status
+        amount
+        currency
+      }
+      applicationAnswers {
+        questionLabel
+        answer
+      }
     }
   }
 `;
@@ -815,8 +897,8 @@ export const REVIEW_INTERNSHIP_APPLICATION = gql`
 `;
 
 export const CREATE_INTERNSHIP_PROJECT_NEW = gql`
-  mutation CreateInternshipProject($title: String!, $description: String!, $requiredSkills: [String!]!, $minTeamSize: Int!, $maxTeamSize: Int!, $internshipProgramId: ID!, $documentation: DocumentationInput) {
-    createInternshipProject(title: $title, description: $description, requiredSkills: $requiredSkills, minTeamSize: $minTeamSize, maxTeamSize: $maxTeamSize, internshipProgramId: $internshipProgramId, documentation: $documentation) {
+  mutation CreateInternshipProject($title: String!, $description: String!, $document: String, $requiredSkills: [String!]!, $minTeamSize: Int!, $maxTeamSize: Int!, $internshipProgramId: ID!, $defaultTickets: [DefaultTicketInput], $documentation: DocumentationInput) {
+    createInternshipProject(title: $title, description: $description, document: $document, requiredSkills: $requiredSkills, minTeamSize: $minTeamSize, maxTeamSize: $maxTeamSize, internshipProgramId: $internshipProgramId, defaultTickets: $defaultTickets, documentation: $documentation) {
       id
       title
     }
@@ -824,8 +906,8 @@ export const CREATE_INTERNSHIP_PROJECT_NEW = gql`
 `;
 
 export const UPDATE_INTERNSHIP_PROJECT_NEW = gql`
-  mutation UpdateInternshipProject($id: ID!, $title: String, $description: String, $requiredSkills: [String], $minTeamSize: Int, $maxTeamSize: Int, $status: String, $documentation: DocumentationInput) {
-    updateInternshipProject(id: $id, title: $title, description: $description, requiredSkills: $requiredSkills, minTeamSize: $minTeamSize, maxTeamSize: $maxTeamSize, status: $status, documentation: $documentation) {
+  mutation UpdateInternshipProject($id: ID!, $title: String, $description: String, $document: String, $requiredSkills: [String], $minTeamSize: Int, $maxTeamSize: Int, $status: String, $defaultTickets: [DefaultTicketInput], $documentation: DocumentationInput) {
+    updateInternshipProject(id: $id, title: $title, description: $description, document: $document, requiredSkills: $requiredSkills, minTeamSize: $minTeamSize, maxTeamSize: $maxTeamSize, status: $status, defaultTickets: $defaultTickets, documentation: $documentation) {
       id
       title
     }
@@ -839,10 +921,12 @@ export const DELETE_INTERNSHIP_PROJECT = gql`
 `;
 
 export const CREATE_INTERNSHIP_TEAM_NEW = gql`
-  mutation CreateInternshipTeam($name: String!, $internshipProjectId: ID!, $internshipProgramId: ID!, $mentorId: ID) {
-    createInternshipTeam(name: $name, internshipProjectId: $internshipProjectId, internshipProgramId: $internshipProgramId, mentorId: $mentorId) {
+  mutation CreateInternshipTeam($name: String!, $internshipProjectId: ID!, $internshipProgramId: ID!, $mentorId: ID, $type: String) {
+    createInternshipTeam(name: $name, internshipProjectId: $internshipProjectId, internshipProgramId: $internshipProgramId, mentorId: $mentorId, type: $type) {
       id
       name
+      type
+      status
     }
   }
 `;
@@ -866,8 +950,8 @@ export const CREATE_INTERNSHIP_MILESTONE_NEW = gql`
 `;
 
 export const SUBMIT_INTERNSHIP_WORK = gql`
-  mutation SubmitInternshipWork($teamId: ID!, $milestoneId: ID!, $workUrl: String!, $description: String!) {
-    submitInternshipWork(teamId: $teamId, milestoneId: $milestoneId, workUrl: $workUrl, description: $description) {
+  mutation SubmitInternshipWork($teamId: ID!, $milestoneId: ID!, $contentUrl: String!, $description: String!) {
+    submitInternshipWork(teamId: $teamId, milestoneId: $milestoneId, contentUrl: $contentUrl, description: $description) {
       id
       status
     }
@@ -982,12 +1066,14 @@ export const APPLY_TO_INTERNSHIP_WITH_VALIDATION = gql`
     $skills: [String!]!
     $availability: String!
     $portfolioUrl: String
+    $applicationAnswers: [ApplicationAnswerInput]
   ) {
     applyToInternshipWithValidation(
       internshipProgramId: $internshipProgramId
       skills: $skills
       availability: $availability
       portfolioUrl: $portfolioUrl
+      applicationAnswers: $applicationAnswers
     ) {
       id
       status
@@ -1114,11 +1200,19 @@ export const CREATE_STRIPE_PAYMENT_INTENT = gql`
   }
 `;
 export const UPDATE_INTERNSHIP_TEAM_NEW = gql`
-  mutation UpdateInternshipTeam($id: ID!, $status: String) {
-    updateInternshipTeam(id: $id, status: $status) {
+  mutation UpdateInternshipTeam($id: ID!, $name: String, $mentorId: ID, $status: String, $type: String) {
+    updateInternshipTeam(id: $id, name: $name, mentorId: $mentorId, status: $status, type: $type) {
       id
+      name
       status
+      type
     }
+  }
+`;
+
+export const DELETE_INTERNSHIP_TEAM_NEW = gql`
+  mutation DeleteInternshipTeam($id: ID!) {
+    deleteInternshipTeam(id: $id)
   }
 `;
 export const SUBSCRIBE_TO_NEWSLETTER = gql`
@@ -1293,5 +1387,202 @@ export const TOGGLE_PROJECT_TEMPLATE = gql`
 export const APPROVE_LESSON_PROGRESS = gql`
   mutation ApproveLessonProgress($userId: ID!, $courseId: ID!, $lessonId: String!) {
     approveLessonProgress(userId: $userId, courseId: $courseId, lessonId: $lessonId)
+  }
+`;
+
+// ===== SPRINT & TASK BOARD MUTATIONS =====
+
+export const CREATE_INTERNSHIP_SPRINT = gql`
+  mutation CreateInternshipSprint($projectId: ID!, $teamId: ID!, $title: String!, $goal: String, $startDate: String!, $endDate: String!) {
+    createInternshipSprint(projectId: $projectId, teamId: $teamId, title: $title, goal: $goal, startDate: $startDate, endDate: $endDate) {
+      id title goal startDate endDate status order
+    }
+  }
+`;
+
+export const UPDATE_INTERNSHIP_SPRINT = gql`
+  mutation UpdateInternshipSprint($id: ID!, $title: String, $goal: String, $startDate: String, $endDate: String, $status: String) {
+    updateInternshipSprint(id: $id, title: $title, goal: $goal, startDate: $startDate, endDate: $endDate, status: $status) {
+      id title goal startDate endDate status order
+    }
+  }
+`;
+
+export const DELETE_INTERNSHIP_SPRINT = gql`
+  mutation DeleteInternshipSprint($id: ID!) {
+    deleteInternshipSprint(id: $id)
+  }
+`;
+
+export const CREATE_INTERNSHIP_TASK = gql`
+  mutation CreateInternshipTask($sprintId: ID, $projectId: ID!, $teamId: ID!, $title: String!, $description: String, $assigneeId: ID, $priority: String, $storyPoints: Int, $labels: [String]) {
+    createInternshipTask(sprintId: $sprintId, projectId: $projectId, teamId: $teamId, title: $title, description: $description, assigneeId: $assigneeId, priority: $priority, storyPoints: $storyPoints, labels: $labels) {
+      id title description status priority storyPoints labels sprintId assigneeId createdAt
+      assignee { id username fullName avatar }
+    }
+  }
+`;
+
+export const UPDATE_INTERNSHIP_TASK = gql`
+  mutation UpdateInternshipTask($id: ID!, $title: String, $description: String, $status: String, $priority: String, $assigneeId: ID, $sprintId: ID, $storyPoints: Int, $labels: [String], $taskType: String, $dueDate: String) {
+    updateInternshipTask(id: $id, title: $title, description: $description, status: $status, priority: $priority, assigneeId: $assigneeId, sprintId: $sprintId, storyPoints: $storyPoints, labels: $labels, taskType: $taskType, dueDate: $dueDate) {
+      id
+      title
+      description
+      status
+      priority
+      taskType
+      dueDate
+      assignee {
+        id
+        username
+        fullName
+        avatar
+      }
+      labels
+      storyPoints
+      sprintId
+    }
+  }
+`;
+
+export const ADD_INTERNSHIP_COMMENT = gql`
+  mutation AddInternshipComment($taskId: ID!, $content: String!, $attachments: [TaskAttachmentInput]) {
+    addInternshipComment(taskId: $taskId, content: $content, attachments: $attachments) {
+      id
+      content
+      createdAt
+      author {
+        id
+        username
+        avatar
+      }
+    }
+  }
+`;
+
+export const MOVE_INTERNSHIP_TASK_STATUS = gql`
+  mutation MoveInternshipTaskStatus($id: ID!, $status: String!) {
+    moveInternshipTaskStatus(id: $id, status: $status) {
+      id status approvedBy approvedAt rejectionReason updatedAt
+    }
+  }
+`;
+
+export const APPROVE_INTERNSHIP_TASK = gql`
+  mutation ApproveInternshipTask($id: ID!) {
+    approveInternshipTask(id: $id) {
+      id status approvedBy approvedAt updatedAt
+    }
+  }
+`;
+
+export const REJECT_INTERNSHIP_TASK = gql`
+  mutation RejectInternshipTask($id: ID!, $reason: String) {
+    rejectInternshipTask(id: $id, reason: $reason) {
+      id status rejectionReason updatedAt
+    }
+  }
+`;
+
+export const ADD_TASK_ATTACHMENT = gql`
+  mutation AddTaskAttachment($taskId: ID!, $name: String!, $url: String!, $type: String) {
+    addTaskAttachment(taskId: $taskId, name: $name, url: $url, type: $type) {
+      id attachments { name url type }
+    }
+  }
+`;
+
+export const REMOVE_TASK_ATTACHMENT = gql`
+  mutation RemoveTaskAttachment($taskId: ID!, $attachmentIndex: Int!) {
+    removeTaskAttachment(taskId: $taskId, attachmentIndex: $attachmentIndex) {
+      id attachments { name url type }
+    }
+  }
+`;
+
+export const DELETE_INTERNSHIP_TASK = gql`
+  mutation DeleteInternshipTask($id: ID!) {
+    deleteInternshipTask(id: $id)
+  }
+`;
+
+export const UPDATE_INTERNSHIP_PROJECT_DOCUMENT = gql`
+  mutation UpdateInternshipProjectDocument($projectId: ID!, $document: String!) {
+    updateInternshipProjectDocument(projectId: $projectId, document: $document) {
+      id title document
+    }
+  }
+`;
+
+export const UPDATE_PROJECT_WORKFLOW = gql`
+  mutation UpdateProjectWorkflow($projectId: ID!, $workflow: [WorkflowStageInput!]!) {
+    updateProjectWorkflow(projectId: $projectId, workflow: $workflow) {
+      id
+      workflow {
+        id
+        label
+        color
+        order
+        type
+      }
+    }
+  }
+`;
+
+export const ASSIGN_PROJECT_TO_TEAM = gql`
+  mutation AssignInternshipProjectToTeam($teamId: ID!, $projectId: ID!) {
+    assignInternshipProjectToTeam(teamId: $teamId, projectId: $projectId) {
+      id
+      internshipProjectId
+      internshipProject {
+        id
+        title
+        description
+        requiredSkills
+        documentation {
+          links {
+            title
+            url
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const CREATE_INTERNSHIP_MEETING = gql`
+  mutation CreateInternshipMeeting($title: String!, $description: String, $startTime: String!, $endTime: String!, $meetLink: String, $type: String!, $teamIds: [ID!]!, $recurrenceDays: [Int]) {
+    createInternshipMeeting(title: $title, description: $description, startTime: $startTime, endTime: $endTime, meetLink: $meetLink, type: $type, teamIds: $teamIds, recurrenceDays: $recurrenceDays) {
+      id
+      title
+      type
+      recurrenceDays
+      startTime
+      endTime
+      meetLink
+      teams {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const UPDATE_INTERNSHIP_MEETING = gql`
+  mutation UpdateInternshipMeeting($id: ID!, $title: String, $description: String, $startTime: String, $endTime: String, $meetLink: String, $type: String, $teamIds: [ID!]) {
+    updateInternshipMeeting(id: $id, title: $title, description: $description, startTime: $startTime, endTime: $endTime, meetLink: $meetLink, type: $type, teamIds: $teamIds) {
+      id
+      title
+      type
+      startTime
+      endTime
+    }
+  }
+`;
+
+export const DELETE_INTERNSHIP_MEETING = gql`
+  mutation DeleteInternshipMeeting($id: ID!) {
+    deleteInternshipMeeting(id: $id)
   }
 `;

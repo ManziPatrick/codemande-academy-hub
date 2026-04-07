@@ -87,7 +87,8 @@ export const typeDefs = `#graphql
     location: String
     title: String
     studentProfile: StudentProfile
-    status: String
+    notes: String
+    paymentProofUrl: String
     isDeleted: Boolean
     lastActive: String
     isOnline: Boolean
@@ -399,6 +400,31 @@ export const typeDefs = `#graphql
     title: String!
     time: String!
     type: String!
+    url: String
+    attendees: [String]
+  }
+
+  type SprintReview {
+    week: Int
+    grade: Int
+    feedback: String
+    reviewedBy: User
+    date: String
+  }
+
+  type Standup {
+    id: ID!
+    internshipId: ID!
+    userId: ID!
+    user: User
+    date: String!
+    yesterday: String!
+    today: String!
+    blockers: String
+    workLink: String
+    attendanceStatus: String!
+    trainerFeedback: String
+    createdAt: String!
   }
 
   type Internship {
@@ -409,6 +435,7 @@ export const typeDefs = `#graphql
     organization: String!
     company: String
     cohort: String
+    groupId: String
     startDate: String
     endDate: String
     duration: String!
@@ -421,6 +448,7 @@ export const typeDefs = `#graphql
     mentorId: ID
     mentor: User
     mentors: [User]
+    assignedProject: InternshipProject
     academicSchool: String
     academicLevel: String
     previousLanguages: String
@@ -433,6 +461,7 @@ export const typeDefs = `#graphql
     milestones: [Milestone]
     tasks: [InternshipTask]
     meetings: [Meeting]
+    sprintReviews: [SprintReview]
     createdAt: String!
     updatedAt: String!
   }
@@ -569,8 +598,14 @@ export const typeDefs = `#graphql
     myCertificates: [Certificate]
     certificate(id: ID!): Certificate
     
+    # Meetings
+    getInternshipMeetings(teamId: ID, programId: ID): [InternshipMeeting]
+    getMyInternshipMeetings: [InternshipMeeting]
+    
     # Internships
     internships: [Internship]
+    getInternshipStandups(internshipId: ID!): [Standup]
+    getMyStandups: [Standup]
     myInternship: Internship
     myMentees: [Internship]
     internship(id: ID!): Internship
@@ -654,6 +689,11 @@ export const typeDefs = `#graphql
     ppts: [String]
     links: [ProjectLinkInput]
     inPersonNotes: String
+  }
+
+  input DefaultTicketInput {
+    title: String!
+    description: String
   }
 
   input RequirementInput {
@@ -951,13 +991,19 @@ export const typeDefs = `#graphql
     deleteInternship(id: ID!): Boolean
     applyForInternship(internshipId: ID!): Internship
     promoteIntern(internshipIds: [ID!], targetStage: Int!): Boolean
+    updateInternshipStage(id: ID!, stage: String!, currentStage: Int!): Internship
     updateInternshipPayment(id: ID!, status: String!, paidAt: String): Internship
     payForCourse(courseId: ID!, amount: Float!, paymentMethod: String!): PaymentTransaction
     enrollStudentInCourse(courseId: ID!, userId: ID!): Course
     addInternshipTask(internshipId: ID!, title: String!, priority: String): Internship
     addBatchTask(internshipIds: [ID!], stage: Int, cohort: String, title: String!, priority: String): Boolean
+    
+    submitStandup(internshipId: ID!, yesterday: String!, today: String!, blockers: String, workLink: String): Standup
+    gradeSprintMilestone(internshipId: ID!, week: Int!, grade: Int!, feedback: String!): Internship
+    scheduleMeeting(internshipId: ID!, title: String!, time: String!, type: String!, url: String, attendees: [String]): Internship
+
     updateTheme(primaryColor: String, mode: String, lightBg: String, darkBg: String): User
-    updateInternshipTask(internshipId: ID!, taskId: ID!, status: String!): Internship
+    updateInternshipTaskLegacy(internshipId: ID!, taskId: ID!, status: String!): Internship
     updateTaskProgress(projectId: ID!, taskId: String!, completed: Boolean!): Project
     approveProjectTask(projectId: ID!, taskId: String!, approved: Boolean!, feedback: String): Project
     gradeProject(id: ID!, grade: String!, feedback: String!): Project
@@ -965,19 +1011,21 @@ export const typeDefs = `#graphql
 
 
     # New Internship Module Mutations
-    createInternshipProgram(title: String!, description: String!, duration: String!, startDate: String!, endDate: String!, applicationDeadline: String!, eligibility: [String], rules: String, price: Float, currency: String, image: String): InternshipProgram
-    updateInternshipProgram(id: ID!, title: String, description: String, duration: String, startDate: String, endDate: String, applicationDeadline: String, status: String, eligibility: [String], rules: String, price: Float, currency: String, image: String): InternshipProgram
+    createInternshipProgram(title: String!, description: String!, duration: String!, startDate: String!, endDate: String!, applicationDeadline: String!, eligibility: [String], rules: String, price: Float, currency: String, image: String, maxSpots: Int, applicationQuestions: [ApplicationQuestionInput]): InternshipProgram
+    updateInternshipProgram(id: ID!, title: String, description: String, duration: String, startDate: String, endDate: String, applicationDeadline: String, status: String, eligibility: [String], rules: String, price: Float, discount: Float, currency: String, image: String, maxSpots: Int, applicationQuestions: [ApplicationQuestionInput]): InternshipProgram
     deleteInternshipProgram(id: ID!): Boolean
 
-    applyToInternshipProgram(internshipProgramId: ID!, skills: [String]!, portfolioUrl: String, resumeUrl: String, availability: String!): InternshipApplication
+    applyToInternshipProgram(internshipProgramId: ID!, skills: [String]!, portfolioUrl: String, resumeUrl: String, availability: String!, applicationAnswers: [ApplicationAnswerInput]): InternshipApplication
     reviewInternshipApplication(id: ID!, status: String!, rejectionReason: String): InternshipApplication
 
-    createInternshipProject(internshipProgramId: ID!, title: String!, description: String!, requiredSkills: [String], minTeamSize: Int, maxTeamSize: Int, documentation: DocumentationInput): InternshipProject
-    updateInternshipProject(id: ID!, title: String, description: String, requiredSkills: [String], minTeamSize: Int, maxTeamSize: Int, status: String, documentation: DocumentationInput): InternshipProject
+    createInternshipProject(internshipProgramId: ID!, title: String!, description: String!, document: String, requiredSkills: [String], minTeamSize: Int, maxTeamSize: Int, defaultTickets: [DefaultTicketInput], documentation: DocumentationInput): InternshipProject
+    updateInternshipProject(id: ID!, title: String, description: String, document: String, requiredSkills: [String], minTeamSize: Int, maxTeamSize: Int, status: String, defaultTickets: [DefaultTicketInput], documentation: DocumentationInput): InternshipProject
     deleteInternshipProject(id: ID!): Boolean
 
-    createInternshipTeam(name: String!, internshipProjectId: ID!, internshipProgramId: ID!, mentorId: ID): InternshipTeam
-    updateInternshipTeam(id: ID!, name: String, mentorId: ID, status: String): InternshipTeam
+    # Team & Milestone Mutations
+    createInternshipTeam(name: String!, internshipProjectId: ID!, internshipProgramId: ID!, mentorId: ID, type: String): InternshipTeam
+    updateInternshipTeam(id: ID!, name: String, internshipProjectId: ID, internshipProgramId: ID, mentorId: ID, status: String, type: String): InternshipTeam
+    deleteInternshipTeam(id: ID!): Boolean
     addInternToTeam(teamId: ID!, userId: ID!, role: String): InternshipTeamMember
     removeInternFromTeam(teamMemberId: ID!): Boolean
 
@@ -990,6 +1038,30 @@ export const typeDefs = `#graphql
   }
 
   # New Internship Module Types
+  type ApplicationQuestion {
+    label: String!
+    type: String!
+    required: Boolean!
+    options: [String]
+  }
+
+  input ApplicationQuestionInput {
+    label: String!
+    type: String!
+    required: Boolean!
+    options: [String]
+  }
+
+  type ApplicationAnswer {
+    questionLabel: String!
+    answer: String!
+  }
+
+  input ApplicationAnswerInput {
+    questionLabel: String!
+    answer: String!
+  }
+
   type InternshipProgram {
     id: ID!
     title: String!
@@ -1001,8 +1073,11 @@ export const typeDefs = `#graphql
     eligibility: [String]
     rules: String
     price: Float
+    discount: Float
     currency: String
     image: String
+    maxSpots: Int
+    applicationQuestions: [ApplicationQuestion]
     status: String!
     isDeleted: Boolean
     createdAt: String
@@ -1020,9 +1095,30 @@ export const typeDefs = `#graphql
     portfolioUrl: String
     resumeUrl: String
     availability: String
+    applicationAnswers: [ApplicationAnswer]
     rejectionReason: String
     payment: InternshipPayment
     createdAt: String
+  }
+
+  type DefaultTicket {
+    title: String!
+    description: String
+    priority: String
+    taskType: String
+    labels: [String]
+    suggestedRole: String
+    order: Int
+  }
+
+  input DefaultTicketInput {
+    title: String!
+    description: String
+    priority: String
+    taskType: String
+    labels: [String]
+    suggestedRole: String
+    order: Int
   }
 
   type InternshipProject {
@@ -1031,12 +1127,24 @@ export const typeDefs = `#graphql
     internshipProgram: InternshipProgram
     title: String!
     description: String!
+    document: String
+    objectives: [String]
     requiredSkills: [String]
     teamSizeRange: TeamSizeRange
     milestones: [InternshipMilestone]
     documentation: Documentation
+    defaultTickets: [DefaultTicket]
+    workflow: [WorkflowStage]
     status: String!
     createdAt: String
+  }
+
+  type WorkflowStage {
+    id: String!
+    label: String!
+    color: String!
+    order: Int!
+    type: String!
   }
 
   type TeamSizeRange {
@@ -1055,6 +1163,7 @@ export const typeDefs = `#graphql
     mentor: User
     members: [InternshipTeamMember]
     status: String!
+    type: String!
     createdAt: String
   }
 
@@ -1074,6 +1183,8 @@ export const typeDefs = `#graphql
     description: String
     deadline: String!
     order: Int
+    completed: Boolean
+    completedAt: String
     createdAt: String
   }
 
@@ -1138,7 +1249,12 @@ export const typeDefs = `#graphql
     myInternshipTeam: InternshipTeam
     internshipSubmissions(teamId: ID!): [InternshipSubmission]
     internshipTimeLogs(teamId: ID!, userId: ID): [InternshipTimeLog]
-    internshipActivityLogs(programId: ID): [InternshipActivityLog]
+    internshipActivityLogs(programId: ID, targetType: String, targetId: ID): [InternshipActivityLog]
+    
+    # Sprint & Task Board Queries
+    internshipSprints(projectId: ID!, teamId: ID): [InternshipSprint]
+    internshipTasks(projectId: ID, sprintId: ID, teamId: ID, assigneeId: ID): [InternshipTask]
+    internshipTask(id: ID!): InternshipTask
     
     # Student Profile Queries
     myStudentProfile: StudentProfile
@@ -1182,6 +1298,77 @@ export const typeDefs = `#graphql
     updatedAt: String
   }
 
+  # Sprint & Task Types
+  type InternshipSprint {
+    id: ID!
+    projectId: ID!
+    project: InternshipProject
+    teamId: ID!
+    team: InternshipTeam
+    title: String!
+    goal: String
+    startDate: String!
+    endDate: String!
+    status: String!
+    order: Int
+    taskCount: Int
+    completedTaskCount: Int
+    createdAt: String
+  }
+
+  type TaskAttachment {
+    name: String!
+    url: String!
+    type: String!
+  }
+
+  input TaskAttachmentInput {
+    name: String!
+    url: String!
+    type: String!
+  }
+
+  type InternshipTask {
+    id: ID!
+    sprintId: ID
+    sprint: InternshipSprint
+    projectId: ID!
+    project: InternshipProject
+    teamId: ID!
+    team: InternshipTeam
+    title: String!
+    description: String
+    status: String!
+    priority: String!
+    assigneeId: ID
+    assignee: User
+    storyPoints: Int
+    labels: [String]
+    attachments: [TaskAttachment]
+    taskType: String
+    dependencies: [ID]
+    dueDate: String
+    comments: [InternshipComment]
+    order: Int
+    approvedBy: ID
+    approvedByUser: User
+    approvedAt: String
+    rejectionReason: String
+    createdAt: String
+    updatedAt: String
+  }
+
+  type InternshipComment {
+    id: ID!
+    taskId: ID!
+    authorId: ID!
+    author: User
+    content: String!
+    attachments: [TaskAttachment]
+    createdAt: String
+    updatedAt: String
+  }
+
   # Payment Types
   type InternshipPayment {
     id: ID!
@@ -1200,6 +1387,7 @@ export const typeDefs = `#graphql
     waivedByUser: User
     waivedReason: String
     notes: String
+    paymentProofUrl: String
     createdAt: String
     updatedAt: String
   }
@@ -1259,8 +1447,32 @@ export const typeDefs = `#graphql
     revokedBy: ID
     revokedByUser: User
     revocationReason: String
-    metadata: CertificateMetadata
     createdAt: String
+  }
+
+  # Meeting Types
+  enum MeetingFrequency {
+    ONCE
+    DAILY
+    WEEKLY
+    MONTHLY
+  }
+
+  type InternshipMeeting {
+    id: ID!
+    title: String!
+    description: String
+    type: MeetingFrequency!
+    meetLink: String
+    startTime: String!
+    endTime: String!
+    recurrenceDays: [Int]
+    teamIds: [ID!]!
+    teams: [InternshipTeam]
+    hostId: ID!
+    host: User
+    createdAt: String
+    updatedAt: String
   }
 
   type CertificateMetadata {
@@ -1322,11 +1534,7 @@ export const typeDefs = `#graphql
       currency: String
     ): InternshipPayment
 
-    processInternshipPayment(
-      paymentId: ID!
-      transactionId: String!
-      paymentMethod: String!
-    ): InternshipPayment
+    processInternshipPayment(paymentId: ID!, transactionId: String, paymentMethod: String!, paymentProofUrl: String): InternshipPayment!
 
     waiveInternshipPayment(
       paymentId: ID!
@@ -1379,6 +1587,26 @@ export const typeDefs = `#graphql
     createStripePaymentIntent(programId: ID!): StripePaymentIntent
     subscribeToNewsletter(email: String!): Boolean
 
+    # Sprint Mutations
+    createInternshipSprint(projectId: ID!, teamId: ID!, title: String!, goal: String, startDate: String!, endDate: String!): InternshipSprint
+    updateInternshipSprint(id: ID!, title: String, goal: String, startDate: String, endDate: String, status: String): InternshipSprint
+    deleteInternshipSprint(id: ID!): Boolean
+
+    # Task Mutations
+    createInternshipTask(sprintId: ID, projectId: ID!, teamId: ID!, title: String!, description: String, assigneeId: ID, priority: String, storyPoints: Int, labels: [String]): InternshipTask
+    updateInternshipTask(id: ID!, title: String, description: String, status: String, priority: String, assigneeId: ID, sprintId: ID, storyPoints: Int, labels: [String], taskType: String, dueDate: String): InternshipTask
+    addInternshipComment(taskId: ID!, content: String!, attachments: [TaskAttachmentInput]): InternshipComment
+    deleteInternshipComment(id: ID!): Boolean
+    moveInternshipTaskStatus(id: ID!, status: String!): InternshipTask
+    approveInternshipTask(id: ID!): InternshipTask
+    rejectInternshipTask(id: ID!, reason: String): InternshipTask
+    addTaskAttachment(taskId: ID!, name: String!, url: String!, type: String): InternshipTask
+    removeTaskAttachment(taskId: ID!, attachmentIndex: Int!): InternshipTask
+    deleteInternshipTask(id: ID!): Boolean
+    updateInternshipProjectDocument(projectId: ID!, document: String!): InternshipProject
+    updateProjectWorkflow(projectId: ID!, workflow: [WorkflowStageInput!]!): InternshipProject
+    assignInternshipProjectToTeam(teamId: ID!, projectId: ID!): InternshipTeam
+
     # Assignments
     submitAssignment(
       courseId: ID!
@@ -1399,6 +1627,31 @@ export const typeDefs = `#graphql
     ): Boolean
 
     pingInstructor(submissionId: ID!, message: String): Boolean
+
+    # Meeting Mutations
+    createInternshipMeeting(
+      title: String!
+      description: String
+      type: String!
+      startTime: String!
+      endTime: String!
+      teamIds: [ID!]!
+      meetLink: String
+      recurrenceDays: [Int]
+    ): InternshipMeeting
+    
+    updateInternshipMeeting(
+      id: ID!
+      title: String
+      description: String
+      type: String
+      startTime: String
+      endTime: String
+      teamIds: [ID!]
+      meetLink: String
+    ): InternshipMeeting
+    
+    deleteInternshipMeeting(id: ID!): Boolean
   }
 
   type StripePaymentIntent {
@@ -1422,5 +1675,12 @@ export const typeDefs = `#graphql
   type Subscription {
     messageAdded(conversationId: ID!): Message
     notificationAdded(userId: ID!): Notification
+  }
+  input WorkflowStageInput {
+    id: String!
+    label: String!
+    color: String!
+    order: Int!
+    type: String!
   }
 `;

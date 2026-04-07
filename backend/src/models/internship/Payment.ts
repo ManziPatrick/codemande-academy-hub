@@ -13,6 +13,7 @@ export interface IInternshipPayment extends Document {
   waivedBy?: mongoose.Types.ObjectId;
   waivedReason?: string;
   notes?: string;
+  paymentProofUrl?: string;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -76,6 +77,10 @@ const InternshipPaymentSchema: Schema = new Schema(
       trim: true
     },
     notes: {
+      type: String,
+      trim: true
+    },
+    paymentProofUrl: {
       type: String,
       trim: true
     },

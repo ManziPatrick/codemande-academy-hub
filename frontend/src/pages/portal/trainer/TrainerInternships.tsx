@@ -6,16 +6,18 @@ import {
     Briefcase,
     Users,
     FileText,
-    LayoutGrid
+    LayoutGrid,
+    Layers
 } from "lucide-react";
 import ApplicationReview from "@/components/portal/admin/internship/ApplicationReview";
 import TeamManagement from "@/components/portal/admin/internship/TeamManagement";
 import ProgramList from "@/components/portal/admin/internship/ProgramList";
+import WorkflowBoard from "@/components/portal/admin/internship/WorkflowBoard";
 import { useAuth } from "@/contexts/AuthContext";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function TrainerInternships() {
-    const [activeTab, setActiveTab] = useState("applications");
+    const [activeTab, setActiveTab] = useState("workflow");
     const { user } = useAuth();
 
     if (!user || user.role !== 'trainer') {
@@ -55,6 +57,10 @@ export default function TrainerInternships() {
                 {/* Main Content */}
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                     <TabsList className="bg-muted/50 p-1 border border-border/50">
+                        <TabsTrigger value="workflow" className="gap-2">
+                            <Layers className="w-4 h-4" />
+                            Workflow Board
+                        </TabsTrigger>
                         <TabsTrigger value="applications" className="gap-2">
                             <FileText className="w-4 h-4" />
                             Applications
@@ -68,6 +74,21 @@ export default function TrainerInternships() {
                             Programs Directory
                         </TabsTrigger>
                     </TabsList>
+
+                    <TabsContent value="workflow">
+                        <div className="space-y-4">
+                            <div className="bg-indigo-50/50 border border-indigo-100 dark:bg-indigo-900/10 dark:border-indigo-900/50 p-4 rounded-lg">
+                                <h3 className="font-medium text-indigo-800 dark:text-indigo-300 flex items-center gap-2">
+                                    <Layers className="w-4 h-4" />
+                                    Workflow Management
+                                </h3>
+                                <p className="text-sm text-indigo-600 dark:text-indigo-400 mt-1">
+                                    Drag and drop interns across different stages of their internship to update their progression.
+                                </p>
+                            </div>
+                            <WorkflowBoard />
+                        </div>
+                    </TabsContent>
 
                     <TabsContent value="applications">
                         <div className="space-y-4">

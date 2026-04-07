@@ -8,6 +8,10 @@ export interface IInternshipApplication extends Document {
   portfolioUrl?: string;
   resumeUrl?: string;
   availability: string;
+  applicationAnswers: {
+    questionLabel: string;
+    answer: string;
+  }[];
   rejectionReason?: string;
   isDeleted: boolean;
   createdAt: Date;
@@ -28,6 +32,12 @@ const InternshipApplicationSchema: Schema = new Schema(
     portfolioUrl: { type: String },
     resumeUrl: { type: String },
     availability: { type: String }, // e.g., "Full-time", "Part-time"
+    applicationAnswers: [
+      {
+        questionLabel: { type: String, required: true },
+        answer: { type: String, required: true }
+      }
+    ],
     rejectionReason: { type: String },
     isDeleted: { type: Boolean, default: false, index: true },
   },

@@ -52,8 +52,18 @@ export interface IInternship extends Document {
     title: string;
     time: string;
     type: string; // 'recurring', 'upcoming', 'past'
+    url?: string;
+    attendees?: string[]; // user IDs or 'all'
+  }>;
+  sprintReviews?: Array<{
+    week: number;
+    grade: number; // out of 100
+    feedback: string;
+    reviewedBy: mongoose.Types.ObjectId;
+    date: Date;
   }>;
   cohort?: string; // Grouping interns into cohorts
+  groupId?: string; // specific isolated group for pacing
   createdAt: Date;
   updatedAt: Date;
 }
@@ -122,8 +132,20 @@ const InternshipSchema: Schema = new Schema(
         title: { type: String },
         time: { type: String },
         type: { type: String, enum: ['recurring', 'upcoming', 'past'] },
+        url: { type: String },
+        attendees: [{ type: String }],
       },
     ],
+    sprintReviews: [
+      {
+        week: { type: Number },
+        grade: { type: Number, min: 0, max: 100 },
+        feedback: { type: String },
+        reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        date: { type: Date, default: Date.now },
+      }
+    ],
+    groupId: { type: String },
   },
   { timestamps: true }
 );

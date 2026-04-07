@@ -26,7 +26,7 @@ import { TeamChatDialog, StudentDetailDialog } from "@/components/portal/dialogs
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_MY_MENTEES } from "@/lib/graphql/queries";
-import { ADD_INTERNSHIP_TASK, UPDATE_INTERNSHIP_TASK } from "@/lib/graphql/mutations";
+import { ADD_INTERNSHIP_TASK, UPDATE_INTERNSHIP_TASK_LEGACY } from "@/lib/graphql/mutations";
 
 export default function TrainerMentorship() {
   const { data, loading, refetch } = useQuery(GET_MY_MENTEES);
@@ -49,7 +49,7 @@ export default function TrainerMentorship() {
     onError: (err) => toast.error(err.message)
   });
 
-  const [updateTask] = useMutation(UPDATE_INTERNSHIP_TASK, {
+  const [updateTask] = useMutation(UPDATE_INTERNSHIP_TASK_LEGACY, {
     onCompleted: () => {
       toast.success("Task updated!");
       refetch();

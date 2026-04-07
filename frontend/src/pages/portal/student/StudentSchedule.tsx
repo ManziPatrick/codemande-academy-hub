@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { format } from "date-fns";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,14 +23,46 @@ import { ViewSessionDialog, BookCallDialog } from "@/components/portal/dialogs";
 import { CalendarGrid } from "@/components/portal/CalendarGrid";
 import { toast } from "sonner";
 import { useQuery } from "@apollo/client/react";
-import { GET_MY_BOOKINGS } from "@/lib/graphql/queries";
+import { GET_MY_BOOKINGS, GET_MY_INTERNSHIP_MEETINGS } from "@/lib/graphql/queries";
 
 export default function StudentSchedule() {
   const [viewSession, setViewSession] = useState<any | null>(null);
   const [bookOpen, setBookOpen] = useState(false);
-  const { data, loading } = useQuery(GET_MY_BOOKINGS);
+  const { data: bookingsData, loading: bookingsLoading } = useQuery(GET_MY_BOOKINGS);
+  const { data: meetingsData, loading: meetingsLoading } = useQuery(GET_MY_INTERNSHIP_MEETINGS);
 
-  const bookings = (data as any)?.myBookings || [];
+  const bookings = (bookingsData as any)?.myBookings || [];
+  const internshipMeetings = (meetingsData as any)?.getMyInternshipMeetings || [];
+
+  const allEvents = [
+    ...bookings.map((b: any) => ({
+      ...b,
+      id: b.id,
+      title: b.type.replace('-', ' ') + (b.mentor ? ` with ${b.mentor.username}` : ""),
+      source: 'booking'
+    })),
+    ...internshipMeetings
+      .filter((m: any) => m.startTime && !isNaN(new Date(m.startTime).getTime()))
+      .map((m: any) => ({
+        ...m,
+        id: m.id,
+        title: m.title,
+        date: format(new Date(m.startTime), "yyyy-MM-dd"),
+        time: format(new Date(m.startTime), "HH:mm"),
+        mentor: m.host,
+        meetingLink: m.meetLink,
+        status: 'confirmed',
+        source: 'internship'
+      }))
+  ].sort((a, b) => {
+    const aTime = new Date(`${a.date}T${a.time}`).getTime();
+    const bTime = new Date(`${b.date}T${b.time}`).getTime();
+    if (isNaN(aTime)) return 1;
+    if (isNaN(bTime)) return -1;
+    return aTime - bTime;
+  });
+
+  const loading = bookingsLoading || meetingsLoading;
 
   const handleJoinSession = (link: string) => {
     if (!link) {
@@ -85,7 +118,7 @@ export default function StudentSchedule() {
 
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="w-12 h-12 animate-spin text-accent" /></div>
-        ) : bookings.length === 0 ? (
+        ) : allEvents.length === 0 ? (
           <Card className="border-border/50">
             <CardContent className="py-20 text-center">
               <CalendarIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
@@ -104,10 +137,7 @@ export default function StudentSchedule() {
         ) : (
           <div className="space-y-8">
             <CalendarGrid
-              events={bookings.map((b: any) => ({
-                ...b,
-                title: b.type.replace('-', ' ') + (b.mentor ? ` with ${b.mentor.username}` : ""),
-              }))}
+              events={allEvents}
               onEventClick={(event) => setViewSession(event)}
             />
 
@@ -117,61 +147,64 @@ export default function StudentSchedule() {
                 Session Queue
               </h3>
               <div className="grid gap-4">
-                {bookings.map((booking: any) => (
-                  <motion.div
-                    key={booking.id}
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                  >
-                    <Card className={`border-border/50 hover:border-accent/30 transition-all ${booking.status === 'confirmed' ? 'bg-accent/5' : ''}`}>
-                      <CardContent className="p-6">
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                          <div className="flex items-start gap-4">
-                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${booking.status === 'confirmed' ? 'bg-accent/20' : 'bg-muted'}`}>
-                              <Video className={`w-7 h-7 ${booking.status === 'confirmed' ? 'text-accent' : 'text-muted-foreground'}`} />
-                            </div>
-                            <div>
-                              <div className="flex flex-wrap items-center gap-2 mb-2">
-                                <h3 className="font-heading font-semibold text-xl text-card-foreground capitalize">
-                                  {booking.type.replace('-', ' ')}
-                                </h3>
-                                {getStatusBadge(booking.status)}
+                  {allEvents.map((booking: any) => (
+                    <motion.div
+                      key={booking.id}
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                    >
+                      <Card className={`border-border/50 hover:border-accent/30 transition-all ${booking.status === 'confirmed' ? 'bg-accent/5' : ''}`}>
+                        <CardContent className="p-6">
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                            <div className="flex items-start gap-4">
+                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${booking.status === 'confirmed' ? 'bg-accent/20' : 'bg-muted'}`}>
+                                <Video className={`w-7 h-7 ${booking.status === 'confirmed' ? 'text-accent' : 'text-muted-foreground'}`} />
                               </div>
-                              <p className="text-card-foreground/80 font-medium mb-1">{booking.topic || "No topic provided"}</p>
-                              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-card-foreground/60">
-                                <span className="flex items-center gap-1.5">
-                                  <CalendarIcon className="w-4 h-4 text-accent" />
-                                  {booking.date}
-                                </span>
-                                <span className="flex items-center gap-1.5">
-                                  <Clock className="w-4 h-4 text-accent" />
-                                  {booking.time}
-                                </span>
-                                <span className="flex items-center gap-1.5">
-                                  <Users className="w-4 h-4 text-accent" />
-                                  Mentor: {booking.mentor?.username || 'Pending Assignment'}
-                                </span>
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <h3 className="font-heading font-semibold text-xl text-card-foreground capitalize">
+                                    {booking.title}
+                                  </h3>
+                                  {getStatusBadge(booking.status)}
+                                  {booking.source === 'internship' && (
+                                    <Badge variant="outline" className="bg-gold/10 text-gold border-gold/20">Internship Team</Badge>
+                                  )}
+                                </div>
+                                <p className="text-card-foreground/80 font-medium mb-1">{booking.topic || booking.description || "Production Sync"}</p>
+                                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-card-foreground/60">
+                                  <span className="flex items-center gap-1.5">
+                                    <CalendarIcon className="w-4 h-4 text-accent" />
+                                    {booking.date}
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                    <Clock className="w-4 h-4 text-accent" />
+                                    {booking.time}
+                                  </span>
+                                  <span className="flex items-center gap-1.5">
+                                    <Users className="w-4 h-4 text-accent" />
+                                    {booking.source === 'internship' ? 'Host' : 'Mentor'}: {booking.mentor?.username || booking.mentor?.fullName || 'TBD'}
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
 
-                          <div className="flex sm:flex-col md:flex-row gap-3">
-                            {booking.meetingLink && booking.status === 'confirmed' && (
-                              <Button variant="gold" className="flex-1" onClick={() => handleJoinSession(booking.meetingLink)}>
-                                <Video className="w-4 h-4 mr-2" />
-                                Join Call
+                            <div className="flex sm:flex-col md:flex-row gap-3">
+                              {booking.meetingLink && booking.status === 'confirmed' && (
+                                <Button variant="gold" className="flex-1" onClick={() => handleJoinSession(booking.meetingLink)}>
+                                  <Video className="w-4 h-4 mr-2" />
+                                  Join Call
+                                </Button>
+                              )}
+                              <Button variant="outline" className="flex-1" onClick={() => setViewSession(booking)}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                View Details
                               </Button>
-                            )}
-                            <Button variant="outline" className="flex-1" onClick={() => setViewSession(booking)}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              View Details
-                            </Button>
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  ))}
               </div>
             </div>
           </div>

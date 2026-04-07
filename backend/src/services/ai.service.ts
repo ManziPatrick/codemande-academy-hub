@@ -100,14 +100,20 @@ export const chatWithAIService = async (userMessage: string, contextUser: any) =
 };
 
 export const explainTaskService = async (taskTitle: string, description: string) => {
-    const prompt = `You are a helpful AI assistant at CODEMANDE Academy. 
-    Please explain the following task in very simple, "non-techy" words so a beginner can understand exactly what to do.
-    Avoid jargon. If you must use a technical term, explain it.
+    const prompt = `You are a helpful AI mentor at CODEMANDE Academy. 
+    Explain the following task in simple, clear words.
     
     Task: ${taskTitle}
     Details: ${description}
     
-    Goal: Make the user feel confident and clear on how to start.`;
+    CRITICAL INSTRUCTIONS:
+    - Focus on explaining the "Why" and "What" of the requirements.
+    - Break down complex concepts into simple steps.
+    - Suggest a first step to get started.
+    - NEVER provide the actual solution, code snippets, final designs, or answers.
+    - If asked for the answer, politely explain that you are here to coach them through the process so they can learn, not to do the work for them.
+    
+    Goal: Make the student feel confident and clear on how to approach the task independently.`;
 
     try {
         const response = await axios.post(

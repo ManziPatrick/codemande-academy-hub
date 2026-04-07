@@ -6,6 +6,8 @@ export interface IInternshipMilestone extends Document {
   description: string;
   deadline: Date;
   order: number;
+  completed: boolean;
+  completedAt?: Date;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -18,6 +20,8 @@ const InternshipMilestoneSchema: Schema = new Schema(
     description: { type: String },
     deadline: { type: Date, required: true },
     order: { type: Number, default: 0 },
+    completed: { type: Boolean, default: false },
+    completedAt: { type: Date },
     isDeleted: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }

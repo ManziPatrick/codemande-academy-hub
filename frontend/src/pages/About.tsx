@@ -79,7 +79,7 @@ const About = () => {
         "name": "Bizimana Eric"
       }
     ],
-    "description": "CODEMANDE is a Rwanda-based technology, training, internship, and software development company focused on building practical digital skills and intelligent AI solutions.",
+    "description": "CODEMANDE is a Rwanda-based professional academy, consultancy, and innovation hub focused on building practical skills and future-ready excellence.",
     "address": {
       "@type": "PostalAddress",
       "addressLocality": "Kigali",
@@ -90,8 +90,8 @@ const About = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>About Us | CODEMANDE - Rwanda Tech & AI Leaders</title>
-        <meta name="description" content="CODEMANDE is a Rwanda-based technology training and software development company specializing in AI, coding internships, and intelligent solutions." />
+        <title>About Us | CODEMANDE - Leaders in Professional Growth</title>
+        <meta name="description" content="CODEMANDE is a Rwanda-based professional training and software solutions company specializing in skills development, internships, and intelligent solutions." />
         <script type="application/ld+json">
           {JSON.stringify(jsonLd)}
         </script>
@@ -121,11 +121,11 @@ const About = () => {
                 Who We Are
               </span>
               <h1 className="font-heading text-3xl lg:text-5xl font-medium text-card-foreground mb-6">
-                Empowering Africa through Practical Technology & AI
+                Empowering Africa through Practical Skills & Excellence
               </h1>
               <p className="text-card-foreground/80 text-lg leading-relaxed">
-                CODEMANDE is a Rwanda-based technology, training, internship, and software development company
-                building practical digital skills and intelligent solutions across Kigali and Africa.
+                CODEMANDE is a Rwanda-based professional academy, consultancy, and innovation hub
+                building practical skills and intelligent solutions across Kigali and Africa.
               </p>
             </motion.div>
           </div>
@@ -153,7 +153,7 @@ const About = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
                     <div className="p-6 bg-card rounded-xl border border-border/50">
                       <h3 className="font-heading font-bold text-accent mb-2">Our Vision</h3>
-                      <p className="text-sm">To become Africa’s leading practical technology and AI learning platform, starting from Rwanda and expanding globally.</p>
+                      <p className="text-sm">To become Africa’s leading practical learning and professional growth platform, starting from Rwanda and expanding globally.</p>
                     </div>
                     <div className="p-6 bg-card rounded-xl border border-border/50">
                       <h3 className="font-heading font-bold text-accent mb-2">Our Mission</h3>

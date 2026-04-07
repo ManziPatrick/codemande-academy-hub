@@ -57,7 +57,7 @@ export function HeroSection() {
             >
               <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
               <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-accent">
-                Africa's Premier Tech Center
+                Africa's Leading Professional Hub
               </span>
             </motion.div>
 
@@ -66,7 +66,7 @@ export function HeroSection() {
               <br />
               <span className="text-foreground">Through </span>
               <span className="relative inline-block">
-                <span className="relative z-10 text-gradient-gold">Technology</span>
+                <span className="relative z-10 text-gradient-gold">Excellence</span>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: "100%" }}

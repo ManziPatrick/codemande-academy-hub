@@ -7,13 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Code, Trash2, Edit, ExternalLink, Users, Layers, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import { CreateInternshipProjectDialog, InternshipProjectDetailsDialog } from '@/components/portal/dialogs';
+import { CreateInternshipProjectDialog, InternshipProjectDetailsDialog, CreateInternshipTeamDialog, EditInternshipProjectDialog, AssignProjectDialog } from '@/components/portal/dialogs';
 import ReactMarkdown from 'react-markdown';
 
 export default function InternshipProjectList() {
     const [createOpen, setCreateOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
     const [detailsOpen, setDetailsOpen] = useState(false);
+    const [assignOpen, setAssignOpen] = useState(false);
     const [selectedProject, setSelectedProject] = useState<any>(null);
+    const [projectToAssign, setProjectToAssign] = useState<any>(null);
     const { data: projectsData, loading: projectsLoading, refetch } = useQuery(GET_INTERNSHIP_PROJECTS_NEW);
 
     const [deleteProject] = useMutation(DELETE_INTERNSHIP_PROJECT, {
@@ -58,10 +61,27 @@ export default function InternshipProjectList() {
                 refetch={refetch}
             />
 
+            <EditInternshipProjectDialog
+                open={editOpen}
+                onOpenChange={setEditOpen}
+                project={selectedProject}
+                refetch={refetch}
+            />
+
             <InternshipProjectDetailsDialog
                 open={detailsOpen}
                 onOpenChange={setDetailsOpen}
                 project={selectedProject}
+            />
+
+            <AssignProjectDialog
+                open={assignOpen}
+                onOpenChange={(val) => {
+                    setAssignOpen(val);
+                    if (!val) setProjectToAssign(null);
+                }}
+                project={projectToAssign}
+                refetch={refetch}
             />
 
             {projects.length === 0 ? (
@@ -89,11 +109,24 @@ export default function InternshipProjectList() {
                                         {project.internshipProgram?.title || 'Program'}
                                     </Badge>
                                     <div className="flex gap-1">
+                                        <Button variant="outline" size="sm" className="h-8 text-xs gap-1" onClick={() => {
+                                            setProjectToAssign(project);
+                                            setAssignOpen(true);
+                                        }}>
+                                            <Users className="w-3.5 h-3.5" />
+                                            Assign
+                                        </Button>
                                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
                                             setSelectedProject(project);
                                             setDetailsOpen(true);
                                         }}>
                                             <Eye className="w-4 h-4 text-primary" />
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                                            setSelectedProject(project);
+                                            setEditOpen(true);
+                                        }}>
+                                            <Edit className="w-4 h-4 text-primary" />
                                         </Button>
                                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDelete(project.id)}>
                                             <Trash2 className="w-4 h-4 text-destructive" />

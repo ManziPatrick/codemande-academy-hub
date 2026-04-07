@@ -762,6 +762,13 @@ export const GET_MY_INTERNSHIP = gql`
           role
         }
       }
+      assignedProject {
+        id
+        title
+        description
+        status
+        requiredSkills
+      }
       payment {
         amount
         currency
@@ -910,6 +917,25 @@ export const GET_INTERNSHIP = gql`
   }
 `;
 
+export const GET_INTERNSHIP_STANDUPS = gql`
+  query GetInternshipStandups($internshipId: ID!) {
+    getInternshipStandups(internshipId: $internshipId) {
+      id
+      date
+      yesterday
+      today
+      blockers
+      workLink
+      attendanceStatus
+      trainerFeedback
+      user {
+        id
+        username
+      }
+    }
+  }
+`;
+
 export const GET_ALL_INTERNSHIPS = gql`
   query GetAllInternships {
     internships {
@@ -1015,10 +1041,17 @@ export const GET_INTERNSHIP_PROGRAMS = gql`
       applicationDeadline
       status
       price
+      discount
       currency
       image
       eligibility
       rules
+      maxSpots
+    }
+    myInternshipApplications {
+      id
+      internshipProgramId
+      status
     }
   }
 `;
@@ -1074,6 +1107,7 @@ export const GET_MY_INTERNSHIP_APPLICATIONS = gql`
     myInternshipApplications {
       id
       status
+      rejectionReason
       internshipProgram {
         id
         title
@@ -1086,6 +1120,7 @@ export const GET_MY_INTERNSHIP_APPLICATIONS = gql`
         status
         amount
         currency
+        paymentProofUrl
       }
       createdAt
     }
@@ -1143,20 +1178,35 @@ export const GET_INTERNSHIP_TEAMS = gql`
       id
       name
       status
-      internshipProject {
-        id
-        title
-      }
+      type
       mentor {
         id
         username
+        fullName
+        avatar
       }
       members {
         id
-        role
+        userId
         user {
           id
           username
+          fullName
+          avatar
+        }
+        role
+      }
+      internshipProjectId
+      internshipProject {
+        id
+        title
+        description
+        requiredSkills
+        documentation {
+          links {
+            title
+            url
+          }
         }
       }
     }
@@ -1169,6 +1219,8 @@ export const GET_MY_INTERNSHIP_TEAM = gql`
       id
       name
       status
+      type
+      internshipProjectId
       internshipProject {
         id
         title
@@ -1176,7 +1228,9 @@ export const GET_MY_INTERNSHIP_TEAM = gql`
         milestones {
           id
           title
+          description
           deadline
+          completed
           order
         }
       }
@@ -1196,6 +1250,96 @@ export const GET_MY_INTERNSHIP_TEAM = gql`
   }
 `;
 
+export const GET_INTERNSHIP_SPRINTS = gql`
+  query GetInternshipSprints($projectId: ID!, $teamId: ID) {
+    internshipSprints(projectId: $projectId, teamId: $teamId) {
+      id
+      title
+      goal
+      startDate
+      endDate
+      status
+      order
+    }
+  }
+`;
+
+export const GET_INTERNSHIP_TASKS = gql`
+  query GetInternshipTasks($projectId: ID!, $teamId: ID, $sprintId: ID) {
+    internshipTasks(projectId: $projectId, teamId: $teamId, sprintId: $sprintId) {
+      id
+      title
+      description
+      status
+      priority
+      taskType
+      dueDate
+      assignee {
+        id
+        username
+        fullName
+        avatar
+      }
+      labels
+      storyPoints
+      attachments {
+        name
+        url
+        type
+      }
+      comments {
+        id
+        content
+        createdAt
+        author {
+          id
+          username
+          avatar
+        }
+      }
+      sprintId
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_INTERNSHIP_PROJECT_FULL = gql`
+  query GetInternshipProjectFull($id: ID!) {
+    internshipProject(id: $id) {
+      id
+      title
+      description
+      document
+      defaultTickets {
+        title
+        description
+        priority
+        taskType
+        labels
+        order
+      }
+      documentation {
+        blueprint
+        links {
+          title
+          url
+        }
+      }
+      internshipProgram {
+        id
+        title
+      }
+      milestones {
+        id
+        title
+        deadline
+        order
+      }
+    }
+  }
+`;
+
 export const GET_INTERNSHIP_SUBMISSIONS = gql`
   query GetInternshipSubmissions($teamId: ID!) {
     internshipSubmissions(teamId: $teamId) {
@@ -1210,6 +1354,25 @@ export const GET_INTERNSHIP_SUBMISSIONS = gql`
       }
       milestone {
         title
+      }
+    }
+  }
+`;
+
+export const GET_INTERNSHIP_ACTIVITY_LOGS = gql`
+  query GetInternshipActivityLogs($programId: ID, $targetType: String, $targetId: ID) {
+    internshipActivityLogs(programId: $programId, targetType: $targetType, targetId: $targetId) {
+      id
+      action
+      targetType
+      targetId
+      details
+      createdAt
+      userId
+      user {
+        id
+        username
+        avatar
       }
     }
   }
@@ -1383,21 +1546,7 @@ export const GET_MY_MENTEES = gql`
   }
 `;
 
-export const GET_INTERNSHIP_ACTIVITY_LOGS = gql`
-  query GetInternshipActivityLogs {
-    internshipActivityLogs {
-      id
-      action
-      targetType
-      targetId
-      details
-      createdAt
-      user {
-        username
-      }
-    }
-  }
-`;
+
 
 // ========== STUDENT PROFILE QUERIES ==========
 export const GET_MY_STUDENT_PROFILE = gql`
@@ -1700,6 +1849,14 @@ export const GET_PROJECT_TEMPLATES = gql`
             url
         }
       }
+      workflow {
+        id
+        label
+        color
+        order
+        type
+      }
+      status
       createdAt
     }
   }
@@ -1713,6 +1870,73 @@ export const GET_ALL_STUDENTS = gql`
       fullName
       avatar
       email
+    }
+  }
+`;
+export const GET_INTERNSHIP_PROGRAM_FOR_APPLY = gql`
+  query GetInternshipProgramForApply($id: ID!) {
+    internshipProgram(id: $id) {
+      id
+      title
+      description
+      price
+      currency
+      applicationQuestions {
+        id
+        label
+        type
+        required
+        options
+      }
+    }
+    myInternshipApplications {
+      id
+      internshipProgramId
+      status
+    }
+  }
+`;
+
+// ========== MEETING QUERIES ==========
+export const GET_INTERNSHIP_MEETINGS = gql`
+  query GetInternshipMeetings($teamId: ID, $programId: ID) {
+    getInternshipMeetings(teamId: $teamId, programId: $programId) {
+      id
+      title
+      description
+      type
+      meetLink
+      startTime
+      endTime
+      teamIds
+      teams {
+        id
+        name
+      }
+      host {
+        id
+        username
+        fullName
+      }
+    }
+  }
+`;
+
+export const GET_MY_INTERNSHIP_MEETINGS = gql`
+  query GetMyInternshipMeetings {
+    getMyInternshipMeetings {
+      id
+      title
+      description
+      type
+      meetLink
+      startTime
+      endTime
+      host {
+        id
+        username
+        fullName
+      }
     }
   }
 `;

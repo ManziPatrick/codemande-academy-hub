@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@apollo/client/react";
-import { GET_INTERNSHIP_PROGRAMS, GET_MY_STUDENT_PROFILE } from "@/lib/graphql/queries";
-import { APPLY_TO_INTERNSHIP_WITH_VALIDATION } from "@/lib/graphql/mutations";
+import { useQuery } from "@apollo/client/react";
+import { GET_INTERNSHIP_PROGRAMS } from "@/lib/graphql/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,152 +8,237 @@ import {
   Calendar,
   Clock,
   CheckCircle,
-  AlertCircle,
-  ExternalLink,
-  Send
+  Send,
+  Info,
+  Users,
+  Lock,
+  Zap,
 } from "lucide-react";
-import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { FileUpload } from "@/components/FileUpload";
-import { PaymentForm } from "@/components/PaymentForm";
+import { ApplyInternshipDialog } from "../../dialogs/ApplyInternshipDialog";
+
+// Robust date formatter that handles both ISO strings and numeric timestamps
+const formatDate = (raw: any): string => {
+  if (!raw) return "TBD";
+  const ts = Number(raw);
+  const date = isNaN(ts) ? new Date(raw) : new Date(ts);
+  if (isNaN(date.getTime())) return "TBD";
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+};
+
+const getStatusBadge = (program: any, deadlinePassed: boolean, alreadyApplied: boolean) => {
+  if (alreadyApplied) {
+    return (
+      <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-[10px] font-bold uppercase tracking-wider gap-1">
+        <CheckCircle className="w-3 h-3" /> Applied
+      </Badge>
+    );
+  }
+  if (program.status === "upcoming") {
+    return (
+      <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 text-[10px] font-bold uppercase tracking-wider gap-1">
+        <Clock className="w-3 h-3" /> Upcoming
+      </Badge>
+    );
+  }
+  if (program.status === "closed" || deadlinePassed) {
+    return (
+      <Badge className="bg-muted text-muted-foreground border-border/40 text-[10px] font-bold uppercase tracking-wider gap-1">
+        <Lock className="w-3 h-3" /> Closed
+      </Badge>
+    );
+  }
+  if (program.maxSpots > 0) {
+    return (
+      <Badge className="bg-orange-500/10 text-orange-600 border-orange-500/20 text-[10px] font-bold uppercase tracking-wider gap-1">
+        <Users className="w-3 h-3" /> {program.maxSpots} Spots
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-[10px] font-bold uppercase tracking-wider gap-1">
+      <Zap className="w-3 h-3" /> Open
+    </Badge>
+  );
+};
 
 export function ProgramCatalog() {
   const { data, loading, refetch } = useQuery(GET_INTERNSHIP_PROGRAMS);
-  const { data: profileData } = useQuery(GET_MY_STUDENT_PROFILE);
-  const [applyingTo, setApplyingTo] = useState<any>(null);
-  const [paymentCompleted, setPaymentCompleted] = useState(false);
-  const [paymentProofUrl, setPaymentProofUrl] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<"paypack" | "manual">("paypack");
+  const [applyingToId, setApplyingToId] = useState<string | null>(null);
 
   const programs = (data as any)?.internshipPrograms || [];
-  const profile = (profileData as any)?.myStudentProfile;
+  const myApplications = (data as any)?.myInternshipApplications || [];
 
-  const [applyToProgram] = useMutation(APPLY_TO_INTERNSHIP_WITH_VALIDATION, {
-    onCompleted: () => {
-      toast.success("Application submitted successfully! You'll hear back soon.");
-      refetch();
-      setApplyingTo(null);
-      setPaymentCompleted(false);
-      setPaymentProofUrl(null);
-      setPaymentMethod("paypack");
-    },
-    onError: (err) => toast.error(err.message)
-  });
-
-  const handleApply = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const requiresPayment = Number(applyingTo?.price || 0) > 0;
-    if (requiresPayment && !paymentCompleted) {
-      toast.error("Please complete payment before submitting your internship application.");
-      return;
-    }
-
-    const formData = new FormData(e.currentTarget);
-    const skills = (formData.get("skills") as string).split(",").map(s => s.trim());
-
-    applyToProgram({
-      variables: {
-        internshipProgramId: applyingTo.id,
-        skills,
-        availability: formData.get("availability"),
-        portfolioUrl: formData.get("portfolioUrl") || null
-      }
-    });
+  const isDeadlinePassed = (deadline: any) => {
+    if (!deadline) return false;
+    const ts = Number(deadline);
+    const date = isNaN(ts) ? new Date(deadline) : new Date(ts);
+    return isNaN(date.getTime()) ? false : date < new Date();
   };
 
-  const isDeadlinePassed = (deadline: string) => {
-    return new Date(deadline) < new Date();
+  const hasUserApplied = (programId: string) => {
+    return myApplications.some((app: any) => app.internshipProgramId === programId);
   };
 
-  if (loading) return <div>Loading programs...</div>;
+  const getDiscountedPrice = (program: any) => {
+    if (!program.discount || program.discount <= 0) return null;
+    return Math.round(program.price * (1 - program.discount / 100));
+  };
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-20 bg-muted/5 rounded-2xl border border-dashed border-border/50">
+      <div className="text-center space-y-3">
+        <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Loading Tracks...</p>
+      </div>
+    </div>
+  );
+
+  const visiblePrograms = programs.filter((p: any) =>
+    p.status === "active" || p.status === "upcoming"
+  );
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {programs.filter((p: any) => p.status === 'active').map((program: any) => {
+        {visiblePrograms.map((program: any) => {
           const deadlinePassed = isDeadlinePassed(program.applicationDeadline);
+          const alreadyApplied = hasUserApplied(program.id);
+          const isUpcoming = program.status === "upcoming";
+          const isClosed = program.status === "closed" || deadlinePassed;
+          const isApplyDisabled = isClosed || alreadyApplied || isUpcoming;
+          const discountedPrice = getDiscountedPrice(program);
 
           return (
             <Card
               key={program.id}
-              className="group overflow-hidden border-border/50 hover:border-accent/40 transition-all hover:shadow-lg"
+              className="group overflow-hidden border-border/50 hover:border-accent/40 transition-all hover:shadow-xl bg-card/60 backdrop-blur-sm relative"
             >
-              <CardHeader className="bg-gradient-to-br from-accent/10 to-accent/5 pb-4 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-2xl -mr-16 -mt-16" />
-                <div className="relative z-10">
-                  <div className="flex justify-between items-start mb-3">
-                    <Badge variant="secondary" className="text-[10px] font-bold uppercase tracking-wider">
+              {/* Hero Image */}
+              {program.image && (
+                <div className="w-full aspect-video overflow-hidden relative">
+                  <img
+                    src={program.image}
+                    alt={program.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                </div>
+              )}
+
+              <CardHeader className={`${program.image ? "pt-4" : "bg-gradient-to-br from-accent/10 to-accent/5 pb-6"} relative overflow-hidden`}>
+                {!program.image && (
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-accent/20 rounded-full blur-3xl -mr-16 -mt-16 transform transition-transform group-hover:scale-150 duration-700" />
+                )}
+                <div className="relative z-10 flex flex-col h-full">
+                  <div className="flex justify-between items-start mb-4">
+                    <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest border-accent/20 text-accent bg-accent/5 px-2.5 py-1">
                       {program.duration}
                     </Badge>
-                    {deadlinePassed && (
-                      <Badge variant="secondary" className="bg-muted text-muted-foreground text-[10px]">
-                        Closed
-                      </Badge>
-                    )}
+                    {getStatusBadge(program, deadlinePassed, alreadyApplied)}
                   </div>
-                  <CardTitle className="text-xl font-heading leading-tight">
+                  <CardTitle className="text-xl font-heading font-bold leading-tight text-foreground group-hover:text-accent transition-colors">
                     {program.title}
                   </CardTitle>
                 </div>
               </CardHeader>
 
-              <CardContent className="pt-6 space-y-4">
+              <CardContent className="pt-4 space-y-5">
                 <div
-                  className="text-sm text-muted-foreground line-clamp-4 min-h-[5.5rem] prose prose-sm dark:prose-invert max-w-none"
+                  className="text-sm text-muted-foreground line-clamp-3 min-h-[4.5rem] prose prose-sm dark:prose-invert max-w-none leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: program.description }}
                 />
 
-                <div className="space-y-2 pt-2 border-t border-border/50">
-                  <div className="flex items-center gap-2 text-xs">
-                    <Calendar className="w-3.5 h-3.5 text-accent" />
-                    <span className="text-muted-foreground">
-                      {program.startDate ? new Date(program.startDate).toLocaleDateString() : 'TBD'} - {program.endDate ? new Date(program.endDate).toLocaleDateString() : 'TBD'}
+                <div className="grid grid-cols-1 gap-2.5 pt-4 border-t border-border/40">
+                  <div className="flex items-center gap-3 text-xs">
+                    <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center">
+                      <Calendar className="w-3.5 h-3.5 text-accent" />
+                    </div>
+                    <span className="text-muted-foreground font-medium">
+                      Starts: <strong className="text-foreground">{formatDate(program.startDate)}</strong>
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    <Clock className="w-3.5 h-3.5 text-accent" />
-                    <span className="text-muted-foreground">
-                      Apply by: <strong className="text-foreground">{program.applicationDeadline ? new Date(program.applicationDeadline).toLocaleDateString() : 'TBD'}</strong>
+                  <div className="flex items-center gap-3 text-xs">
+                    <div className="w-7 h-7 rounded-lg bg-accent/10 flex items-center justify-center">
+                      <Clock className="w-3.5 h-3.5 text-accent" />
+                    </div>
+                    <span className="text-muted-foreground font-medium">
+                      Apply by: <strong className="text-foreground">{formatDate(program.applicationDeadline)}</strong>
                     </span>
                   </div>
+                  {program.maxSpots > 0 && (
+                    <div className="flex items-center gap-3 text-xs">
+                      <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                        <Users className="w-3.5 h-3.5 text-orange-500" />
+                      </div>
+                      <span className="text-muted-foreground font-medium">
+                        <strong className="text-orange-600">{program.maxSpots} spots</strong> remaining
+                      </span>
+                    </div>
+                  )}
                 </div>
 
-                {program.eligibility && program.eligibility.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Requirements</p>
-                    <div className="flex flex-wrap gap-1">
-                      {program.eligibility.map((req: string, idx: number) => (
+                {program.eligibility?.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="text-[10px] uppercase font-black text-muted-foreground/60 tracking-widest pl-1">Requirements</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {program.eligibility.slice(0, 3).map((req: string, idx: number) => (
                         <span
                           key={idx}
-                          className="text-[10px] bg-muted px-2 py-1 rounded-md text-muted-foreground flex items-center gap-1"
+                          className="text-[10px] bg-muted/40 font-bold px-2.5 py-1.5 rounded-lg text-muted-foreground border border-border/50 flex items-center gap-1.5 transition-colors hover:bg-muted"
                         >
-                          <CheckCircle className="w-3 h-3 text-accent" />
+                          <CheckCircle className="w-3 h-3 text-green-500" />
                           {req}
                         </span>
                       ))}
+                      {program.eligibility.length > 3 && (
+                        <span className="text-[10px] text-muted-foreground font-bold px-1 py-1">
+                          +{program.eligibility.length - 3} more
+                        </span>
+                      )}
                     </div>
                   </div>
                 )}
 
-                <div className="pt-4 flex gap-2">
+                <div className="pt-4 flex items-center gap-4">
+                  <div className="flex-1">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mb-0.5">Application Fee</p>
+                    {Number(program.price) > 0 ? (
+                      discountedPrice ? (
+                        <div className="space-y-0.5">
+                          <div className="flex items-baseline gap-2">
+                            <p className="text-lg font-black text-foreground">
+                              {discountedPrice.toLocaleString()} <span className="text-[10px] font-bold text-muted-foreground uppercase">RWF</span>
+                            </p>
+                            <span className="text-xs text-muted-foreground line-through">{program.price.toLocaleString()}</span>
+                          </div>
+                          <Badge className="text-[10px] bg-green-500/10 text-green-600 border-green-500/20 font-black">
+                            {program.discount}% discount
+                          </Badge>
+                        </div>
+                      ) : (
+                        <p className="text-lg font-black text-foreground">
+                          {program.price.toLocaleString()} <span className="text-[10px] font-bold text-muted-foreground uppercase">RWF</span>
+                        </p>
+                      )
+                    ) : (
+                      <p className="text-lg font-black text-green-600">Free</p>
+                    )}
+                  </div>
                   <Button
-                    variant="default"
-                    className="w-full gap-2"
-                    onClick={() => setApplyingTo(program)}
-                    disabled={deadlinePassed}
+                    variant={alreadyApplied ? "outline" : isUpcoming ? "outline" : "gold"}
+                    className="px-6 gap-2 shadow-premium hover:-translate-y-1 transition-all h-11"
+                    onClick={() => setApplyingToId(program.id)}
+                    disabled={isApplyDisabled}
                   >
-                    <Send className="w-4 h-4" />
-                    {deadlinePassed ? 'Applications Closed' : 'Apply Now'}
+                    {alreadyApplied ? (
+                      <><Info className="w-4 h-4" />Applied</>
+                    ) : isUpcoming ? (
+                      <><Clock className="w-4 h-4" />Coming Soon</>
+                    ) : isClosed ? (
+                      <><Lock className="w-4 h-4" />Closed</>
+                    ) : (
+                      <><Send className="w-4 h-4" />Apply Now</>
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -163,171 +247,11 @@ export function ProgramCatalog() {
         })}
       </div>
 
-      {/* Application Dialog */}
-      <Dialog
-        open={!!applyingTo}
-        onOpenChange={() => {
-          setApplyingTo(null);
-          setPaymentCompleted(false);
-          setPaymentProofUrl(null);
-          setPaymentMethod("paypack");
-        }}
-      >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Apply to {applyingTo?.title}</DialogTitle>
-          </DialogHeader>
-
-          {Number(applyingTo?.price || 0) > 0 && !paymentCompleted && (
-            <div className="space-y-3 rounded-lg border border-accent/20 bg-accent/5 p-4">
-              <p className="text-sm font-medium">
-                Complete Internship Fee Payment First
-              </p>
-              <p className="text-xs text-muted-foreground">
-                This internship track requires payment before application submission.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={paymentMethod === "paypack" ? "default" : "outline"}
-                  onClick={() => setPaymentMethod("paypack")}
-                >
-                  Paypack
-                </Button>
-                <Button
-                  type="button"
-                  variant={paymentMethod === "manual" ? "default" : "outline"}
-                  onClick={() => setPaymentMethod("manual")}
-                >
-                  Manual
-                </Button>
-              </div>
-              {paymentMethod === "paypack" ? (
-                <PaymentForm
-                  amount={Number(applyingTo?.price || 0)}
-                  description={`Internship application fee - ${applyingTo?.title || "Program"}`}
-                  internshipProgramId={applyingTo.id || applyingTo._id}
-                  onSuccess={() => {
-                    setPaymentCompleted(true);
-                    toast.success("Paypack payment successful. You can now submit your application.");
-                  }}
-                />
-              ) : (
-              <div className="rounded-lg border border-accent/20 bg-background p-4 space-y-4">
-                <p className="text-sm font-bold text-accent mb-1 text-center uppercase tracking-wider">
-                  Manual Payment Instructions
-                </p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between items-center p-2 bg-muted/20 rounded-md border border-border/40">
-                    <span className="text-muted-foreground">MTN MoMo</span>
-                    <span className="font-mono font-bold select-all">250790706170</span>
-                  </div>
-                  <div className="flex justify-between items-center p-2 bg-muted/20 rounded-md border border-border/40">
-                    <span className="text-muted-foreground">PayPal</span>
-                    <span className="font-mono font-bold select-all">munyeshurimanzi@gmail.com</span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Send{" "}
-                  <span className="font-semibold text-foreground">
-                    {Number(applyingTo?.price || 0).toLocaleString()} RWF
-                  </span>{" "}
-                  using one of the methods above, then upload confirmation below.
-                </p>
-                <FileUpload
-                  onUploadComplete={(url) => setPaymentProofUrl(url)}
-                  label="Upload Confirmation Screenshot/PDF"
-                  folder="payment-proofs"
-                />
-                <Button
-                  type="button"
-                  variant="gold"
-                  className="w-full"
-                  disabled={!paymentProofUrl}
-                  onClick={() => {
-                    setPaymentCompleted(true);
-                    toast.success("Payment proof uploaded. You can now submit your application.");
-                  }}
-                >
-                  I Have Submitted Payment Proof
-                </Button>
-              </div>
-              )}
-            </div>
-          )}
-
-          {Number(applyingTo?.price || 0) > 0 && paymentCompleted && (
-            <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-300">
-              Payment completed. Please continue with your application details below.
-            </div>
-          )}
-
-          <form onSubmit={handleApply} className="space-y-4 py-4">
-            <div className="bg-accent/5 border border-accent/20 rounded-lg p-4 space-y-2">
-              <p className="text-sm font-medium flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-accent" />
-                Application Guidelines
-              </p>
-              <ul className="text-xs text-muted-foreground space-y-1 ml-6 list-disc">
-                <li>Ensure all information is accurate and up-to-date</li>
-                <li>List your technical skills honestly</li>
-                <li>Portfolio links help strengthen your application</li>
-                <li>You'll receive a response within 5 business days</li>
-              </ul>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="skills">Technical Skills (comma-separated) *</Label>
-              <Input
-                id="skills"
-                name="skills"
-                placeholder="e.g., JavaScript, React, Node.js, Python"
-                defaultValue={profile?.skills?.join(", ") || ""}
-                required
-              />
-              <p className="text-xs text-muted-foreground">List all relevant programming languages and frameworks</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="availability">Availability *</Label>
-              <Input
-                id="availability"
-                name="availability"
-                placeholder="e.g., Full-time, Part-time (20hrs/week)"
-                defaultValue={profile?.availability || ""}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="portfolioUrl">Portfolio / GitHub URL (Optional)</Label>
-              <Input
-                id="portfolioUrl"
-                name="portfolioUrl"
-                type="url"
-                placeholder="https://github.com/yourusername"
-                defaultValue={profile?.portfolioUrl || ""}
-              />
-              <p className="text-xs text-muted-foreground">Share your best work to stand out</p>
-            </div>
-
-            <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={() => setApplyingTo(null)}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="default"
-                className="gap-2"
-                disabled={Number(applyingTo?.price || 0) > 0 && !paymentCompleted}
-              >
-                <Send className="w-4 h-4" />
-                Submit Application
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ApplyInternshipDialog
+        open={!!applyingToId}
+        onOpenChange={(open) => !open && setApplyingToId(null)}
+        internshipProgramId={applyingToId || ""}
+      />
     </div>
   );
 }

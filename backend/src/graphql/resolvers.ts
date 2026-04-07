@@ -41,6 +41,7 @@ import { AssignmentSubmission } from '../models/AssignmentSubmission';
 import { Project, IProject } from '../models/Project';
 import { Certificate } from '../models/Certificate';
 import { Internship } from '../models/Internship';
+import { Standup } from '../models/Standup';
 import { CourseProgress } from '../models/CourseProgress';
 import { Payment } from '../models/Payment';
 import { generateUploadSignature } from '../services/upload.service';
@@ -59,10 +60,14 @@ import { InternshipTimeLog } from '../models/internship/TimeLog';
 import { InternshipMentorFeedback } from '../models/internship/MentorFeedback';
 import { NewsletterSubscription } from '../models/NewsletterSubscription';
 import { InternshipActivityLog } from '../models/internship/ActivityLog';
+import { InternshipComment } from '../models/internship/Comment';
 import { StudentProfile } from '../models/StudentProfile';
 import { InternshipPayment } from '../models/internship/Payment';
 import { InternshipInvoice } from '../models/internship/Invoice';
 import { InternshipCertificate } from '../models/internship/Certificate';
+import { InternshipSprint } from '../models/internship/Sprint';
+import { InternshipTask } from '../models/internship/Task';
+import { InternshipMeeting } from '../models/internship/InternshipMeeting';
 import { logActivity } from '../services/audit.service';
 import { sendNotification, broadcastToTeam } from '../services/notification.service';
 import { createPaymentIntent, createCheckoutSession, confirmPayment, refundPayment } from '../services/stripe.service';
@@ -82,6 +87,16 @@ import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { chatWithAIService, explainTaskService, reviewSubmissionService } from '../services/ai.service';
 
+
+const DEFAULT_WORKFLOW = [
+  { id: 'todo', label: 'To Do', color: 'slate', order: 0, type: 'todo' },
+  { id: 'in_progress', label: 'In Progress', color: 'blue', order: 1, type: 'progress' },
+  { id: 'in_testing', label: 'In Testing', color: 'orange', order: 2, type: 'testing' },
+  { id: 'in_review', label: 'In Review', color: 'purple', order: 3, type: 'review' },
+  { id: 'done', label: 'Done', color: 'yellow', order: 4, type: 'done' },
+  { id: 'staged', label: 'Staged', color: 'cyan', order: 5, type: 'staged' },
+  { id: 'completed', label: 'Completed', color: 'green', order: 6, type: 'completed' },
+];
 
 const calculateInternshipProgress = async (internship: any) => {
   // 1. Tasks Contribution (Internship-specific tasks)
@@ -233,6 +248,32 @@ export const resolvers = {
 
       if (status) filter.status = status;
       return await Booking.find(filter).populate('userId mentorId').sort({ createdAt: -1 });
+    },
+
+    getInternshipMeetings: async (_: any, { teamId, programId }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const filter: any = { isDeleted: false };
+      if (teamId) filter.teamIds = teamId;
+      if (programId) {
+        // Find teams in this program first
+        const teams = await InternshipTeam.find({ internshipProgramId: programId });
+        const teamIds = teams.map(t => t._id);
+        filter.teamIds = { $in: teamIds };
+      }
+      return await InternshipMeeting.find(filter).sort({ startTime: 1 });
+    },
+
+    getMyInternshipMeetings: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      // Find teams the user belongs to
+      const teamMemberships = await InternshipTeamMember.find({ userId: context.user.id });
+      const teamIds = teamMemberships.map(tm => tm.teamId);
+      
+      return await InternshipMeeting.find({
+        teamIds: { $in: teamIds },
+        isDeleted: false,
+        startTime: { $gte: new Date() } // Only upcoming meetings for students
+      }).sort({ startTime: 1 });
     },
 
     getAllStudents: async (_: any, __: any, context: any) => {
@@ -847,6 +888,14 @@ export const resolvers = {
       }
       return await Internship.find().populate('userId mentorId').sort({ createdAt: -1 });
     },
+    getInternshipStandups: async (_: any, { internshipId }: any, context: any) => {
+      if (!context.user) throw new Error('Not authorized');
+      return await Standup.find({ internshipId }).populate('userId').sort({ date: -1 });
+    },
+    getMyStandups: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authorized');
+      return await Standup.find({ userId: context.user._id }).populate('userId').sort({ date: -1 });
+    },
     myInternship: async (_: any, __: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       return await Internship.findOne({ userId: context.user.id }).populate('userId mentorId');
@@ -1009,9 +1058,42 @@ export const resolvers = {
       if (userId) query.userId = userId;
       return await InternshipTimeLog.find(query).sort({ date: -1 });
     },
-    internshipActivityLogs: async (_: any, { programId }: { programId?: string }, context: any) => {
-      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
-      return await InternshipActivityLog.find({ isDeleted: false }).sort({ createdAt: -1 }).limit(100);
+    internshipActivityLogs: async (_: any, { programId, targetType, targetId }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      
+      const query: any = { isDeleted: false };
+      if (programId) query.programId = programId;
+      if (targetType) query.targetType = targetType;
+      if (targetId) query.targetId = targetId;
+
+      return await InternshipActivityLog.find(query).sort({ createdAt: -1 }).limit(100);
+    },
+
+    // Sprint & Task Board Queries
+    internshipSprints: async (_: any, { projectId, teamId }: { projectId: string; teamId?: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const query: any = { projectId, isDeleted: false };
+      if (teamId) query.teamId = teamId;
+      return await InternshipSprint.find(query).sort({ order: 1, createdAt: 1 });
+    },
+
+    internshipTasks: async (_: any, { projectId, sprintId, teamId, assigneeId }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const query: any = { isDeleted: false };
+      if (projectId) query.projectId = projectId;
+      if (sprintId) query.sprintId = sprintId;
+      if (teamId) query.teamId = teamId;
+      if (assigneeId) query.assigneeId = assigneeId;
+      // Students see only their own tasks
+      if (context.user.role === 'student') query.assigneeId = context.user.id;
+      return await InternshipTask.find(query).sort({ order: 1, createdAt: 1 });
+    },
+
+    internshipTask: async (_: any, { id }: { id: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const task = await InternshipTask.findById(id);
+      if (!task || task.isDeleted) throw new Error('Task not found');
+      return task;
     },
 
     // Student Profile Queries
@@ -2768,7 +2850,74 @@ export const resolvers = {
       return true;
     },
 
-    updateInternshipTask: async (_: any, { internshipId, taskId, status }: any, context: any) => {
+    submitStandup: async (_: any, { internshipId, yesterday, today, blockers, workLink }: any, context: any) => {
+      if (!context.user) throw new Error('Not authorized');
+      
+      const internship = await Internship.findById(internshipId);
+      if (!internship) throw new Error('Internship not found');
+      if (internship.userId.toString() !== context.user.id && internship.userId.toString() !== context.user._id.toString()) {
+        throw new Error('Not authorized to submit standup for this internship');
+      }
+
+      const standup = new Standup({
+        internshipId,
+        userId: context.user._id || context.user.id,
+        yesterday,
+        today,
+        blockers,
+        workLink,
+        attendanceStatus: 'present',
+      });
+      await standup.save();
+
+      return standup.populate('userId');
+    },
+
+    gradeSprintMilestone: async (_: any, { internshipId, week, grade, feedback }: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+      
+      const internship = await Internship.findById(internshipId);
+      if (!internship) throw new Error('Internship not found');
+
+      const review = {
+        week,
+        grade,
+        feedback,
+        reviewedBy: context.user._id || context.user.id,
+        date: new Date()
+      };
+
+      internship.sprintReviews = [...(internship.sprintReviews || []), review];
+      await internship.save();
+
+      return internship;
+    },
+
+    scheduleMeeting: async (_: any, { internshipId, title, time, type, url, attendees }: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      const internship = await Internship.findById(internshipId);
+      if (!internship) throw new Error('Internship not found');
+
+      const meeting = {
+        title,
+        time,
+        type,
+        url,
+        attendees: attendees || []
+      };
+
+      internship.meetings = [...(internship.meetings || []), meeting as any];
+      await internship.save();
+
+      return internship;
+    },
+
+    updateInternshipTaskLegacy: async (_: any, { internshipId, taskId, status }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const internship = await Internship.findById(internshipId);
       if (!internship) throw new Error('Internship not found');
@@ -2872,6 +3021,47 @@ export const resolvers = {
       }
 
       return true;
+    },
+
+    updateInternshipStage: async (_: any, { id, stage, currentStage }: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
+
+      const internship = await Internship.findById(id);
+      if (!internship) throw new Error('Internship not found');
+
+      const oldStageTitle = internship.stage;
+      internship.currentStage = currentStage;
+      internship.stage = stage;
+
+      const totalStages = 6;
+      const baseProgress = ((currentStage - 1) / totalStages) * 100;
+      internship.progress = Math.min(100, Math.round(baseProgress));
+
+      if (oldStageTitle && !internship.completedStages.includes(oldStageTitle)) {
+        internship.completedStages.push(oldStageTitle);
+      }
+
+      if (currentStage >= 5 && currentStage < 6) internship.status = 'completed';
+      if (currentStage >= 6) {
+        internship.status = 'graduated';
+        internship.progress = 100;
+      }
+
+      await internship.save();
+
+      const user = await User.findById(internship.userId);
+      if (user) {
+        (user as any).activityLog.push({
+          action: 'STAGE_UPDATED',
+          details: `Moved to ${stage}`,
+          timestamp: new Date()
+        });
+        await user.save();
+      }
+
+      return await internship.populate('userId mentorId projects');
     },
 
     assignGroupProject: async (_: any, { internshipIds, title, description, repoUrl, deadline, mentorIds }: any, context: any) => {
@@ -3563,15 +3753,24 @@ export const resolvers = {
       if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
       const program = new InternshipProgram(args);
       await program.save();
-      await logActivity(context.user.id, 'CREATE', 'InternshipProgram', program.id, `Created program: ${program.title} `);
+      await logActivity(context.user.id, 'CREATE', 'InternshipProgram', program.id, `Created program: ${program.title}`);
       return program;
     },
 
     updateInternshipProgram: async (_: any, { id, ...args }: any, context: any) => {
       if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
-      const program = await InternshipProgram.findByIdAndUpdate(id, args, { new: true });
+      
+      // Parse date strings to Date objects if provided
+      const updateData: any = { ...args };
+      if (args.startDate) updateData.startDate = new Date(args.startDate);
+      if (args.endDate) updateData.endDate = new Date(args.endDate);
+      if (args.applicationDeadline) updateData.applicationDeadline = new Date(args.applicationDeadline);
+      if (args.discount !== undefined) updateData.discount = args.discount;
+      if (args.maxSpots !== undefined) updateData.maxSpots = args.maxSpots;
+
+      const program = await InternshipProgram.findByIdAndUpdate(id, updateData, { new: true });
       if (!program) throw new Error('Program not found');
-      await logActivity(context.user.id, 'UPDATE', 'InternshipProgram', id, `Updated program: ${program.title} `);
+      await logActivity(context.user.id, 'UPDATE', 'InternshipProgram', id, `Updated program: ${program.title}`);
       return program;
     },
 
@@ -3596,7 +3795,7 @@ export const resolvers = {
         status: 'pending'
       });
       await application.save();
-      await logActivity(context.user.id, 'APPLY', 'InternshipApplication', application.id, `Applied to program: ${program.title} `);
+      await logActivity(context.user.id, 'APPLY', 'InternshipApplication', application.id, `Applied to program: ${program.title}`);
       return application;
     },
 
@@ -3609,37 +3808,54 @@ export const resolvers = {
       if (rejectionReason) application.rejectionReason = rejectionReason;
       await application.save();
 
-      // Automatically create Internship record on approval
+      // On approval: create a pending InternshipPayment (NOT the Internship yet)
+      // The Internship record is created AFTER the student pays
       if (status === 'approved') {
         const program = application.internshipProgramId as any;
-        const existingInternship = await Internship.findOne({
+
+        // Check if a payment record already exists
+        const existingPayment = await InternshipPayment.findOne({
           userId: application.userId,
-          title: program?.title,
-          isDeleted: false
+          internshipProgramId: program?._id || program?.id,
+          isDeleted: { $ne: true }
         });
 
-        if (!existingInternship) {
-          const newInternship = new Internship({
+        if (!existingPayment) {
+          const payment = new InternshipPayment({
             userId: application.userId,
-            title: program?.title || 'Internship Program',
-            duration: program?.duration || '3 Months',
-            type: 'Online', // Default
-            status: 'enrolled',
-            mentorId: context.user.id,
-            mentors: [context.user.id],
-            progress: 0,
-            payment: {
-              amount: program?.price || 0,
-              currency: program?.currency || 'RWF',
-              status: program?.price === 0 ? 'paid' : 'pending'
-            }
+            internshipProgramId: program?._id || program?.id,
+            amount: program?.price || 0,
+            currency: program?.currency || 'RWF',
+            status: program?.price === 0 ? 'paid' : 'pending',
           });
-          await newInternship.save();
-          await logActivity(context.user.id, 'CREATE', 'Internship', newInternship.id, `Automatically created internship record upon application approval`);
+          await payment.save();
+
+          // If free program, also create the Internship record immediately
+          if (program?.price === 0) {
+            const existingInternship = await Internship.findOne({
+              userId: application.userId,
+              title: program?.title,
+              isDeleted: false
+            });
+            if (!existingInternship) {
+              const newInternship = new Internship({
+                userId: application.userId,
+                title: program?.title || 'Internship Program',
+                duration: program?.duration || '3 Months',
+                type: 'Online',
+                status: 'enrolled',
+                mentorId: context.user.id,
+                mentors: [context.user.id],
+                progress: 0,
+                payment: { amount: 0, currency: 'RWF', status: 'paid' }
+              });
+              await newInternship.save();
+            }
+          }
         }
       }
 
-      await logActivity(context.user.id, 'REVIEW', 'InternshipApplication', id, `Reviewed application status to: ${status} `);
+      await logActivity(context.user.id, 'REVIEW', 'InternshipApplication', id, `Reviewed application status to: ${status}`);
 
       // Notify via Socket
       sendNotification(application.userId.toString(), {
@@ -3647,7 +3863,9 @@ export const resolvers = {
         title: 'Application Update',
         status,
         applicationId: id,
-        message: `Your internship application status has been updated to: ${status} `
+        message: status === 'approved'
+          ? `Your application has been approved! Please log in to complete your enrollment payment.`
+          : `Your internship application status has been updated to: ${status}`
       });
 
       // Notify via Email
@@ -3676,10 +3894,23 @@ export const resolvers = {
       const project = new InternshipProject({
         ...rest,
         documentation,
-        teamSizeRange: { min: minTeamSize, max: maxTeamSize }
+        teamSizeRange: { min: minTeamSize, max: maxTeamSize },
+        workflow: DEFAULT_WORKFLOW,
+        isTemplate: true
       });
       await project.save();
       await logActivity(context.user.id, 'CREATE', 'InternshipProject', project.id, `Created project: ${project.title} `);
+      return project;
+    },
+
+    updateProjectWorkflow: async (_: any, { projectId, workflow }: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const project = await InternshipProject.findById(projectId);
+      if (!project || project.isDeleted) throw new Error('Project not found');
+      
+      project.workflow = workflow;
+      await project.save();
+      await logActivity(context.user.id, 'UPDATE_WORKFLOW', 'InternshipProject', projectId, `Updated workflow for: ${project.title}`);
       return project;
     },
 
@@ -3715,9 +3946,30 @@ export const resolvers = {
 
     createInternshipTeam: async (_: any, args: any, context: any) => {
       if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
-      const team = new InternshipTeam(args);
+      const team = new InternshipTeam({
+        ...args,
+        type: args.type || 'team'
+      });
       await team.save();
-      await logActivity(context.user.id, 'CREATE', 'InternshipTeam', team.id, `Created team: ${team.name} `);
+
+      // Clone predefined default tickets from the project template as tasks for this independent team
+      const project = await InternshipProject.findById(args.internshipProjectId);
+      if (project && project.defaultTickets && project.defaultTickets.length > 0) {
+        const defaultTasks = project.defaultTickets.map((ticket: any) => ({
+          projectId: project.id,
+          teamId: team.id,
+          title: ticket.title,
+          description: ticket.description,
+          status: 'todo',
+          priority: ticket.priority || 'medium',
+          taskType: ticket.taskType || 'task',
+          labels: ticket.labels || [],
+          order: ticket.order || 0,
+        }));
+        await InternshipTask.insertMany(defaultTasks);
+      }
+
+      await logActivity(context.user.id, 'CREATE', 'InternshipTeam', team.id, `Created ${team.type} assignment: ${team.name}`);
       return team;
     },
 
@@ -3733,6 +3985,16 @@ export const resolvers = {
       await team.save();
       await logActivity(context.user.id, 'UPDATE', 'InternshipTeam', id, `Updated team: ${team.name} `);
       return team;
+    },
+
+    deleteInternshipTeam: async (_: any, { id }: { id: string }, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const team = await InternshipTeam.findById(id);
+      if (!team) throw new Error('Team not found');
+      team.isDeleted = true;
+      await team.save();
+      await logActivity(context.user.id, 'DELETE', 'InternshipTeam', id, `Soft deleted track: ${team.name}`);
+      return true;
     },
 
     addInternToTeam: async (_: any, { teamId, userId, role }: any, context: any) => {
@@ -3763,6 +4025,345 @@ export const resolvers = {
 
       await logActivity(context.user.id, 'REMOVE_MEMBER', 'InternshipTeam', membership.teamId.toString(), `Removed intern ${membership.userId} from team`);
       return true;
+    },
+
+    assignInternshipProjectToTeam: async (_: any, { teamId, projectId }: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      
+      const team = await InternshipTeam.findById(teamId);
+      if (!team) throw new Error('Team not found');
+      
+      const project = await InternshipProject.findById(projectId);
+      if (!project) throw new Error('Project not found');
+      
+      team.internshipProjectId = projectId;
+      await team.save();
+      
+      // Clone blueprint tickets
+      if (project.defaultTickets && project.defaultTickets.length > 0) {
+        const defaultTasks = project.defaultTickets.map((bt: any) => ({
+          projectId: project.id,
+          teamId: team.id,
+          title: bt.title,
+          description: bt.description,
+          priority: bt.priority,
+          taskType: bt.taskType,
+          status: 'todo',
+          order: bt.order,
+          labels: bt.labels
+        }));
+        
+        // Remove old unstarted tasks to avoid clutter?
+        // For now, let's just insert the new ones.
+        await InternshipTask.insertMany(defaultTasks);
+      }
+
+      await logActivity(context.user.id, 'UPDATE_TEAM', 'InternshipTeam', teamId, `Assigned project "${project.title}" to team "${team.name}" and cloned ${project.defaultTickets?.length || 0} blueprint tickets.`);
+      
+      // Trigger real-time update
+      await pusher.trigger(`team-${teamId}`, 'project_assigned', {
+        teamId,
+        projectId,
+        projectTitle: project.title
+      });
+
+      return team;
+    },
+
+    // --- Meeting Mutations ---
+    createInternshipMeeting: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      
+      const meeting = new InternshipMeeting({
+        ...args,
+        hostId: context.user.id
+      });
+      await meeting.save();
+
+      // Notify all members of assigned teams
+      try {
+        for (const teamId of args.teamIds) {
+          const members = await InternshipTeamMember.find({ teamId, isDeleted: false });
+          for (const member of members) {
+             await sendNotification(member.userId.toString(), {
+               type: 'meeting',
+               title: 'New Meeting Scheduled',
+               message: `A new meeting "${args.title}" has been scheduled for your team.`,
+               link: `/portal/internship/meetings`
+             });
+          }
+        }
+      } catch (err) {
+        console.error('Error sending meeting notifications:', err);
+      }
+
+      await logActivity(context.user.id, 'CREATE', 'InternshipMeeting', meeting.id, `Scheduled meeting: ${meeting.title}`);
+      return meeting;
+    },
+
+    updateInternshipMeeting: async (_: any, { id, ...args }: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const meeting = await InternshipMeeting.findByIdAndUpdate(id, args, { new: true });
+      if (!meeting) throw new Error('Meeting not found');
+      await logActivity(context.user.id, 'UPDATE', 'InternshipMeeting', id, `Updated meeting: ${meeting.title}`);
+      return meeting;
+    },
+
+    deleteInternshipMeeting: async (_: any, { id }: { id: string }, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const meeting = await InternshipMeeting.findById(id);
+      if (!meeting) throw new Error('Meeting not found');
+      meeting.isDeleted = true;
+      await meeting.save();
+      await logActivity(context.user.id, 'DELETE', 'InternshipMeeting', id, `Deleted meeting: ${meeting.title}`);
+      return true;
+    },
+
+    // --- Sprint Mutations ---
+    createInternshipSprint: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const sprintCount = await InternshipSprint.countDocuments({ projectId: args.projectId, isDeleted: false });
+      const sprint = new InternshipSprint({ ...args, order: sprintCount + 1 });
+      await sprint.save();
+      await logActivity(context.user.id, 'CREATE', 'InternshipSprint', sprint.id, `Created sprint: ${sprint.title}`);
+      return sprint;
+    },
+
+    updateInternshipSprint: async (_: any, { id, ...args }: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const sprint = await InternshipSprint.findById(id);
+      if (!sprint || sprint.isDeleted) throw new Error('Sprint not found');
+      Object.assign(sprint, args);
+      await sprint.save();
+      await logActivity(context.user.id, 'UPDATE', 'InternshipSprint', id, `Updated sprint: ${sprint.title}`);
+      return sprint;
+    },
+
+    deleteInternshipSprint: async (_: any, { id }: { id: string }, context: any) => {
+      if (!['admin', 'super_admin'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const sprint = await InternshipSprint.findById(id);
+      if (!sprint) throw new Error('Sprint not found');
+      sprint.isDeleted = true;
+      await sprint.save();
+      await logActivity(context.user.id, 'DELETE', 'InternshipSprint', id, `Deleted sprint: ${sprint.title}`);
+      return true;
+    },
+
+    // --- Task Mutations ---
+    createInternshipTask: async (_: any, args: any, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const taskCount = await InternshipTask.countDocuments({ projectId: args.projectId, isDeleted: false });
+      const task = new InternshipTask({ ...args, status: 'todo', order: taskCount + 1 });
+      await task.save();
+      await logActivity(context.user.id, 'CREATE', 'InternshipTask', task.id, `Created task: ${task.title}`);
+
+      // Notify assignee if set
+      if (args.assigneeId) {
+        sendNotification(args.assigneeId, {
+          type: 'TASK_ASSIGNED',
+          title: 'New Task Assigned',
+          taskId: task.id,
+          message: `You have been assigned a new task: "${task.title}"`
+        });
+      }
+      
+      await pusher.trigger(`team-${task.teamId}`, 'task_created', task);
+      return task;
+    },
+
+    updateInternshipTask: async (_: any, { id, ...args }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const task = await InternshipTask.findById(id);
+      if (!task || task.isDeleted) throw new Error('Task not found');
+
+      const oldAssignee = task.assigneeId?.toString();
+      Object.assign(task, args);
+      await task.save();
+
+      // Notify new assignee if changed
+      if (args.assigneeId && args.assigneeId !== oldAssignee) {
+        sendNotification(args.assigneeId, {
+          type: 'TASK_ASSIGNED',
+          title: 'Task Assigned To You',
+          taskId: task.id,
+          message: `You have been assigned: "${task.title}"`
+        });
+      }
+      await logActivity(context.user.id, 'UPDATE', 'InternshipTask', id, `Updated task: ${task.title}`);
+      
+      await pusher.trigger(`team-${task.teamId}`, 'task_updated', task);
+      return task;
+    },
+
+    addInternshipComment: async (_: any, { taskId, content, attachments }: any, context: any) => {
+      if (!context.user) throw new Error('Unauthorized');
+      
+      const task = await InternshipTask.findById(taskId);
+      if (!task) throw new Error('Task not found');
+
+      const comment = new InternshipComment({
+        taskId,
+        content,
+        attachments,
+        authorId: context.user.id
+      });
+      await comment.save();
+
+      await pusher.trigger(`team-${task.teamId}`, 'comment_added', comment);
+      return comment;
+    },
+
+    deleteInternshipComment: async (_: any, { id }: any, context: any) => {
+      if (!context.user) throw new Error('Unauthorized');
+      await InternshipComment.findByIdAndDelete(id);
+      return true;
+    },
+
+    moveInternshipTaskStatus: async (_: any, { id, status }: { id: string; status: string }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const task = await InternshipTask.findById(id);
+      if (!task || task.isDeleted) throw new Error('Task not found');
+
+      const project = await InternshipProject.findById(task.projectId);
+      if (!project) throw new Error('Project not found');
+
+      const workflow = project.workflow?.length ? project.workflow : DEFAULT_WORKFLOW;
+      const targetStage = workflow.find(s => s.id === status);
+      if (!targetStage) throw new Error('Invalid status for this project');
+
+      // Gate: only trainer/admin can move to types staged or completed
+      if (['staged', 'completed'].includes(targetStage.type) && !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error(`Only a trainer or admin can move tasks to ${targetStage.label}`);
+      }
+
+      task.status = status as any;
+      if (targetStage.type === 'staged') {
+        task.approvedBy = context.user.id;
+        task.approvedAt = new Date();
+      }
+      await task.save();
+
+      await logActivity(context.user.id, 'STATUS_CHANGE', 'InternshipTask', id, `Moved task "${task.title}" to ${targetStage.label}`);
+
+      // Notify assignee
+      if (task.assigneeId) {
+        sendNotification(task.assigneeId.toString(), {
+          type: 'TASK_STATUS_CHANGED',
+          title: 'Task Status Updated',
+          taskId: id,
+          message: `Your task "${task.title}" was moved to ${targetStage.label}`
+        });
+      }
+
+      await pusher.trigger(`team-${task.teamId}`, 'task_updated', task);
+      return task;
+    },
+
+    approveInternshipTask: async (_: any, { id }: { id: string }, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const task = await InternshipTask.findById(id);
+      if (!task || task.isDeleted) throw new Error('Task not found');
+
+      const project = await InternshipProject.findById(task.projectId);
+      if (!project) throw new Error('Project not found');
+
+      const workflow = project.workflow?.length ? project.workflow : DEFAULT_WORKFLOW;
+      
+      // Find the first stage of type 'staged' (deployment/approval gate)
+      const stagedStage = workflow.find(s => s.type === 'staged');
+      if (!stagedStage) throw new Error('This project has no staged column defined');
+
+      task.status = stagedStage.id as any;
+      task.approvedBy = context.user.id;
+      task.approvedAt = new Date();
+      task.rejectionReason = undefined;
+      await task.save();
+
+      await logActivity(context.user.id, 'APPROVE', 'InternshipTask', id, `Approved task: ${task.title}`);
+
+      if (task.assigneeId) {
+        sendNotification(task.assigneeId.toString(), {
+          type: 'TASK_APPROVED',
+          title: '✅ Task Approved!',
+          taskId: id,
+          message: `Great work! "${task.title}" has been approved and moved to ${stagedStage.label}.`
+        });
+      }
+      return task;
+    },
+
+    rejectInternshipTask: async (_: any, { id, reason }: { id: string; reason?: string }, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const task = await InternshipTask.findById(id);
+      if (!task || task.isDeleted) throw new Error('Task not found');
+
+      const project = await InternshipProject.findById(task.projectId);
+      if (!project) throw new Error('Project not found');
+
+      const workflow = project.workflow?.length ? project.workflow : DEFAULT_WORKFLOW;
+      
+      // Find the first stage of type 'review' (to send it back)
+      const reviewStage = workflow.find(s => s.type === 'review') || workflow.find(s => s.type === 'progress');
+      if (!reviewStage) throw new Error('This project has no review or progress column defined');
+
+      task.status = reviewStage.id as any;
+      task.rejectionReason = reason;
+      await task.save();
+
+      await logActivity(context.user.id, 'REJECT', 'InternshipTask', id, `Rejected task "${task.title}": ${reason}`);
+
+      if (task.assigneeId) {
+        sendNotification(task.assigneeId.toString(), {
+          type: 'TASK_REJECTED',
+          title: '↩️ Task Needs Revision',
+          taskId: id,
+          message: `Your task "${task.title}" needs changes: ${reason || 'Please make revisions.'}`
+        });
+      }
+      return task;
+    },
+
+    addTaskAttachment: async (_: any, { taskId, name, url, type }: any, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const task = await InternshipTask.findById(taskId);
+      if (!task || task.isDeleted) throw new Error('Task not found');
+      task.attachments = task.attachments || [];
+      task.attachments.push({ name, url, type: type || 'link' });
+      await task.save();
+
+      await pusher.trigger(`team-${task.teamId}`, 'task_updated', task);
+      return task;
+    },
+
+    removeTaskAttachment: async (_: any, { taskId, attachmentIndex }: { taskId: string; attachmentIndex: number }, context: any) => {
+      if (!context.user) throw new Error('Not authenticated');
+      const task = await InternshipTask.findById(taskId);
+      if (!task || task.isDeleted) throw new Error('Task not found');
+      if (task.attachments) {
+        task.attachments.splice(attachmentIndex, 1);
+        await task.save();
+      }
+      return task;
+    },
+
+    deleteInternshipTask: async (_: any, { id }: { id: string }, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const task = await InternshipTask.findById(id);
+      if (!task) throw new Error('Task not found');
+      task.isDeleted = true;
+      await task.save();
+      await logActivity(context.user.id, 'DELETE', 'InternshipTask', id, `Deleted task: ${task.title}`);
+      return true;
+    },
+
+    updateInternshipProjectDocument: async (_: any, { projectId, document }: { projectId: string; document: string }, context: any) => {
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
+      const project = await InternshipProject.findById(projectId);
+      if (!project || project.isDeleted) throw new Error('Project not found');
+      project.document = document;
+      await project.save();
+      await logActivity(context.user.id, 'UPDATE', 'InternshipProject', projectId, `Updated project document for: ${project.title}`);
+      return project;
     },
 
     createInternshipMilestone: async (_: any, args: any, context: any) => {
@@ -3989,30 +4590,75 @@ export const resolvers = {
     processInternshipPayment: async (_: any, args: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
 
-      const payment = await InternshipPayment.findById(args.paymentId);
+      const payment = await (InternshipPayment as any).findById(args.paymentId);
       if (!payment) throw new Error('Payment not found.');
       if (payment.userId.toString() !== context.user.id && !['admin', 'super_admin'].includes(context.user.role)) {
         throw new Error('Unauthorized');
       }
-      if (payment.status !== 'pending') throw new Error(`Payment cannot be processed.Current status: ${payment.status} `);
+      if (payment.status !== 'pending') throw new Error(`Payment cannot be processed. Current status: ${payment.status}`);
 
-      payment.status = 'paid';
-      payment.transactionId = args.transactionId;
       payment.paymentMethod = args.paymentMethod;
-      payment.paidAt = new Date();
+      
+      if (args.paymentMethod === 'manual_transfer') {
+        payment.paymentProofUrl = args.paymentProofUrl;
+        // Keep status as pending for admin review — internship created after admin verifies
+      } else {
+        payment.status = 'paid';
+        payment.transactionId = args.transactionId;
+        payment.paidAt = new Date();
+
+        // Create Internship enrollment record now that payment is confirmed
+        const program = await InternshipProgram.findById(payment.internshipProgramId);
+        if (program) {
+          const existingInternship = await Internship.findOne({
+            userId: payment.userId,
+            title: program.title,
+            isDeleted: false
+          });
+          if (!existingInternship) {
+            const newInternship = new Internship({
+              userId: payment.userId,
+              title: program.title || 'Internship Program',
+              duration: program.duration || '3 Months',
+              type: 'Online',
+              status: 'enrolled',
+              progress: 0,
+              payment: {
+                amount: payment.amount,
+                currency: payment.currency,
+                status: 'paid'
+              }
+            });
+            await newInternship.save();
+            await logActivity(context.user.id, 'CREATE', 'Internship', newInternship.id, `Internship enrollment created after payment for: ${program.title}`);
+          }
+        }
+      }
+      
       await payment.save();
 
-      await logActivity(context.user.id, 'UPDATE', 'InternshipPayment', payment.id, `Payment processed: ${args.transactionId} `);
+      await logActivity(context.user.id, 'UPDATE', 'InternshipPayment', payment.id, `Payment processed via ${args.paymentMethod}: ${args.transactionId || 'Proof submitted'}`);
 
       // Notify admin
       sendNotification('admin', {
         type: 'PAYMENT_RECEIVED',
-        title: 'New Payment Received',
+        title: args.paymentMethod === 'manual_transfer' ? 'New Payment Proof Submitted' : 'New Payment Received',
         userId: payment.userId.toString(),
         amount: payment.amount,
         currency: payment.currency,
-        message: `New internship payment received`
+        message: args.paymentMethod === 'manual_transfer' 
+          ? `A student submitted payment proof for ${payment.amount} ${payment.currency}`
+          : `New internship payment received — enrollment confirmed`
       });
+
+      // Notify student about proof submission (manual transfer)
+      if (args.paymentMethod === 'manual_transfer') {
+        sendNotification(payment.userId.toString(), {
+          type: 'PAYMENT_PROOF_SUBMITTED',
+          title: 'Payment Proof Submitted',
+          message: `Your payment proof has been submitted. Our team will verify it within 24 hours.`
+        });
+      }
 
       return payment;
     },
@@ -4486,6 +5132,16 @@ export const resolvers = {
       return await User.find({ _id: { $in: parent.mentors || [] } });
     },
     projects: async (parent: any) => await Project.find({ _id: { $in: parent.projects } }),
+    assignedProject: async (parent: any) => {
+      // Find the team member entry for this user
+      const membership = await InternshipTeamMember.findOne({ userId: parent.userId, isDeleted: false });
+      if (!membership) return null;
+      
+      const team = await InternshipTeam.findById(membership.teamId);
+      if (!team || !team.internshipProjectId) return null;
+      
+      return await InternshipProject.findById(team.internshipProjectId);
+    }
   },
   Message: {
     sender: async (parent: any) => {
@@ -4541,6 +5197,15 @@ export const resolvers = {
   InternshipTeamMember: {
     id: (parent: any) => parent.id || parent._id,
     user: async (parent: any) => await User.findById(parent.userId),
+  },
+  InternshipTask: {
+    id: (parent: any) => parent.id || parent._id,
+    assignee: async (parent: any) => parent.assigneeId ? await User.findById(parent.assigneeId) : null,
+    comments: async (parent: any) => await InternshipComment.find({ taskId: parent._id, isDeleted: false }).sort({ createdAt: -1 }),
+  },
+  InternshipComment: {
+    id: (parent: any) => parent.id || parent._id,
+    author: async (parent: any) => await User.findById(parent.authorId),
   },
   InternshipSubmission: {
     id: (parent: any) => parent.id || parent._id,
@@ -4630,5 +5295,13 @@ export const resolvers = {
       ),
     },
   },
+  InternshipMeeting: {
+    teams: async (meeting: any) => {
+      return await InternshipTeam.find({ _id: { $in: meeting.teamIds } });
+    },
+    host: async (meeting: any) => {
+      return await User.findById(meeting.hostId);
+    }
+  }
 };
 

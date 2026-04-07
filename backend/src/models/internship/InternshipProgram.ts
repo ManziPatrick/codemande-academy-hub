@@ -11,11 +11,19 @@ export interface IInternshipProgram extends Document {
   rules: string;
   price: number;
   currency: string;
+  discount: number;
   maxParticipants: number;
+  maxSpots: number;
   image: string;
   isActive: boolean;
   batches: { name: string; startDate: Date; endDate: Date }[];
-  status: 'active' | 'inactive' | 'closed';
+  status: 'active' | 'inactive' | 'closed' | 'upcoming';
+  applicationQuestions: {
+    label: string;
+    type: 'text' | 'textarea' | 'select' | 'radio' | 'checkbox';
+    required: boolean;
+    options?: string[];
+  }[];
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -33,7 +41,9 @@ const InternshipProgramSchema: Schema = new Schema(
     rules: { type: String },
     price: { type: Number, default: 0 },
     currency: { type: String, default: 'RWF' },
+    discount: { type: Number, default: 0 }, // percentage discount, e.g. 20 = 20%
     maxParticipants: { type: Number },
+    maxSpots: { type: Number, default: 0 }, // 0 = unlimited
     image: { type: String },
     isActive: { type: Boolean, default: true },
     batches: [{
@@ -41,7 +51,15 @@ const InternshipProgramSchema: Schema = new Schema(
       startDate: { type: Date },
       endDate: { type: Date }
     }],
-    status: { type: String, enum: ['active', 'inactive', 'closed'], default: 'active', index: true },
+    applicationQuestions: [
+      {
+        label: { type: String, required: true },
+        type: { type: String, enum: ['text', 'textarea', 'select', 'radio', 'checkbox'], default: 'text' },
+        required: { type: Boolean, default: false },
+        options: [{ type: String }]
+      }
+    ],
+    status: { type: String, enum: ['active', 'inactive', 'closed', 'upcoming'], default: 'active', index: true },
     isDeleted: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }

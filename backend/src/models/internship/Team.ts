@@ -5,7 +5,8 @@ export interface IInternshipTeam extends Document {
     internshipProjectId: mongoose.Types.ObjectId;
     internshipProgramId: mongoose.Types.ObjectId;
     mentorId?: mongoose.Types.ObjectId;
-    status: 'active' | 'disbanded' | 'completed' | 'on_hold';
+    status: 'active' | 'disbanded' | 'completed' | 'on_hold' | 'pending';
+    type: 'team' | 'individual';
     isDeleted: boolean;
     createdAt: Date;
     updatedAt: Date;
@@ -14,13 +15,19 @@ export interface IInternshipTeam extends Document {
 const InternshipTeamSchema: Schema = new Schema(
     {
         name: { type: String, required: true, index: true },
-        internshipProjectId: { type: Schema.Types.ObjectId, ref: 'InternshipProject', required: true, index: true },
+        internshipProjectId: { type: Schema.Types.ObjectId, ref: 'InternshipProject', index: true },
         internshipProgramId: { type: Schema.Types.ObjectId, ref: 'InternshipProgram', required: true, index: true },
         mentorId: { type: Schema.Types.ObjectId, ref: 'User', index: true },
         status: {
             type: String,
-            enum: ['active', 'disbanded', 'completed', 'on_hold'],
-            default: 'active',
+            enum: ['active', 'disbanded', 'completed', 'on_hold', 'pending'],
+            default: 'pending',
+            index: true
+        },
+        type: {
+            type: String,
+            enum: ['team', 'individual'],
+            default: 'team',
             index: true
         },
         isDeleted: { type: Boolean, default: false, index: true },

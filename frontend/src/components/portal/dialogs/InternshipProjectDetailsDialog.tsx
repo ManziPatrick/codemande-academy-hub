@@ -17,6 +17,7 @@ import {
     Link as LinkIcon
 } from "lucide-react";
 import ReactMarkdown from 'react-markdown';
+import { cn } from "@/lib/utils";
 
 interface InternshipProjectDetailsDialogProps {
     open: boolean;
@@ -113,6 +114,41 @@ export function InternshipProjectDetailsDialog({ open, onOpenChange, project }: 
                                 </div>
                             </div>
                         </div>
+
+                        {/* Blueprint Tickets Section */}
+                        {project.defaultTickets?.length > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border/20">Initial Blueprint Tickets ({project.defaultTickets.length})</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {project.defaultTickets.map((ticket: any, idx: number) => (
+                                        <div key={idx} className="p-4 rounded-2xl border border-border/40 bg-muted/10 flex flex-col gap-3 group hover:border-primary/40 transition-all">
+                                            <div className="flex items-center justify-between">
+                                                <Badge variant="secondary" className="text-[9px] font-black uppercase px-2 py-0.5">{ticket.taskType || 'Task'}</Badge>
+                                                <Badge className={cn(
+                                                    "text-[9px] font-black uppercase px-2 py-0.5 border-0 shadow-sm",
+                                                    ticket.priority === 'critical' ? 'bg-red-500 text-white' :
+                                                    ticket.priority === 'high' ? 'bg-orange-500 text-white' :
+                                                    ticket.priority === 'medium' ? 'bg-blue-500 text-white' : 'bg-slate-500 text-white'
+                                                )}>
+                                                    {ticket.priority}
+                                                </Badge>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-foreground group-hover:text-primary transition-colors leading-tight mb-1">{ticket.title}</p>
+                                                <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">{ticket.description || 'No description provided.'}</p>
+                                            </div>
+                                            {ticket.labels?.length > 0 && (
+                                                <div className="flex flex-wrap gap-1">
+                                                    {ticket.labels.map((l: string, i: number) => (
+                                                        <span key={i} className="text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full bg-primary/5 text-primary/70 border border-primary/10">{l}</span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

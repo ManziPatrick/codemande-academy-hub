@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import {
     Calendar,
@@ -26,6 +27,7 @@ import { useAuth } from "@/contexts/AuthContext";
 export function DailyInternshipDashboard({ username }: { username: string }) {
     const { data, loading, refetch } = useQuery(GET_DAILY_DASHBOARD);
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [showAddResource, setShowAddResource] = useState(false);
 
     if (loading) return <DashboardSkeleton />;
@@ -100,31 +102,35 @@ export function DailyInternshipDashboard({ username }: { username: string }) {
                                 </div>
                             ) : (
                                 dashboard.tasks.map((task: any) => (
-                                    <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 group hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50">
-                                        <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${task.priority === 'high' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
-                                            task.priority === 'medium' ? 'bg-amber-500' : 'bg-green-500'
-                                            }`} />
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <p className="font-medium text-sm truncate">{task.title}</p>
-                                                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 opacity-70">
-                                                    {task.type}
-                                                </Badge>
+                                        <div 
+                                            key={task.id} 
+                                            className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 group hover:bg-muted/50 transition-colors border border-transparent hover:border-border/50 cursor-pointer"
+                                            onClick={() => navigate('/portal/student/internships?tab=dashboard')}
+                                        >
+                                            <div className={`w-2 h-2 rounded-full mt-2 shrink-0 ${task.priority === 'high' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
+                                                task.priority === 'medium' ? 'bg-amber-500' : 'bg-green-500'
+                                                }`} />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <p className="font-medium text-sm truncate">{task.title}</p>
+                                                    <Badge variant="secondary" className="text-[10px] h-5 px-1.5 opacity-70">
+                                                        {task.type}
+                                                    </Badge>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {task.deadline && (
+                                                        <span className={`text-xs ${new Date(task.deadline) < new Date() ? 'text-red-400 font-bold' : 'text-muted-foreground'
+                                                            }`}>
+                                                            Due {new Date(task.deadline).toLocaleDateString()}
+                                                        </span>
+                                                    )}
+                                                    {!task.deadline && <span className="text-xs text-muted-foreground">No deadline</span>}
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                {task.deadline && (
-                                                    <span className={`text-xs ${new Date(task.deadline) < new Date() ? 'text-red-400 font-bold' : 'text-muted-foreground'
-                                                        }`}>
-                                                        Due {new Date(task.deadline).toLocaleDateString()}
-                                                    </span>
-                                                )}
-                                                {!task.deadline && <span className="text-xs text-muted-foreground">No deadline</span>}
-                                            </div>
+                                            <Button size="icon" variant="ghost" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <ArrowRight className="w-4 h-4" />
+                                            </Button>
                                         </div>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <ArrowRight className="w-4 h-4" />
-                                        </Button>
-                                    </div>
                                 ))
                             )}
                         </div>

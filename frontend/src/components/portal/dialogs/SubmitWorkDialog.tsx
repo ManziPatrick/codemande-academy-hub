@@ -62,13 +62,13 @@ export function SubmitWorkDialog({ open, onOpenChange, teamId, milestoneId, mile
 
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                     <div className="space-y-2">
-                        <Label htmlFor="workUrl">Submission URL (GitHub / Demo)</Label>
+                        <Label htmlFor="workUrl">Submission URL (Figma / Behance / GitHub / Demo)</Label>
                         <div className="relative">
                             <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 id="workUrl"
                                 className="pl-9"
-                                placeholder="https://github.com/..."
+                                placeholder="https://figma.com/..., https://behance.net/..., https://github.com/..."
                                 value={workUrl}
                                 onChange={(e) => setWorkUrl(e.target.value)}
                                 required

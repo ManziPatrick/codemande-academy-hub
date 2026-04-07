@@ -1,98 +1,69 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { PortalLayout } from "@/components/portal/PortalLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format } from "date-fns";
-
-const safeFormatDate = (dateString: any, formatStr: string = 'MMM dd, yyyy HH:mm') => {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return '';
-  return format(date, formatStr);
-};
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Briefcase,
-  Calendar,
   Clock,
   CheckCircle,
-  Users,
-  Target,
-  MessageSquare,
-  CreditCard,
-  FileText,
-  Star,
   ArrowRight,
-  AlertCircle,
-  Stars,
-  Lock,
-  Layers,
+  Target,
   FileCode,
-  Award,
-  Loader2,
+  FileText,
+  Users,
+  MessageSquare,
   Activity,
+  Layers,
+  Lock,
+  Star,
+  Stars,
+  CreditCard,
+  Award,
+  Rocket
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TimeTracking } from "./components/TimeTracking";
-import { ApplyInternshipDialog, BookCallDialog, TeamChatDialog, ProjectDetailsDialog, SubmitProofDialog } from "@/components/portal/dialogs";
-import { toast } from "sonner";
-import { useQuery, useMutation } from "@apollo/client/react";
+import { 
+  ApplyInternshipDialog, 
+  BookCallDialog, 
+  TeamChatDialog, 
+  ProjectDetailsDialog, 
+  SubmitProofDialog,
+  GraduationDialog
+} from "@/components/portal/dialogs";
+import { useQuery } from "@apollo/client/react";
 import { GET_MY_INTERNSHIP } from "@/lib/graphql/queries";
-import { UPDATE_INTERNSHIP_PAYMENT } from "@/lib/graphql/mutations";
+import { toast } from "sonner";
+import DailyStandup from "@/components/portal/student/DailyStandup";
 import { AIHelper } from "@/components/portal/AIHelper";
-import { GraduationDialog } from "@/components/portal/dialogs/GraduationDialog";
-import { useEffect } from "react";
-
 import { DailyInternshipDashboard } from "@/components/portal/student/DailyInternshipDashboard";
 
 export default function StudentInternship() {
-  const { data, loading, error, refetch } = useQuery(GET_MY_INTERNSHIP);
-  const internship = (data as any)?.myInternship;
-
-
-
-
-  const [updatePayment, { loading: isPaying }] = useMutation(UPDATE_INTERNSHIP_PAYMENT, {
-    onCompleted: () => {
-      toast.success("Payment successful! Your internship is now active.");
-      refetch();
-    },
-    onError: (err) => {
-      toast.error(err.message);
-    }
-  });
-
-  const handlePay = () => {
-    if (!internship) return;
-    updatePayment({
-      variables: {
-        id: internship.id,
-        status: "paid",
-        paidAt: new Date().toISOString()
-      }
-    });
-  };
-
-  const [applyOpen, setApplyOpen] = useState(false);
+  const [activeProject, setActiveProject] = useState<any>(null);
   const [bookCallOpen, setBookCallOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [activeProject, setActiveProject] = useState<any>(null);
   const [projectDetailsOpen, setProjectDetailsOpen] = useState(false);
-  const [graduationOpen, setGraduationOpen] = useState(false);
   const [proofDialogOpen, setProofDialogOpen] = useState(false);
+  const [graduationOpen, setGraduationOpen] = useState(false);
 
-  useEffect(() => {
-    if (internship?.stage === "Graduated" || internship?.status === "graduated") {
-      setGraduationOpen(true);
+  const { data, loading, error, refetch } = useQuery(GET_MY_INTERNSHIP);
+
+  const internship = (data as any)?.myInternship;
+
+  const safeFormatDate = (dateStr: string) => {
+    try {
+      return new Date(dateStr).toLocaleDateString();
+    } catch (e) {
+      return "TBD";
     }
-  }, [internship]);
+  };
 
   if (loading) return (
     <PortalLayout>
-      <div className="flex items-center justify-center p-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
       </div>
     </PortalLayout>
   );
@@ -105,7 +76,6 @@ export default function StudentInternship() {
     </PortalLayout>
   );
 
-  const status = internship?.status || "not_eligible";
   const stages = [
     "Stage 1: Foundation",
     "Stage 2: Intermediate",
@@ -119,6 +89,7 @@ export default function StudentInternship() {
     <PortalLayout>
       <div className="space-y-6 pb-12">
         {internship && <DailyInternshipDashboard username={internship.user?.username || "Scholar"} />}
+        
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
@@ -138,58 +109,44 @@ export default function StudentInternship() {
         </div>
 
         {!internship ? (
-          <Card className="border-border/50 border-accent/30 overflow-hidden">
-            <CardContent className="p-8 lg:p-12 text-center max-w-2xl mx-auto">
+          <Card className="border-border/50 bg-accent/5 backdrop-blur-sm relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-accent/10 rounded-full blur-3xl -mr-32 -mt-32" />
+            <CardContent className="py-20 text-center relative z-10">
               <div className="w-20 h-20 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <GraduationCap className="w-10 h-10 text-accent" />
+                <Briefcase className="w-10 h-10 text-accent" />
               </div>
-              <h2 className="font-heading text-2xl font-bold mb-4">Start Your Professional Career</h2>
-              <p className="text-muted-foreground mb-8">
-                Our internal internship program is designed to bridge the gap between learning and employment.
-                You'll work on production-level projects, receive 1:1 mentorship, and move through
-                different stages until you're industry-ready.
+              <h2 className="font-heading text-3xl font-bold mb-4">Initialize Your Journey</h2>
+              <p className="text-muted-foreground mb-8 max-w-md mx-auto leading-relaxed">
+                You don't have an active internship track yet. Browse our professional tracks and apply to start gaining hands-on experience.
               </p>
-              <div className="grid sm:grid-cols-3 gap-4 mb-8">
-                <div className="space-y-1">
-                  <div className="font-bold text-accent text-xl">1:1</div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-widest">Mentorship</div>
-                </div>
-                <div className="space-y-1 border-x border-border/50">
-                  <div className="font-bold text-accent text-xl">4 Stages</div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-widest">Progression</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="font-bold text-accent text-xl">Live</div>
-                  <div className="text-xs text-muted-foreground uppercase tracking-widest">Projects</div>
-                </div>
-              </div>
-              <Button variant="gold" size="lg" onClick={() => setApplyOpen(true)} className="px-8 shadow-xl shadow-gold/20">
-                Enroll in Program <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
+              <Link to="/portal/student/internships">
+                <Button variant="gold" size="lg" className="h-14 px-10 rounded-2xl shadow-premium hover:-translate-y-1 transition-all">
+                  Browse Internship Tracks <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         ) : (
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="bg-muted/50 p-1 border border-border/50">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-background data-[state=active]:text-accent data-[state=active]:shadow-sm">
+              <TabsTrigger value="overview">
                 <Layers className="w-4 h-4 mr-2" />
                 Overview
               </TabsTrigger>
-              <TabsTrigger value="time" className="data-[state=active]:bg-background data-[state=active]:text-accent data-[state=active]:shadow-sm">
-                <Clock className="w-4 h-4 mr-2" />
-                Time Tracking
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="data-[state=active]:bg-background data-[state=active]:text-accent data-[state=active]:shadow-sm">
+              <TabsTrigger value="activity">
                 <Activity className="w-4 h-4 mr-2" />
                 My Activity
+              </TabsTrigger>
+              <TabsTrigger value="standup">
+                <FileText className="w-4 h-4 mr-2" />
+                Daily Standups
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview">
               <div className="grid lg:grid-cols-3 gap-6">
-                {/* Left Column: Progression & Projects */}
                 <div className="lg:col-span-2 space-y-6">
-                  {/* Payment Alert for Eligible Status */}
+                  {/* Payment Alert */}
                   {(internship.status === 'eligible' || internship.payment?.status === 'pending') && (
                     <Card className="border-accent/40 bg-accent/5 overflow-hidden">
                       <CardContent className="p-6">
@@ -199,14 +156,14 @@ export default function StudentInternship() {
                           </div>
                           <div className="flex-1 text-center md:text-left">
                             <h3 className="text-lg font-bold mb-1">Activation Required</h3>
-                            <p className="text-sm text-muted-foreground mb-4 md:mb-0">
-                              Your application is registered! Please upload proof of payment for the one-time application fee of 20,000 RWF. Once verified by admin, your internship will be activated and you can start Stage 1.
+                            <p className="text-sm text-muted-foreground">
+                              Your application is registered! Please upload proof of payment for the one-time application fee of 20,000 RWF to activate your Stage 1.
                             </p>
                           </div>
                           <Button
                             variant="gold"
                             size="lg"
-                            className="shrink-0 shadow-lg shadow-gold/20"
+                            className="shrink-0"
                             onClick={() => setProofDialogOpen(true)}
                           >
                             Upload Payment Proof <ArrowRight className="w-4 h-4 ml-2" />
@@ -233,14 +190,12 @@ export default function StudentInternship() {
                                 }`}>
                                 {idx < currentStageIndex ? <CheckCircle className="w-5 h-5" /> : idx === currentStageIndex ? <Star className="w-5 h-5 animate-pulse" /> : <Lock className="w-4 h-4" />}
                               </div>
-                              <span className={`text-[10px] text-center font-bold uppercase transition-colors ${idx === currentStageIndex ? "text-accent" : "text-muted-foreground"
-                                }`}>
+                              <span className={`text-[10px] text-center font-bold uppercase ${idx === currentStageIndex ? "text-accent" : "text-muted-foreground"}`}>
                                 {st.split(": ")[1] || st}
                               </span>
                             </div>
                           ))}
                         </div>
-                        {/* Line behind */}
                         <div className="absolute top-7 left-[10%] right-[10%] h-0.5 bg-muted -z-0" />
                         <div
                           className="absolute top-7 left-[10%] h-0.5 bg-accent transition-all duration-1000 -z-0"
@@ -250,90 +205,89 @@ export default function StudentInternship() {
                     </CardContent>
                   </Card>
 
-                  {/* Assigned Projects */}
+                  {/* Projects */}
                   <div className="space-y-4">
                     <h3 className="font-bold flex items-center gap-2 px-2">
                       <FileCode className="w-4 h-4 text-accent" />
                       Assigned Stage Projects
                     </h3>
-                    {internship.projects?.length > 0 ? (
-                      internship.projects.map((proj: any) => (
-                        <Card key={proj.id} className="border-border/50 hover:border-accent/40 transition-colors group">
-                          <CardContent className="p-5 flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <FileText className="w-6 h-6 text-accent" />
+                    {((internship.projects?.length > 0) || internship.assignedProject) ? (
+                      <>
+                        {internship.assignedProject && (
+                          <Card className="border-border/50 hover:border-accent/40 transition-colors group mb-4">
+                            <CardContent className="p-5 flex flex-col sm:flex-row justify-between items-center gap-4">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center">
+                                  <Rocket className="w-6 h-6 text-accent" />
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-lg">{internship.assignedProject.title}</h4>
+                                  <div className="flex gap-2">
+                                    <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter bg-accent/5">
+                                      Team Project
+                                    </Badge>
+                                    <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter">
+                                      {internship.assignedProject.status}
+                                    </Badge>
+                                  </div>
+                                </div>
                               </div>
-                              <div>
-                                <h4 className="font-bold text-lg">{proj.title}</h4>
-                                <div className="flex items-center gap-2">
+                              <div className="flex gap-2">
+                                <Link to="/portal/student/internships?tab=dashboard">
+                                  <Button variant="gold" size="sm">
+                                    Open Board
+                                  </Button>
+                                </Link>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+                        {internship.projects?.map((proj: any) => (
+                          <Card key={proj.id} className="border-border/50 hover:border-accent/40 transition-colors group">
+                            <CardContent className="p-5 flex flex-col sm:flex-row justify-between items-center gap-4">
+                              <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center">
+                                  <FileText className="w-6 h-6 text-accent" />
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-lg">{proj.title}</h4>
                                   <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter">
                                     {proj.status}
                                   </Badge>
-                                  {proj.grade && (
-                                    <Badge className="bg-green-500/20 text-green-400 border-none text-[10px]">
-                                      Grade: {proj.grade}
-                                    </Badge>
-                                  )}
                                 </div>
                               </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto mt-4 sm:mt-0">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => { setActiveProject(proj); setChatOpen(true); }}
-                                className="bg-accent/5 hover:bg-accent/10 border-accent/20"
-                              >
-                                <MessageSquare className="w-4 h-4 mr-2 text-accent" />
-                                Team Chat
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => { setActiveProject(proj); setProjectDetailsOpen(true); }}
-                              >
-                                Full Info & Progress
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => { setActiveProject(proj); setChatOpen(true); }}
+                                >
+                                  Team Chat
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => { setActiveProject(proj); setProjectDetailsOpen(true); }}
+                                >
+                                  Full Info
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </>
                     ) : (
-                      <Card className="border-border/50 border-dashed bg-muted/5">
-                        <CardContent className="p-10 text-center">
-                          <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Layers size={32} className="text-accent/40" />
-                          </div>
-                          <h4 className="font-bold text-lg mb-2">Awaiting Project Assignment</h4>
-                          <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-6">
-                            Your professional track is active! We are currently matching you with a live academy project that fits your department specialization.
-                          </p>
-
-                          <div className="flex justify-center items-center gap-8 max-w-md mx-auto">
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-white">1</div>
-                              <span className="text-[10px] font-bold uppercase">Review</span>
-                            </div>
-                            <div className="h-[2px] w-8 bg-accent" />
-                            <div className="flex flex-col items-center gap-1">
-                              <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center text-[10px] font-bold text-white animate-pulse">2</div>
-                              <span className="text-[10px] font-bold uppercase text-accent">Selection</span>
-                            </div>
-                            <div className="h-[2px] w-8 bg-border" />
-                            <div className="flex flex-col items-center gap-1 opacity-40">
-                              <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center text-[10px] font-bold">3</div>
-                              <span className="text-[10px] font-bold uppercase">Kickoff</span>
-                            </div>
-                          </div>
-                        </CardContent>
+                      <Card className="border-border/50 border-dashed bg-muted/5 p-10 text-center">
+                        <Layers size={32} className="text-accent/30 mx-auto mb-4" />
+                        <h4 className="font-bold mb-2">Awaiting Project Assignment</h4>
+                        <p className="text-sm text-muted-foreground">We are matching you with a professional academy project.</p>
                       </Card>
                     )}
                   </div>
                 </div>
 
-                {/* Right Column: Mentor & Tasks */}
                 <div className="space-y-6">
+                  {/* Mentor Card */}
                   <Card className="border-border/50 overflow-hidden">
                     <div className="h-2 bg-accent" />
                     <CardContent className="p-6">
@@ -342,214 +296,99 @@ export default function StudentInternship() {
                         Your Mentor
                       </h3>
                       {internship.mentor ? (
-                        <>
-                          <div className="flex items-center gap-4 mb-6">
-                            <div className="w-14 h-14 rounded-full bg-accent/20 flex items-center justify-center ring-4 ring-accent/5">
-                              <span className="text-xl font-bold text-accent">
-                                {internship.mentor.username?.charAt(0).toUpperCase()}
-                              </span>
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent text-lg">
+                              {internship.mentor.username?.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-bold text-foreground">{internship.mentor.username}</p>
-                              <p className="text-xs text-muted-foreground uppercase tracking-widest">Industry Expert</p>
+                              <p className="font-bold">{internship.mentor.username}</p>
+                              <p className="text-[10px] text-muted-foreground uppercase">Industry Expert</p>
                             </div>
                           </div>
-                          <div className="space-y-2">
-                            <Button variant="gold" className="w-full shadow-lg shadow-gold/10" onClick={() => setChatOpen(true)}>
-                              <MessageSquare className="w-4 h-4 mr-2" />
-                              Community Chat
-                            </Button>
-                            <Button variant="outline" className="w-full" onClick={() => setBookCallOpen(true)}>
-                              <Calendar className="w-4 h-4 mr-2" />
-                              Book 1:1 Review
-                            </Button>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="text-center py-6">
-                          <div className="w-14 h-14 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-3">
-                            <Users className="w-7 h-7 text-muted-foreground/50" />
-                          </div>
-                          <p className="text-sm font-medium text-muted-foreground mb-1">Mentor Assignment Pending</p>
-                          <p className="text-xs text-muted-foreground/70">
-                            An industry expert will be assigned to guide you soon
-                          </p>
+                          <Button variant="gold" className="w-full" onClick={() => setChatOpen(true)}>
+                            Community Chat
+                          </Button>
+                          <Button variant="outline" className="w-full" onClick={() => setBookCallOpen(true)}>
+                            Book 1:1 Review
+                          </Button>
                         </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">Mentor Assignment Pending</p>
                       )}
                     </CardContent>
                   </Card>
 
-                  {/* Milestone Badges */}
-                  <Card className="border-border/50 bg-gradient-to-br from-card to-accent/5 overflow-hidden group">
-                    <CardContent className="p-6">
-                      <h3 className="font-bold mb-4 flex items-center gap-2">
-                        <Stars className="w-4 h-4 text-accent" />
-                        Earned Badges
-                      </h3>
-                      <div className="flex flex-wrap gap-4">
-                        <div className="flex flex-col items-center gap-2 group/badge">
-                          <div className="w-12 h-12 rounded-full bg-gold/20 flex items-center justify-center border border-gold/40 shadow-lg shadow-gold/10 group-hover/badge:scale-110 transition-transform">
-                            <Stars className="w-6 h-6 text-gold" />
-                          </div>
-                          <span className="text-[9px] font-bold uppercase tracking-tight text-gold">Early Bird</span>
-                        </div>
-                        {currentStageIndex >= 1 && (
-                          <div className="flex flex-col items-center gap-2 group/badge">
-                            <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center border border-accent/40 shadow-lg shadow-accent/10 group-hover/badge:scale-110 transition-transform">
-                              <Layers className="w-6 h-6 text-accent" />
-                            </div>
-                            <span className="text-[9px] font-bold uppercase tracking-tight text-accent">Stage 1 Master</span>
-                          </div>
-                        )}
-                        {currentStageIndex >= 2 && (
-                          <div className="flex flex-col items-center gap-2 group/badge">
-                            <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center border border-green-500/40 shadow-lg shadow-green-500/10 group-hover/badge:scale-110 transition-transform">
-                              <Target className="w-6 h-6 text-green-500" />
-                            </div>
-                            <span className="text-[9px] font-bold uppercase tracking-tight text-green-500">Fast Mover</span>
-                          </div>
-                        )}
-                        {/* Locked Badge */}
-                        <div className="flex flex-col items-center gap-2 opacity-30 grayscale cursor-not-allowed">
-                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center border border-border">
-                            <Lock className="w-5 h-5" />
-                          </div>
-                          <span className="text-[9px] font-bold uppercase tracking-tight">Pro Coder</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
                   {/* Tasks Card */}
-                  <Card className="border-border/50">
-                    <CardContent className="p-6">
-                      <h3 className="font-bold mb-4 flex items-center gap-2">
-                        <FileCode className="w-4 h-4 text-accent" />
-                        My Tasks
-                        <Badge variant="outline" className="ml-auto text-[10px]">
-                          {internship.tasks?.filter((t: any) => t.status === "completed").length || 0}/{internship.tasks?.length || 0}
-                        </Badge>
-                      </h3>
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                        {internship.tasks?.map((task: any) => (
-                          <div
-                            key={task.id}
-                            className="flex items-center gap-3 p-2 bg-muted/20 rounded border border-border/50"
-                          >
-                            <div
-                              className={`w-4 h-4 rounded border flex items-center justify-center ${task.status === "completed"
-                                ? "bg-green-500 border-green-500"
-                                : "border-muted-foreground/30"
-                                }`}
-                            >
-                              {task.status === "completed" && <CheckCircle className="w-3 h-3 text-white" />}
-                            </div>
-                            <span
-                              className={`text-sm flex-1 ${task.status === "completed"
-                                ? "line-through text-muted-foreground"
-                                : "text-foreground font-medium"
-                                }`}
-                            >
-                              {task.title}
-                            </span>
-                            {task.status !== "completed" && (
-                              <AIHelper type="explain" taskTitle={task.title} description="General Internship Task" />
-                            )}
-                            <Badge variant="outline" className="text-[9px] uppercase opacity-50">
-                              {task.priority}
-                            </Badge>
+                  <Card className="border-border/50 p-6">
+                    <h3 className="font-bold mb-4 flex items-center gap-2">
+                      <FileCode className="w-4 h-4 text-accent" />
+                      My Tasks
+                    </h3>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                      {internship.tasks?.map((task: any) => (
+                        <div key={task.id} className="flex items-center gap-3 p-2 bg-muted/20 rounded border border-border/50">
+                          <div className={`w-4 h-4 rounded border ${task.status === "completed" ? "bg-green-500 border-green-500" : "border-muted-foreground/30"}`}>
+                            {task.status === "completed" && <CheckCircle className="w-3 h-3 text-white mx-auto" />}
                           </div>
-                        ))}
-                        {!internship.tasks?.length && (
-                          <div className="py-8 text-center">
-                            <FileCode className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-                            <p className="text-xs text-muted-foreground italic">No tasks assigned yet</p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
+                          <span className={`text-sm flex-1 ${task.status === "completed" ? "line-through text-muted-foreground" : "font-medium"}`}>
+                            {task.title}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </Card>
 
-                  {/* Internship Details */}
-                  <Card className="border-border/50">
-                    <CardContent className="p-6 space-y-4">
-                      <h3 className="font-bold border-b border-border/50 pb-2">Program Details</h3>
-                      <div className="flex items-center gap-3 text-sm">
-                        <Building2 className="w-4 h-4 text-accent" />
-                        <div>
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Organization</p>
-                          <p>{internship.organization}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm">
-                        <Clock className="w-4 h-4 text-accent" />
-                        <div>
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Duration</p>
-                          <p>{internship.duration}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm">
-                        <Award className="w-4 h-4 text-accent" />
-                        <div>
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Type</p>
-                          <p>{internship.type}</p>
-                        </div>
-                      </div>
-                    </CardContent>
+                  {/* Program Details */}
+                  <Card className="border-border/50 p-6 space-y-4">
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Organization</p>
+                      <p className="text-sm font-medium">{internship.organization}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Duration</p>
+                      <p className="text-sm font-medium">{internship.duration}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Type</p>
+                      <p className="text-sm font-medium">{internship.type}</p>
+                    </div>
                   </Card>
                 </div>
               </div>
             </TabsContent>
 
-            <TabsContent value="time">
-              <TimeTracking teamId={internship.teamId || internship.id} />
+            <TabsContent value="activity">
+              <Card className="border-border/50 p-6">
+                <h3 className="font-bold mb-4 flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-accent" />
+                  Internship Activity
+                </h3>
+                <div className="space-y-4">
+                  {internship.activityLog?.map((log: any, idx: number) => (
+                    <div key={idx} className="flex gap-4 items-start p-3 rounded-lg border border-border/40">
+                      <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
+                        <Activity className="w-4 h-4 text-accent" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">{log.action}</p>
+                        <p className="text-xs text-muted-foreground">{log.details}</p>
+                        <p className="text-[10px] text-muted-foreground/60">{safeFormatDate(log.timestamp)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
             </TabsContent>
 
-            <TabsContent value="activity">
-              <Card className="border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Activity className="w-5 h-5 text-accent" />
-                    Internship activity
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {internship.activityLog?.length > 0 ? (
-                      internship.activityLog.map((log: any, idx: number) => (
-                        <div key={idx} className="flex gap-4 items-start p-3 rounded-lg border border-border/40 hover:bg-muted/30 transition-colors">
-                          <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-                            <Activity className="w-4 h-4 text-accent" />
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium">{log.action}</p>
-                            <p className="text-xs text-muted-foreground">{log.details}</p>
-                            <p className="text-[10px] text-muted-foreground/60">{safeFormatDate(log.timestamp)}</p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="py-12 text-center text-muted-foreground">
-                        No activity logs found.
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="standup">
+              <DailyStandup internshipId={internship.id} />
             </TabsContent>
           </Tabs>
         )}
       </div>
 
-      {/* Existing Dialogs (unchanged but passing real data) */}
-      <ApplyInternshipDialog
-        open={applyOpen}
-        onOpenChange={setApplyOpen}
-        onApply={() => {
-          toast.success("Enrollment request sent!");
-          setApplyOpen(false);
-        }}
-      />
+      {/* Dialogs */}
       {internship?.mentor && (
         <BookCallDialog
           open={bookCallOpen}
@@ -563,7 +402,7 @@ export default function StudentInternship() {
         onOpenChange={setChatOpen}
         projectId={activeProject?.id || ""}
         conversationId={activeProject?.conversationId}
-        projectTitle={activeProject?.title || ((internship?.projects && internship?.projects.length > 0) ? internship.projects[0].title : "Internship") + " Discussion"}
+        projectTitle={activeProject?.title || "Project Discussion"}
         teamMembers={activeProject?.team || []}
       />
       <ProjectDetailsDialog
@@ -590,50 +429,5 @@ export default function StudentInternship() {
         />
       )}
     </PortalLayout>
-  );
-}
-
-// Missing icon used
-function GraduationCap(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-      <path d="M6 12v5c3 3 9 3 12 0v-5" />
-    </svg>
-  );
-}
-
-function Building2(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M6 22V4c0-.5.2-1 .6-1.4C7 2.2 7.5 2 8 2h8c.5 0 1 .2 1.4.6.4.4.6.9.6 1.4v18" />
-      <path d="M6 18h12" />
-      <path d="M6 14h12" />
-      <path d="M6 10h12" />
-      <path d="M6 6h12" />
-      <path d="M9 22V18h6v4" />
-    </svg>
   );
 }
