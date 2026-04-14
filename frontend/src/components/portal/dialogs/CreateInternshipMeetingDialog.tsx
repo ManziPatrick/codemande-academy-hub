@@ -165,7 +165,7 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto flex flex-col">
           <ScrollArea className="flex-1 px-6">
             <div className="space-y-6 py-6">
 
