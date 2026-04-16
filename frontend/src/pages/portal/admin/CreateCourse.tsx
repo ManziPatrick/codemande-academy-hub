@@ -75,7 +75,7 @@ export default function CreateCourse() {
     modules: [] as any[]
   });
 
-  const { data: usersData } = useQuery(GET_USERS);
+  const { data: usersData } = useQuery(GET_USERS, { variables: { limit: 100 } });
   const trainers = (usersData as any)?.users?.items?.filter((u: any) => u.role === 'trainer' || u.role === 'admin' || u.role === 'super_admin') || [];
 
   const [createCourse] = useMutation(CREATE_COURSE, {

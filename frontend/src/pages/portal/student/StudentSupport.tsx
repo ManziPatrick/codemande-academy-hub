@@ -65,7 +65,7 @@ export default function StudentSupport() {
     variables: { conversationId: activeConversationId },
     skip: !activeConversationId
   });
-  const { data: usersData } = useQuery(GET_USERS);
+  const { data: usersData } = useQuery(GET_USERS, { variables: { limit: 100 } });
 
   const [sendMessageMutation] = useMutation(SEND_MESSAGE);
 
