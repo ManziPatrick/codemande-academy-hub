@@ -96,7 +96,7 @@ export default function StudentSupport() {
 
   const conversations = (convData as any)?.conversations || [];
   const messages = (msgData as any)?.messages || [];
-  const trainers = ((usersData as any)?.users || []).filter((u: any) => u.role === 'trainer');
+  const trainers = ((usersData as any)?.users?.items || []).filter((u: any) => u.role === 'trainer');
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !activeConversationId) return;
