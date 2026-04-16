@@ -5,6 +5,8 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { Suspense, lazy } from "react";
 import { Loader2 } from "lucide-react";
 import { Chat } from "@/components/chat/Chat";
+import { useBranding } from "./BrandingProvider";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Public Pages
 const Index = lazy(() => import("@/pages/Index"));
@@ -59,13 +61,15 @@ const AdminBranding = lazy(() => import("@/pages/portal/admin/AdminBranding"));
 const AdminTools = lazy(() => import("@/pages/portal/admin/AdminTools"));
 const AdminBlogManager = lazy(() => import("@/pages/portal/admin/AdminBlogManager"));
 const AdminTeamManager = lazy(() => import("@/pages/portal/admin/AdminTeamManager"));
+const CreateCourse = lazy(() => import("@/pages/portal/admin/CreateCourse").then(m => ({ default: m.default })));
 
 // Super Admin Portal
 const SuperAdminDashboard = lazy(() => import("@/pages/portal/super-admin/SuperAdminDashboard"));
 const SuperAdminAdmins = lazy(() => import("@/pages/portal/super-admin/SuperAdminAdmins"));
-const SuperAdminUsers = lazy(() => import("@/pages/portal/super-admin/SuperAdminUsers"));
+const SuperAdminUsers = lazy(() => import("@/pages/portal/super-admin/SuperAdminUsers").then(m => ({ default: m.default })));
 const SuperAdminConfig = lazy(() => import("@/pages/portal/super-admin/SuperAdminConfig"));
 const SuperAdminAnalytics = lazy(() => import("@/pages/portal/super-admin/SuperAdminAnalytics"));
+const Maintenance = lazy(() => import("@/pages/Maintenance"));
 
 
 const ModuleAccessDashboard = lazy(() => import("@/pages/portal/student/ModuleAccessDashboard"));
@@ -85,6 +89,26 @@ const PageLoader = () => (
 
 export function AnimatedRoutes() {
   const location = useLocation();
+  const { branding, loading: brandingLoading } = useBranding();
+  const { user, isLoading: authLoading } = useAuth();
+
+  const isMaintenanceMode = branding.maintenanceMode;
+  const isAdmin = user && (user.role === "admin" || user.role === "super_admin");
+  const isPublicPath = ["/auth", "/maintenance", "/reset-password"].includes(location.pathname);
+
+  // If in maintenance mode and not an admin, and not on an allowed public path
+  // we restrict the UI.
+  if (!brandingLoading && isMaintenanceMode && !isAdmin && !isPublicPath) {
+    return (
+      <AnimatePresence mode="wait">
+        <Suspense fallback={<PageLoader />}>
+          <Routes location={location} key="maintenance">
+            <Route path="*" element={<Maintenance />} />
+          </Routes>
+        </Suspense>
+      </AnimatePresence>
+    );
+  }
 
   return (
     <AnimatePresence mode="wait">
@@ -135,6 +159,7 @@ export function AnimatedRoutes() {
           <Route path="/portal/admin" element={<ProtectedRoute allowedRoles={["admin"]}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/portal/admin/users" element={<ProtectedRoute allowedRoles={["admin"]}><AdminUsers /></ProtectedRoute>} />
           <Route path="/portal/admin/courses" element={<ProtectedRoute allowedRoles={["admin"]}><AdminCourses /></ProtectedRoute>} />
+          <Route path="/portal/admin/courses/create" element={<ProtectedRoute allowedRoles={["admin"]}><CreateCourse /></ProtectedRoute>} />
           <Route path="/portal/admin/internships" element={<ProtectedRoute allowedRoles={["admin"]}><AdminInternships /></ProtectedRoute>} />
           <Route path="/portal/admin/projects" element={<ProtectedRoute allowedRoles={["admin"]}><AdminProjects /></ProtectedRoute>} />
           <Route path="/portal/admin/assignment-reviews" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><TrainerProjects /></ProtectedRoute>} />
@@ -162,6 +187,7 @@ export function AnimatedRoutes() {
           {/* Experimental/Testing */}
           <Route path="/courses/:id" element={<PageTransition><CoursePage /></PageTransition>} />
           <Route path="/chat" element={<PageTransition><Chat /></PageTransition>} />
+          <Route path="/maintenance" element={<Maintenance />} />
 
           {/* Catch-all */}
           <Route path="*" element={<PageTransition><NotFound /></PageTransition>} />

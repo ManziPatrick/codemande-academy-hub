@@ -10,7 +10,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AddUserDialogProps {
   open: boolean;
@@ -19,6 +21,7 @@ interface AddUserDialogProps {
 }
 
 export function AddUserDialog({ open, onOpenChange, onSave }: AddUserDialogProps) {
+  const { user: currentUser } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -64,8 +67,7 @@ export function AddUserDialog({ open, onOpenChange, onSave }: AddUserDialogProps
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">Password *</label>
-              <Input
-                type="password"
+              <PasswordInput
                 placeholder="••••••••"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -83,8 +85,12 @@ export function AddUserDialog({ open, onOpenChange, onSave }: AddUserDialogProps
                 <SelectContent>
                   <SelectItem value="student">Student</SelectItem>
                   <SelectItem value="trainer">Trainer</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                  {currentUser?.role === "super_admin" && (
+                    <>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="super_admin">Super Admin</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

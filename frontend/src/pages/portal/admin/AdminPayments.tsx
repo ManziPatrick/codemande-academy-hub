@@ -19,6 +19,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useQuery } from "@apollo/client/react"; // Assuming Apollo Client
 import { GET_PAYMENTS } from "@/lib/graphql/queries";
@@ -43,10 +45,15 @@ const statusIcons: Record<string, React.ElementType> = {
 export default function AdminPayments() {
   const [searchQuery, setSearchQuery] = useState("");
   const [verifyingPayment, setVerifyingPayment] = useState<any | null>(null);
-  const { data, loading } = useQuery(GET_PAYMENTS);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  const { data, loading } = useQuery(GET_PAYMENTS, {
+    variables: { page: currentPage, limit: pageSize }
+  });
 
 
-  const payments = (data as any)?.payments || [];
+  const payments = (data as any)?.payments?.items || [];
+  const pagination = (data as any)?.payments?.pagination;
 
   // Calculate stats
   const totalRevenue = payments
@@ -215,9 +222,11 @@ export default function AdminPayments() {
                                         Verify
                                       </Button>
                                     )}
-                                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                      <Download className="w-4 h-4" />
-                                    </Button>
+                                    {(payment.status === 'completed' || payment.status === 'paid' || payment.status === 'successful') && (
+                                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                        <Download className="w-4 h-4" />
+                                      </Button>
+                                    )}
                                   </div>
                                 </td>
                               </tr>
@@ -229,6 +238,53 @@ export default function AdminPayments() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Pagination UI */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6">
+                  <p className="text-sm text-muted-foreground">
+                    Showing page <span className="font-semibold">{pagination.currentPage}</span> of <span className="font-semibold">{pagination.totalPages}</span> ({pagination.totalCount} total)
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={!pagination.hasPreviousPage}
+                    >
+                      <ChevronLeft className="w-4 h-4 mr-2" /> Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                        .filter(p => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+                        .map((p, i, arr) => {
+                          const showEllipsis = i > 0 && p - arr[i - 1] > 1;
+                          return (
+                            <div key={p} className="flex items-center">
+                              {showEllipsis && <span className="px-1 text-muted-foreground">...</span>}
+                              <Button
+                                variant={currentPage === p ? "gold" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(p)}
+                                className="w-8 h-8 p-0"
+                              >
+                                {p}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                      disabled={!pagination.hasNextPage}
+                    >
+                      Next <ChevronRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </motion.div>
           </TabsContent>
 

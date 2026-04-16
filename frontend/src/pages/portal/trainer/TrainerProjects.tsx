@@ -93,7 +93,17 @@ interface Project {
 }
 
 interface GetAssignmentSubmissionsData {
-    getAssignmentSubmissions: AssignmentSubmission[];
+    getAssignmentSubmissions: {
+        items: AssignmentSubmission[];
+        pagination: {
+            totalCount: number;
+            totalPages: number;
+            currentPage: number;
+            pageSize: number;
+            hasNextPage: boolean;
+            hasPreviousPage: boolean;
+        };
+    };
 }
 
 interface GetMyProjectsData {
@@ -121,7 +131,12 @@ export default function TrainerProjects() {
     });
     const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
 
-    const { data: assignmentsData, loading: assignmentsLoading, refetch: refetchAssignments } = useQuery<GetAssignmentSubmissionsData>(GET_ASSIGNMENT_SUBMISSIONS);
+    const [assignPage, setAssignPage] = useState(1);
+    const assignPageSize = 10;
+
+    const { data: assignmentsData, loading: assignmentsLoading, refetch: refetchAssignments } = useQuery<GetAssignmentSubmissionsData>(GET_ASSIGNMENT_SUBMISSIONS, {
+        variables: { page: assignPage, limit: assignPageSize }
+    });
     const { data: projectsData, loading: projectsLoading } = useQuery<GetMyProjectsData>(GET_MY_PROJECTS);
     const { data: coursesData } = useQuery(GET_COURSES);
     const { data: studentsData } = useQuery(GET_ALL_STUDENTS);
@@ -145,7 +160,8 @@ export default function TrainerProjects() {
         }
     };
 
-    const submissions = assignmentsData?.getAssignmentSubmissions || [];
+    const submissions = assignmentsData?.getAssignmentSubmissions?.items || [];
+    const assignPagination = assignmentsData?.getAssignmentSubmissions?.pagination;
     const pendingSubmissions = submissions.filter((s: AssignmentSubmission) => s.status === "pending");
     const gradedSubmissions = submissions.filter((s: AssignmentSubmission) => s.status === "reviewed" || s.status === "graded" || s.status === "revision_requested");
 
@@ -522,7 +538,36 @@ export default function TrainerProjects() {
                                     </Card>
                                     </div>
                                 )}
-                    </TabsContent>
+                                
+                                {/* Pagination Controls for Pending */}
+                                {assignPagination && assignPagination.totalPages > 1 && (
+                                    <div className="flex items-center justify-between px-2 py-4 bg-muted/10 rounded-xl mt-4">
+                                        <p className="text-[10px] font-black uppercase text-muted-foreground pl-2">
+                                            Page {assignPagination.currentPage} of {assignPagination.totalPages}
+                                        </p>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setAssignPage(prev => Math.max(1, prev - 1))}
+                                                disabled={!assignPagination.hasPreviousPage}
+                                                className="h-8 rounded-lg"
+                                            >
+                                                Back
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => setAssignPage(prev => Math.min(assignPagination.totalPages, prev + 1))}
+                                                disabled={!assignPagination.hasNextPage}
+                                                className="h-8 rounded-lg"
+                                            >
+                                                Next
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </TabsContent>
 
                     <TabsContent value="graded" className="space-y-4">
                         {gradedSubmissions.length === 0 ? (

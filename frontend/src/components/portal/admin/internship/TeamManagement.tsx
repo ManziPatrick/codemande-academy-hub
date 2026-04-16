@@ -84,7 +84,12 @@ export default function TeamManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
-  const { data: teamsData, loading: teamsLoading, refetch } = useQuery(GET_INTERNSHIP_TEAMS);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 12;
+  
+  const { data: teamsData, loading: teamsLoading, refetch } = useQuery(GET_INTERNSHIP_TEAMS, {
+    variables: { page: currentPage, limit: pageSize }
+  });
   const { data: coursesData } = useQuery(GET_INTERNSHIP_PROGRAMS);
   const { data: templatesData } = useQuery(GET_INTERNSHIP_PROJECTS_NEW);
 
@@ -145,7 +150,8 @@ export default function TeamManagement() {
     </div>
   );
 
-  const allTeams = (teamsData as any)?.internshipTeams || [];
+  const allTeams = (teamsData as any)?.internshipTeams?.items || [];
+  const pagination = (teamsData as any)?.internshipTeams?.pagination;
   const filteredTeams = allTeams.filter((t: any) => 
     t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.internshipProject?.title?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -455,6 +461,55 @@ export default function TeamManagement() {
         })}
       </div>
 
+      {/* Pagination UI */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-2">
+            Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalCount} tracks)
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={!pagination.hasPreviousPage}
+              className="h-9 w-9 p-0 rounded-xl"
+            >
+              <ArrowRight className="h-4 w-4 rotate-180" />
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+                .map((p, i, arr) => {
+                  const showEllipsis = i > 0 && p - arr[i - 1] > 1;
+                  return (
+                    <div key={p} className="flex items-center">
+                      {showEllipsis && <span className="px-1 text-muted-foreground">...</span>}
+                      <Button
+                        variant={currentPage === p ? 'gold' : 'outline'}
+                        size="sm"
+                        onClick={() => setCurrentPage(p)}
+                        className={`h-9 w-9 p-0 rounded-xl ${currentPage === p ? 'pointer-events-none' : ''}`}
+                      >
+                        {p}
+                      </Button>
+                    </div>
+                  );
+                })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+              disabled={!pagination.hasNextPage}
+              className="h-9 w-9 p-0 rounded-xl"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {filteredTeams.length === 0 && !teamsLoading && (
         <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-border/50 rounded-[40px] bg-muted/5">
           <div className="w-16 h-16 rounded-3xl bg-muted/50 flex items-center justify-center mb-4">
@@ -525,7 +580,7 @@ export default function TeamManagement() {
               <Select
                 value={newAssignment.course}
                 onValueChange={(val) => {
-                  const blueprint = (templatesData as any)?.internshipProjects?.find((p: any) => p.id === val);
+                  const blueprint = (templatesData as any)?.internshipProjects?.items?.find((p: any) => p.id === val);
                   setNewAssignment({ 
                     ...newAssignment, 
                     course: val,
@@ -537,7 +592,7 @@ export default function TeamManagement() {
                   <SelectValue placeholder="Select a blueprint project from pool..." />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-border/50">
-                  {(templatesData as any)?.internshipProjects?.map((p: any) => (
+                  {(templatesData as any)?.internshipProjects?.items?.map((p: any) => (
                     <SelectItem key={p.id} value={p.id} className="rounded-lg">
                       <div className="flex flex-col">
                         <span className="font-bold">{p.title}</span>
@@ -545,7 +600,7 @@ export default function TeamManagement() {
                       </div>
                     </SelectItem>
                   ))}
-                  {(!(templatesData as any)?.internshipProjects || (templatesData as any).internshipProjects.length === 0) && (
+                  {(!(templatesData as any)?.internshipProjects?.items || (templatesData as any).internshipProjects.items.length === 0) && (
                     <div className="p-4 text-center text-xs text-muted-foreground">
                       No blueprint templates found. Create one in the Project Builder first.
                     </div>
@@ -572,11 +627,11 @@ export default function TeamManagement() {
                     <p className="text-[10px] text-muted-foreground uppercase tracking-widest">Team Ready</p>
                   </div>
                 </div>
-                {(templatesData as any)?.internshipProjects?.find((p: any) => p.id === newAssignment.course)?.tasks?.length > 0 && (
+                {(templatesData as any)?.internshipProjects?.items?.find((p: any) => p.id === newAssignment.course)?.tasks?.length > 0 && (
                   <div className="pt-2 border-t border-accent/10">
                     <p className="text-[11px] font-medium flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      {(templatesData as any).internshipProjects.find((p: any) => p.id === newAssignment.course).tasks.length} standard tickets will be generated.
+                      {(templatesData as any).internshipProjects.items.find((p: any) => p.id === newAssignment.course).tasks.length} standard tickets will be generated.
                     </p>
                   </div>
                 )}

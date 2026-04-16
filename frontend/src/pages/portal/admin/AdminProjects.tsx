@@ -27,6 +27,7 @@ import {
   Eye,
   Stars,
   User,
+  ChevronLeft,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -63,7 +64,17 @@ interface AssignmentSubmission {
 }
 
 interface GetAssignmentSubmissionsData {
-  getAssignmentSubmissions: AssignmentSubmission[];
+  getAssignmentSubmissions: {
+    items: AssignmentSubmission[];
+    pagination: {
+      totalCount: number;
+      totalPages: number;
+      currentPage: number;
+      pageSize: number;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+    };
+  };
 }
 
 export default function AdminProjects() {
@@ -79,6 +90,8 @@ export default function AdminProjects() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [gradeProject, setGradeProject] = useState<any>(null);
   const [gradeOpen, setGradeOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   // Assignment states
   const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
@@ -86,11 +99,17 @@ export default function AdminProjects() {
   const [feedbackValue, setFeedbackValue] = useState("");
   const [bookingOpen, setBookingOpen] = useState(false);
 
+  const [assignPage, setAssignPage] = useState(1);
+  const assignPageSize = 10;
+
   // Queries handling
-  const { data: assignmentsData, refetch: refetchAssignments } = useQuery<GetAssignmentSubmissionsData>(GET_ASSIGNMENT_SUBMISSIONS);
+  const { data: assignmentsData, refetch: refetchAssignments } = useQuery<GetAssignmentSubmissionsData>(GET_ASSIGNMENT_SUBMISSIONS, {
+      variables: { page: assignPage, limit: assignPageSize }
+  });
   const [gradeAssignmentMutation, { loading: grading }] = useMutation(GRADE_ASSIGNMENT);
 
-  const submissions = assignmentsData?.getAssignmentSubmissions || [];
+  const submissions = assignmentsData?.getAssignmentSubmissions?.items || [];
+  const assignPagination = assignmentsData?.getAssignmentSubmissions?.pagination;
   const pendingSubmissions = submissions.filter((s: AssignmentSubmission) => s.status === "pending");
   const gradedSubmissions = submissions.filter((s: AssignmentSubmission) => s.status === "reviewed" || s.status === "graded" || s.status === "revision_requested");
 
@@ -120,8 +139,11 @@ export default function AdminProjects() {
     }
   };
 
-  const { data, loading, refetch } = useQuery(GET_ALL_PROJECTS);
-  const projects = (data as any)?.projects || [];
+  const { data, loading, refetch } = useQuery(GET_ALL_PROJECTS, {
+    variables: { page: currentPage, limit: pageSize }
+  });
+  const projects = (data as any)?.projects?.items || [];
+  const pagination = (data as any)?.projects?.pagination;
 
   const [deleteProject] = useMutation(DELETE_PROJECT, {
     onCompleted: () => {
@@ -408,6 +430,53 @@ export default function AdminProjects() {
                 ))}
               </div>
             )}
+
+            {/* Pagination UI */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="flex items-center justify-between mt-6">
+                <p className="text-sm text-muted-foreground">
+                  Showing page <span className="font-semibold">{pagination.currentPage}</span> of <span className="font-semibold">{pagination.totalPages}</span> ({pagination.totalCount} total)
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={!pagination.hasPreviousPage}
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-2" /> Previous
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+                      .map((p, i, arr) => {
+                        const showEllipsis = i > 0 && p - arr[i - 1] > 1;
+                        return (
+                          <div key={p} className="flex items-center">
+                            {showEllipsis && <span className="px-1 text-muted-foreground">...</span>}
+                            <Button
+                              variant={currentPage === p ? "gold" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(p)}
+                              className="w-8 h-8 p-0"
+                            >
+                              {p}
+                            </Button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                    disabled={!pagination.hasNextPage}
+                  >
+                    Next <ChevronRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="assignments" className="space-y-6">
@@ -603,6 +672,42 @@ export default function AdminProjects() {
                       </Card>
                     ))}
                   </div>
+                )}
+                
+                {gradedSubmissions.length === 0 && (
+                  <div className="text-center py-20 border-2 border-dashed rounded-[32px] opacity-50">
+                    <FileText className="w-12 h-12 mx-auto mb-4" />
+                    <p className="font-bold">No submissions found</p>
+                  </div>
+                )}
+
+                {/* Assignment Pagination UI */}
+                {assignPagination && assignPagination.totalPages > 1 && (
+                    <div className="flex items-center justify-between px-2 py-4">
+                        <p className="text-sm text-muted-foreground">
+                            Page <span className="font-bold text-foreground">{assignPagination.currentPage}</span> of {assignPagination.totalPages} ({assignPagination.totalCount} total)
+                        </p>
+                        <div className="flex gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAssignPage(prev => Math.max(1, prev - 1))}
+                                disabled={!assignPagination.hasPreviousPage}
+                                className="rounded-xl h-8 px-3"
+                            >
+                                Previous
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAssignPage(prev => Math.min(assignPagination.totalPages, prev + 1))}
+                                disabled={!assignPagination.hasNextPage}
+                                className="rounded-xl h-8 px-3"
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
                 )}
               </TabsContent>
             </Tabs>

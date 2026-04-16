@@ -1,5 +1,16 @@
 import { gql } from "@apollo/client";
 
+export const PAGINATION_FRAGMENT = gql`
+  fragment PaginationFragment on PaginationInfo {
+    totalCount
+    totalPages
+    currentPage
+    pageSize
+    hasNextPage
+    hasPreviousPage
+  }
+`;
+
 export const GET_UNREAD_NOTIFICATIONS = gql`
   query GetUnreadNotifications {
     unreadNotificationCount
@@ -57,20 +68,26 @@ export const GET_STATS = gql`
 
 
 export const GET_USERS = gql`
-  query GetUsers {
-    users {
-      id
-      username
-      email
-      role
-      permissions
-      activityLog {
-        action
-        details
-        timestamp
+  query GetUsers($page: Int, $limit: Int) {
+    users(page: $page, limit: $limit) {
+      items {
+        id
+        username
+        email
+        role
+        permissions
+        activityLog {
+          action
+          details
+          timestamp
+        }
+      }
+      pagination {
+        ...PaginationFragment
       }
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 export const GET_CONVERSATIONS = gql`
@@ -109,45 +126,51 @@ export const GET_MESSAGES = gql`
 `;
 
 export const GET_COURSES = gql`
-  query GetCourses {
-    courses {
-      id
-      title
-      description
-      thumbnail
-      price
-      discountPrice
-      level
-      category
-      status
-      submissionRequired
-      instructor {
-        id
-        username
-      }
-      studentsEnrolled {
-        id
-      }
-      createdAt
-      modules {
+  query GetCourses($page: Int, $limit: Int) {
+    courses(page: $page, limit: $limit) {
+      items {
         id
         title
         description
-        lessons {
+        thumbnail
+        price
+        discountPrice
+        level
+        category
+        status
+        submissionRequired
+        instructor {
+          id
+          username
+        }
+        studentsEnrolled {
+          id
+        }
+        createdAt
+        modules {
           id
           title
-          duration
-          content
-          videoUrl
-          fileUrl
-          type
-          isAssignment
-          requiredAssignment
-          assignmentDescription
+          description
+          lessons {
+            id
+            title
+            duration
+            content
+            videoUrl
+            fileUrl
+            type
+            isAssignment
+            requiredAssignment
+            assignmentDescription
+          }
         }
+      }
+      pagination {
+        ...PaginationFragment
       }
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 export const GET_COURSE = gql`
@@ -411,39 +434,51 @@ export const GET_MY_PAYMENTS = gql`
 `;
 
 export const GET_ALL_BOOKINGS = gql`
-  query GetAllBookings {
-    bookings {
-      id
-      type
-      date
-      time
-      topic
-      notes
-      status
-      meetingLink
-      user {
+  query GetAllBookings($page: Int, $limit: Int) {
+    bookings(page: $page, limit: $limit) {
+      items {
         id
-        username
+        type
+        date
+        time
+        topic
+        notes
+        status
+        meetingLink
+        user {
+          id
+          username
+        }
+        mentor {
+          id
+          username
+        }
+        createdAt
       }
-      mentor {
-        id
-        username
+      pagination {
+        ...PaginationFragment
       }
-      createdAt
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 export const GET_BADGES = gql`
-  query GetBadges {
-    badges {
-      id
-      title
-      description
-      icon
-      category
+  query GetBadges($page: Int, $limit: Int) {
+    badges(page: $page, limit: $limit) {
+      items {
+        id
+        title
+        description
+        icon
+        category
+      }
+      pagination {
+        ...PaginationFragment
+      }
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 export const GET_CONFIGS = gql`
@@ -583,47 +618,53 @@ export const GET_PROJECT = gql`
 `;
 
 export const GET_ALL_PROJECTS = gql`
-  query GetAllProjects {
-    projects {
-      id
-      title
-      course
-      type
-      status
-      progress
-      deadline
-      submittedAt
-      grade
-      feedback
-      description
-      submissionUrl
-      conversationId
-      team {
-        userId
-        name
-        role
+  query GetAllProjects($page: Int, $limit: Int) {
+    projects(page: $page, limit: $limit) {
+      items {
+        id
+        title
+        course
+        type
+        status
+        progress
+        deadline
+        submittedAt
+        grade
+        feedback
+        description
+        submissionUrl
+        conversationId
+        team {
+          userId
+          name
+          role
+          user {
+            id
+            username
+          }
+        }
+        mentors {
+          id
+          username
+        }
+        tasks {
+          id
+          title
+          completed
+        }
         user {
           id
           username
         }
+        createdAt
+        updatedAt
       }
-      mentors {
-        id
-        username
+      pagination {
+        ...PaginationFragment
       }
-      tasks {
-        id
-        title
-        completed
-      }
-      user {
-        id
-        username
-      }
-      createdAt
-      updatedAt
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 export const GET_MY_CERTIFICATES = gql`
@@ -937,40 +978,46 @@ export const GET_INTERNSHIP_STANDUPS = gql`
 `;
 
 export const GET_ALL_INTERNSHIPS = gql`
-  query GetAllInternships {
-    internships {
-      id
-      title
-      organization
-      company
-      duration
-      type
-      status
-      stage
-      cohort
-      user {
-        id
-        username
-      }
-      mentor {
-        id
-        username
-      }
-      mentors {
-        id
-        username
-      }
-      progress
-      currentStage
-      tasks {
+  query GetAllInternships($page: Int, $limit: Int) {
+    internships(page: $page, limit: $limit) {
+      items {
         id
         title
+        organization
+        company
+        duration
+        type
         status
-        priority
+        stage
+        cohort
+        user {
+          id
+          username
+        }
+        mentor {
+          id
+          username
+        }
+        mentors {
+          id
+          username
+        }
+        progress
+        currentStage
+        tasks {
+          id
+          title
+          status
+          priority
+        }
+        createdAt
       }
-      createdAt
+      pagination {
+        ...PaginationFragment
+      }
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 export const GET_TRAINER_STATS = gql`
@@ -1010,43 +1057,54 @@ export const GET_ADMIN_DASHBOARD_DATA = gql`
 `;
 
 export const GET_PAYMENTS = gql`
-  query GetPayments {
-    payments {
-      id
-      studentName
-      amount
-      currency
-      itemTitle
-      type
-      status
-      date
-      method
-      proofOfPaymentUrl
-      adminNotes
+  query GetPayments($page: Int, $limit: Int) {
+    payments(page: $page, limit: $limit) {
+      items {
+        id
+        studentName
+        amount
+        currency
+        itemTitle
+        type
+        status
+        date
+        method
+        proofOfPaymentUrl
+        adminNotes
+      }
+      pagination {
+        ...PaginationFragment
+      }
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 // --- New Internship Module Queries ---
 
 export const GET_INTERNSHIP_PROGRAMS = gql`
-  query GetInternshipPrograms {
-    internshipPrograms {
-      id
-      title
-      description
-      duration
-      startDate
-      endDate
-      applicationDeadline
-      status
-      price
-      discount
-      currency
-      image
-      eligibility
-      rules
-      maxSpots
+  query GetInternshipPrograms($page: Int, $limit: Int) {
+    internshipPrograms(page: $page, limit: $limit) {
+      items {
+        id
+        title
+        description
+        duration
+        startDate
+        endDate
+        applicationDeadline
+        status
+        price
+        discount
+        currency
+        image
+        eligibility
+        rules
+        maxSpots
+      }
+      pagination {
+        ...PaginationFragment
+      }
     }
     myInternshipApplications {
       id
@@ -1054,6 +1112,7 @@ export const GET_INTERNSHIP_PROGRAMS = gql`
       status
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 export const GET_INTERNSHIP_PROGRAM = gql`
@@ -1076,30 +1135,36 @@ export const GET_INTERNSHIP_PROGRAM = gql`
 `;
 
 export const GET_INTERNSHIP_APPLICATIONS = gql`
-  query GetInternshipApplications($programId: ID, $status: String) {
-    internshipApplications(programId: $programId, status: $status) {
-      id
-      status
-      skills
-      availability
-      portfolioUrl
-      rejectionReason
-      createdAt
-      user {
+  query GetInternshipApplications($programId: ID, $status: String, $page: Int, $limit: Int) {
+    internshipApplications(programId: $programId, status: $status, page: $page, limit: $limit) {
+      items {
         id
-        username
-        email
-        fullName
-        studentProfile {
-          school
+        status
+        skills
+        availability
+        portfolioUrl
+        rejectionReason
+        createdAt
+        user {
+          id
+          username
+          email
+          fullName
+          studentProfile {
+            school
+          }
+        }
+        internshipProgram {
+          id
+          title
         }
       }
-      internshipProgram {
-        id
-        title
+      pagination {
+        ...PaginationFragment
       }
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 export const GET_MY_INTERNSHIP_APPLICATIONS = gql`
@@ -1128,20 +1193,26 @@ export const GET_MY_INTERNSHIP_APPLICATIONS = gql`
 `;
 
 export const GET_INTERNSHIP_PROJECTS_NEW = gql`
-  query GetInternshipProjects($programId: ID) {
-    internshipProjects(programId: $programId) {
-      id
-      title
-      description
-      requiredSkills
-      documentation {
-        links {
-          title
-          url
+  query GetInternshipProjects($programId: ID, $page: Int, $limit: Int) {
+    internshipProjects(programId: $programId, page: $page, limit: $limit) {
+      items {
+        id
+        title
+        description
+        requiredSkills
+        documentation {
+          links {
+            title
+            url
+          }
         }
+      }
+      pagination {
+        ...PaginationFragment
       }
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 export const GET_INTERNSHIP_PROJECT_NEW = gql`
@@ -1173,44 +1244,50 @@ export const GET_INTERNSHIP_PROJECT_NEW = gql`
 `;
 
 export const GET_INTERNSHIP_TEAMS = gql`
-  query GetInternshipTeams($programId: ID) {
-    internshipTeams(programId: $programId) {
-      id
-      name
-      status
-      type
-      mentor {
+  query GetInternshipTeams($programId: ID, $page: Int, $limit: Int) {
+    internshipTeams(programId: $programId, page: $page, limit: $limit) {
+      items {
         id
-        username
-        fullName
-        avatar
-      }
-      members {
-        id
-        userId
-        user {
+        name
+        status
+        type
+        mentor {
           id
           username
           fullName
           avatar
         }
-        role
-      }
-      internshipProjectId
-      internshipProject {
-        id
-        title
-        description
-        requiredSkills
-        documentation {
-          links {
-            title
-            url
+        members {
+          id
+          userId
+          user {
+            id
+            username
+            fullName
+            avatar
+          }
+          role
+        }
+        internshipProjectId
+        internshipProject {
+          id
+          title
+          description
+          requiredSkills
+          documentation {
+            links {
+              title
+              url
+            }
           }
         }
       }
+      pagination {
+        ...PaginationFragment
+      }
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 
 export const GET_MY_INTERNSHIP_TEAM = gql`
@@ -1359,24 +1436,7 @@ export const GET_INTERNSHIP_SUBMISSIONS = gql`
   }
 `;
 
-export const GET_INTERNSHIP_ACTIVITY_LOGS = gql`
-  query GetInternshipActivityLogs($programId: ID, $targetType: String, $targetId: ID) {
-    internshipActivityLogs(programId: $programId, targetType: $targetType, targetId: $targetId) {
-      id
-      action
-      targetType
-      targetId
-      details
-      createdAt
-      userId
-      user {
-        id
-        username
-        avatar
-      }
-    }
-  }
-`;
+
 
 export const GET_ANALYTICS = gql`
   query GetAnalytics {
@@ -1422,6 +1482,7 @@ export const GET_BRANDING = gql`
       logoUrl
       siteName
       portalTitle
+      maintenanceMode
     }
   }
 `;
@@ -1781,34 +1842,40 @@ export const GET_RESOURCES = gql`
 `;
 
 export const GET_ASSIGNMENT_SUBMISSIONS = gql`
-  query GetAssignmentSubmissions($courseId: ID, $lessonId: String) {
-    getAssignmentSubmissions(courseId: $courseId, lessonId: $lessonId) {
-      id
-      userId
-      user {
+  query GetAssignmentSubmissions($courseId: ID, $lessonId: String, $page: Int, $limit: Int) {
+    getAssignmentSubmissions(courseId: $courseId, lessonId: $lessonId, page: $page, limit: $limit) {
+      items {
         id
-        username
-        fullName
-        avatar
-      }
-      courseId
-      course {
-        id
-        title
-        instructor {
+        userId
+        user {
           id
-          fullName
           username
+          fullName
+          avatar
         }
+        courseId
+        course {
+          id
+          title
+          instructor {
+            id
+            fullName
+            username
+          }
+        }
+        lessonId
+        content
+        status
+        grade
+        feedback
+        createdAt
       }
-      lessonId
-      content
-      status
-      grade
-      feedback
-      createdAt
+      pagination {
+        ...PaginationFragment
+      }
     }
   }
+  ${PAGINATION_FRAGMENT}
 `;
 export const GET_NOTIFICATIONS = gql`
   query GetNotifications {
@@ -1939,4 +2006,27 @@ export const GET_MY_INTERNSHIP_MEETINGS = gql`
       }
     }
   }
+`;
+
+export const GET_INTERNSHIP_ACTIVITY_LOGS = gql`
+  query GetInternshipActivityLogs($programId: ID, $targetType: String, $targetId: ID, $page: Int, $limit: Int) {
+    internshipActivityLogs(programId: $programId, targetType: $targetType, targetId: $targetId, page: $page, limit: $limit) {
+      items {
+        id
+        action
+        targetType
+        targetId
+        details
+        createdAt
+        user {
+          username
+          fullName
+        }
+      }
+      pagination {
+        ...PaginationFragment
+      }
+    }
+  }
+  ${PAGINATION_FRAGMENT}
 `;

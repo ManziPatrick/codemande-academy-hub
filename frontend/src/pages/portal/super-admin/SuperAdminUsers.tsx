@@ -41,14 +41,19 @@ import { DELETE_USER, UPDATE_USER } from "@/lib/graphql/mutations";
 import { toast } from "sonner";
 
 export default function SuperAdminUsers() {
+  const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const pageSize = 10;
 
-  const { data, loading, refetch } = useQuery(GET_USERS);
+  const { data, loading, refetch } = useQuery(GET_USERS, {
+    variables: { page: currentPage, limit: pageSize }
+  });
   const [deleteUserMutation] = useMutation(DELETE_USER);
   const [updateUserMutation] = useMutation(UPDATE_USER);
 
-  const allUsers = (data as any)?.users || [];
+  const allUsers = (data as any)?.users?.items || [];
+  const pagination = (data as any)?.users?.pagination;
 
   const getInitials = (name: string) => (name || "U").split(" ").map(n => n[0]).join("").toUpperCase();
 
@@ -244,6 +249,57 @@ export default function SuperAdminUsers() {
                     </table>
                 )}
               </div>
+
+              {/* Pagination UI */}
+                {pagination && pagination.totalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-4 border-t border-border/50 gap-4">
+                        <p className="text-sm text-muted-foreground order-2 sm:order-1">
+                            Showing page <span className="font-semibold text-foreground">{pagination.currentPage}</span> of <span className="font-semibold text-foreground">{pagination.totalPages}</span> ({pagination.totalCount} users)
+                        </p>
+                        <div className="flex items-center gap-2 order-1 sm:order-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={!pagination.hasPreviousPage}
+                                className="rounded-xl border-border/50 h-9"
+                            >
+                                Previous
+                            </Button>
+                            
+                            <div className="flex items-center gap-1">
+                                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                                    .filter(p => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+                                    .map((p, i, arr) => {
+                                        const showEllipsis = i > 0 && p - arr[i-1] > 1;
+                                        return (
+                                            <div key={p} className="flex items-center">
+                                                {showEllipsis && <span className="px-1 text-muted-foreground">...</span>}
+                                                <Button
+                                                    variant={currentPage === p ? "default" : "outline"}
+                                                    size="sm"
+                                                    onClick={() => setCurrentPage(p)}
+                                                    className={`h-9 w-9 p-0 rounded-xl border-border/50 ${currentPage === p ? 'bg-accent text-accent-foreground' : ''}`}
+                                                >
+                                                    {p}
+                                                </Button>
+                                            </div>
+                                        );
+                                    })}
+                            </div>
+
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                                disabled={!pagination.hasNextPage}
+                                className="rounded-xl border-border/50 h-9"
+                            >
+                                Next
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </CardContent>
           </Card>
         </motion.div>

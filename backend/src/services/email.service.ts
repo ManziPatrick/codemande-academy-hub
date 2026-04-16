@@ -1,18 +1,53 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+import { Config } from '../models/Config';
 
 dotenv.config();
 
-// Create transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false, // Use TLS
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
+interface EmailConfig {
+  host: string;
+  port: number;
+  user?: string;
+  pass?: string;
+  from: string;
+  siteName: string;
+}
+
+const getEmailConfig = async (): Promise<EmailConfig> => {
+  try {
+    const serverConfig = await Config.findOne({ key: 'emailServer' });
+    const portConfig = await Config.findOne({ key: 'emailPort' });
+    const senderConfig = await Config.findOne({ key: 'emailSender' });
+    const passConfig = await Config.findOne({ key: 'emailAppPassword' });
+    const siteNameConfig = await Config.findOne({ key: 'siteName' });
+
+    let host = serverConfig ? String(serverConfig.value) : process.env.SMTP_HOST || 'smtp.gmail.com';
+    let portStr = portConfig ? String(portConfig.value) : process.env.SMTP_PORT || '587';
+    let user = senderConfig ? String(senderConfig.value) : process.env.SMTP_USER;
+    let pass = passConfig ? String(passConfig.value) : process.env.SMTP_PASS;
+    let siteName = siteNameConfig ? String(siteNameConfig.value) : "CODEMANDE Academy";
+    
+    // Clear quotes if present from JSON strings
+    host = host.replace(/^"|"$/g, '');
+    portStr = portStr.replace(/^"|"$/g, '');
+    user = user?.replace(/^"|"$/g, '');
+    pass = pass?.replace(/^"|"$/g, '');
+    siteName = siteName.replace(/^"|"$/g, '');
+
+    let from = user ? `${siteName} <${user}>` : process.env.EMAIL_FROM || `${siteName} <noreply@codemande.com>`;
+
+    return { host, port: parseInt(portStr), user, pass, from, siteName };
+  } catch (error) {
+    return {
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+      from: process.env.EMAIL_FROM || 'CODEMANDE Academy <noreply@codemande.com>',
+      siteName: "CODEMANDE Academy"
+    };
   }
-});
+};
 
 interface EmailOptions {
   to: string;
@@ -21,19 +56,28 @@ interface EmailOptions {
   text?: string;
 }
 
-/**
- * Send an email
- */
 export const sendEmail = async (options: EmailOptions): Promise<boolean> => {
   try {
+    const config = await getEmailConfig();
+
     // Skip sending if SMTP not configured
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    if (!config.user || !config.pass) {
       console.log('[Email] SMTP not configured, skipping email:', options.subject);
       return true; // Return true to not block flow
     }
 
+    const transporter = nodemailer.createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.port === 465, // Use true for 465, false for other ports
+      auth: {
+        user: config.user,
+        pass: config.pass
+      }
+    });
+
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || 'CODEMANDE Academy <noreply@codemande.com>',
+      from: config.from,
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -55,6 +99,7 @@ export const sendWelcomeEmail = async (
   username: string,
   role: string
 ): Promise<boolean> => {
+  const config = await getEmailConfig();
   const html = `
     <!DOCTYPE html>
     <html>
@@ -81,7 +126,7 @@ export const sendWelcomeEmail = async (
           <a href="${process.env.CLIENT_ORIGIN}/login" class="btn">Access My Dashboard</a>
         </div>
         <div class="footer">
-          <p>© 2026 CODEMANDE Academy. Building Africa's Tech Talent.</p>
+          <p>© 2026 ${config.siteName}. Building Africa's Tech Talent.</p>
         </div>
       </div>
     </body>
@@ -104,6 +149,7 @@ export const sendAdminNewUserNotification = async (
   newUserEmail: string,
   newUserRole: string
 ): Promise<boolean> => {
+  const config = await getEmailConfig();
   const html = `
     <!DOCTYPE html>
     <html>
@@ -145,6 +191,7 @@ export const sendMeetingInvitation = async (
     meetingLink?: string;
   }
 ): Promise<boolean> => {
+  const config = await getEmailConfig();
   const html = `
     <!DOCTYPE html>
     <html>
@@ -183,7 +230,7 @@ export const sendMeetingInvitation = async (
           <p>If you need to reschedule, please do so through your portal dashboard.</p>
         </div>
         <div class="footer">
-          <p>© 2026 CODEMANDE Academy. Building Africa's Tech Talent.</p>
+          <p>© 2026 ${config.siteName}. Building Africa's Tech Talent.</p>
         </div>
       </div>
     </body>
@@ -205,6 +252,7 @@ export const sendApplicationConfirmation = async (
   studentName: string,
   programTitle: string
 ): Promise<boolean> => {
+  const config = await getEmailConfig();
   const html = `
     <!DOCTYPE html>
     <html>
@@ -236,7 +284,7 @@ export const sendApplicationConfirmation = async (
           <a href="${process.env.CLIENT_ORIGIN}/portal/student/internships" class="btn">View Application Status</a>
         </div>
         <div class="footer">
-          <p>© 2026 CODEMANDE Academy. Building Africa's Tech Talent.</p>
+          <p>© 2026 ${config.siteName}. Building Africa's Tech Talent.</p>
         </div>
       </div>
     </body>
@@ -260,6 +308,7 @@ export const sendApplicationStatusUpdate = async (
   status: 'approved' | 'rejected' | 'waitlisted',
   message?: string
 ): Promise<boolean> => {
+  const config = await getEmailConfig();
   const statusMessages = {
     approved: {
       title: '🎉 Congratulations! You\'re In!',
@@ -314,7 +363,7 @@ export const sendApplicationStatusUpdate = async (
           ` : ''}
         </div>
         <div class="footer">
-          <p>© 2026 CODEMANDE Academy. Building Africa's Tech Talent.</p>
+          <p>© 2026 ${config.siteName}. Building Africa's Tech Talent.</p>
         </div>
       </div>
     </body>
@@ -339,6 +388,7 @@ export const sendPaymentConfirmation = async (
   currency: string,
   invoiceNumber: string
 ): Promise<boolean> => {
+  const config = await getEmailConfig();
   const formattedAmount = new Intl.NumberFormat('en-RW', {
     style: 'currency',
     currency: currency
@@ -377,7 +427,7 @@ export const sendPaymentConfirmation = async (
           <p>You now have full access to the internship program. Log in to your portal to start your journey!</p>
         </div>
         <div class="footer">
-          <p>© 2026 CODEMANDE Academy. Building Africa's Tech Talent.</p>
+          <p>© 2026 ${config.siteName}. Building Africa's Tech Talent.</p>
         </div>
       </div>
     </body>
@@ -401,6 +451,7 @@ export const sendCertificateIssued = async (
   certificateNumber: string,
   verificationUrl: string
 ): Promise<boolean> => {
+  const config = await getEmailConfig();
   const html = `
     <!DOCTYPE html>
     <html>
@@ -439,7 +490,7 @@ export const sendCertificateIssued = async (
           <a href="${process.env.CLIENT_ORIGIN}/portal/student/certificates" class="btn">Download Certificate</a>
         </div>
         <div class="footer">
-          <p>© 2026 CODEMANDE Academy. Building Africa's Tech Talent.</p>
+          <p>© 2026 ${config.siteName}. Building Africa's Tech Talent.</p>
         </div>
       </div>
     </body>
@@ -462,6 +513,7 @@ export const sendFeedbackNotification = async (
   mentorName: string,
   projectTitle: string
 ): Promise<boolean> => {
+  const config = await getEmailConfig();
   const html = `
     <!DOCTYPE html>
     <html>
@@ -487,7 +539,7 @@ export const sendFeedbackNotification = async (
           <a href="${process.env.CLIENT_ORIGIN}/portal/student/internships" class="btn">View Feedback</a>
         </div>
         <div class="footer">
-          <p>© 2026 CODEMANDE Academy. Building Africa's Tech Talent.</p>
+          <p>© 2026 ${config.siteName}. Building Africa's Tech Talent.</p>
         </div>
       </div>
     </body>
@@ -508,6 +560,7 @@ export const sendPasswordResetEmail = async (
   email: string,
   resetToken: string
 ): Promise<boolean> => {
+  const config = await getEmailConfig();
   const resetUrl = `${process.env.CLIENT_ORIGIN}/reset-password?token=${resetToken}`;
 
   const html = `
@@ -548,7 +601,7 @@ export const sendPasswordResetEmail = async (
           <p>If you didn't request a password reset, you can safely ignore this email.</p>
         </div>
         <div class="footer">
-          <p>© 2026 CODEMANDE Academy. Building Africa's Tech Talent.</p>
+          <p>© 2026 ${config.siteName}. Building Africa's Tech Talent.</p>
         </div>
       </div>
     </body>
@@ -562,6 +615,70 @@ export const sendPasswordResetEmail = async (
   });
 };
 
+/**
+ * Send Login OTP (2FA) Email
+ */
+export const sendLoginOTPEmail = async (email: string, code: string): Promise<boolean> => {
+  const config = await getEmailConfig();
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; padding: 0; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; }
+        .header { background: #000; color: #EAB308; padding: 40px 20px; text-align: center; }
+        .content { background: #ffffff; padding: 40px; }
+        .otp-code { 
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 42px; 
+          font-weight: bold; 
+          color: #EAB308; 
+          letter-spacing: 8px; 
+          text-align: center; 
+          padding: 24px; 
+          background: #fdfae5; 
+          border: 2px dashed #EAB308;
+          border-radius: 8px;
+          margin: 30px 0;
+        }
+        .footer { background: #f8f9fa; padding: 24px; text-align: center; color: #6c757d; font-size: 13px; }
+        .warning { color: #856404; background-color: #fff3cd; padding: 12px; border-radius: 6px; font-size: 14px; margin-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 style="margin: 0; font-size: 24px;">CODEMANDE ACADEMY</h1>
+        </div>
+        <div class="content">
+          <h2 style="margin-top: 0; color: #1a1a1a;">Verification Code</h2>
+          <p>Please enter the following 6-digit code to verify your identity and complete your sign-in to the portal.</p>
+          
+          <div class="otp-code">${code}</div>
+          
+          <p>This code will expire in <strong>5 minutes</strong>. If you did not request this code, please ignore this email or contact support if you suspect unauthorized access.</p>
+          
+          <div class="warning">
+            <strong>Security Tip:</strong> Never share your verification code with anyone. Our team will never ask for this code.
+          </div>
+        </div>
+        <div class="footer">
+          <p>© 2026 ${config.siteName}. All rights reserved.</p>
+          <p>Building Africa's Tech Talent.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `${code} is your verification code for ${config.siteName}`,
+    html
+  });
+};
+
 export default {
   sendEmail,
   sendApplicationConfirmation,
@@ -570,6 +687,7 @@ export default {
   sendCertificateIssued,
   sendFeedbackNotification,
   sendPasswordResetEmail,
+  sendLoginOTPEmail,
   sendWelcomeEmail,
   sendAdminNewUserNotification,
   sendMeetingInvitation

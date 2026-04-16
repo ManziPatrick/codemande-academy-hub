@@ -15,9 +15,11 @@ export default function InternshipProjectList() {
     const [editOpen, setEditOpen] = useState(false);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [assignOpen, setAssignOpen] = useState(false);
-    const [selectedProject, setSelectedProject] = useState<any>(null);
-    const [projectToAssign, setProjectToAssign] = useState<any>(null);
-    const { data: projectsData, loading: projectsLoading, refetch } = useQuery(GET_INTERNSHIP_PROJECTS_NEW);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 9; // 3x3 grid usually looks best
+    const { data: projectsData, loading: projectsLoading, refetch } = useQuery(GET_INTERNSHIP_PROJECTS_NEW, {
+        variables: { page: currentPage, limit: pageSize }
+    });
 
     const [deleteProject] = useMutation(DELETE_INTERNSHIP_PROJECT, {
         onCompleted: () => {
@@ -29,7 +31,8 @@ export default function InternshipProjectList() {
 
     if (projectsLoading) return <div className="p-8 text-center">Loading projects...</div>;
 
-    const projects = (projectsData as any)?.internshipProjects || [];
+    const projects = (projectsData as any)?.internshipProjects?.items || [];
+    const pagination = (projectsData as any)?.internshipProjects?.pagination;
 
     const handleDelete = (id: string) => {
         if (confirm('Are you sure you want to delete this project?')) {
@@ -183,6 +186,55 @@ export default function InternshipProjectList() {
                             </CardContent>
                         </Card>
                     ))}
+                </div>
+            )}
+
+            {/* Pagination UI */}
+            {pagination && pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between px-2 py-4 border-t border-border/50">
+                    <p className="text-sm text-muted-foreground font-medium">
+                        Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalCount} projects)
+                    </p>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                            disabled={!pagination.hasPreviousPage}
+                            className="rounded-xl"
+                        >
+                            Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                                .filter(p => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+                                .map((p, i, arr) => {
+                                    const showEllipsis = i > 0 && p - arr[i-1] > 1;
+                                    return (
+                                        <div key={p} className="flex items-center">
+                                            {showEllipsis && <span className="px-2 text-muted-foreground">...</span>}
+                                            <Button
+                                                variant={currentPage === p ? 'default' : 'outline'}
+                                                size="sm"
+                                                onClick={() => setCurrentPage(p)}
+                                                className={`h-9 w-9 p-0 rounded-xl ${currentPage === p ? 'bg-primary text-primary-foreground pointer-events-none' : ''}`}
+                                            >
+                                                {p}
+                                            </Button>
+                                        </div>
+                                    );
+                                })}
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                            disabled={!pagination.hasNextPage}
+                            className="rounded-xl"
+                        >
+                            Next
+                        </Button>
+                    </div>
                 </div>
             )}
         </div>

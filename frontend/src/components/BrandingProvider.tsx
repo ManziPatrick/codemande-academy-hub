@@ -11,6 +11,7 @@ interface Branding {
   logoUrl: string;
   siteName: string;
   portalTitle: string;
+  maintenanceMode: boolean;
 }
 
 interface BrandingContextType {
@@ -25,6 +26,7 @@ const defaultBranding: Branding = {
   logoUrl: "",
   siteName: "CODEMANDE",
   portalTitle: "Academy Hub",
+  maintenanceMode: false,
 };
 
 const BrandingContext = createContext<BrandingContextType>({

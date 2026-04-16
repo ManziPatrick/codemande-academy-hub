@@ -161,15 +161,17 @@ export default function StudentPayments() {
                                     Submit Proof
                                   </Button>
                                 )}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 text-xs font-bold hover:bg-gold/10 hover:text-gold"
-                                  onClick={() => setSelectedPayment(payment)}
-                                >
-                                  <Download className="w-3.5 h-3.5 mr-1.5" />
-                                  Receipt
-                                </Button>
+                                {(payment.status === 'completed' || payment.status === 'paid' || payment.status === 'successful') && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 text-xs font-bold hover:bg-gold/10 hover:text-gold"
+                                    onClick={() => setSelectedPayment(payment)}
+                                  >
+                                    <Download className="w-3.5 h-3.5 mr-1.5" />
+                                    Receipt
+                                  </Button>
+                                )}
                               </div>
                             </td>
                           </tr>

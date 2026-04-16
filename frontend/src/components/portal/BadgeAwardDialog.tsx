@@ -31,7 +31,7 @@ export function BadgeAwardDialog({ isOpen, onClose, user }: BadgeAwardDialogProp
         }
     });
 
-    const badges = (data as any)?.badges || [];
+    const badges = (data as any)?.badges?.items || [];
     const filteredBadges = badges.filter((b: any) =>
         (b.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (b.description || "").toLowerCase().includes(searchQuery.toLowerCase())

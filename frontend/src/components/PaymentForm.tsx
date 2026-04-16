@@ -31,15 +31,10 @@ export function PaymentForm({
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'checking' | null>(null);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+    // Allow digits and plus sign
+    let value = e.target.value.replace(/[^\d+]/g, ''); 
     
-    // Format as phone number
-    if (value.length >= 1 && value.startsWith('0')) {
-      value = value; // Keep as is (078xxxxxxx)
-    } else if (value.length >= 1 && !value.startsWith('0')) {
-      value = '0' + value; // Add leading 0 if missing
-    }
-    
+    // Don't auto-prefix with 0 to allow natural typing or pasting of +250...
     setPhoneNumber(value);
   };
 
@@ -250,7 +245,7 @@ export function PaymentForm({
                     onChange={handlePhoneChange}
                     disabled={isLoading}
                     className="pl-9 h-10 bg-muted/20 border-none focus-visible:ring-1 focus-visible:ring-accent/40 rounded-xl text-base font-black tracking-widest placeholder:tracking-normal placeholder:font-medium placeholder:text-muted-foreground/20 text-center transition-all shadow-none"
-                    maxLength={10}
+                    maxLength={13}
                 />
             </div>
         </div>

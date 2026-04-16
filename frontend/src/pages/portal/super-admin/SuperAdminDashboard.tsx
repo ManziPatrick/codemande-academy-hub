@@ -16,37 +16,39 @@ import {
   CheckCircle,
   TrendingUp,
   Server,
+  BookOpen,
+  DollarSign,
+  GraduationCap,
 } from "lucide-react";
 
-const systemStats = [
-  { label: "Total Users", value: "1,247", icon: Users },
-  { label: "Active Sessions", value: "324", icon: Activity },
-  { label: "System Uptime", value: "99.9%", icon: Server },
-  { label: "Storage Used", value: "45.2 GB", icon: Database },
-];
-
-const adminAccounts = [
-  { name: "Sarah Uwimana", email: "sarah@codemande.com", role: "super_admin", lastActive: "Now" },
-  { name: "Emmanuel Kwizera", email: "emmanuel@codemande.com", role: "admin", lastActive: "2 hours ago" },
-  { name: "Jean Pierre", email: "jean@codemande.com", role: "admin", lastActive: "Yesterday" },
-];
-
-const systemAlerts = [
-  { type: "info", message: "System backup completed successfully", time: "2 hours ago" },
-  { type: "warning", message: "High traffic detected on course pages", time: "5 hours ago" },
-  { type: "success", message: "SSL certificates renewed", time: "1 day ago" },
-];
-
-const platformConfigs = [
-  { name: "Email Notifications", status: "enabled", description: "Send email notifications to users" },
-  { name: "Auto-confirm Emails", status: "disabled", description: "Automatically confirm user emails on signup" },
-  { name: "Maintenance Mode", status: "disabled", description: "Put the platform in maintenance mode" },
-  { name: "Free Trial Lessons", status: "enabled", description: "Allow 2 free lessons per course" },
-  { name: "Internship Applications", status: "enabled", description: "Accept internship applications" },
-];
+import { useQuery } from "@apollo/client/react";
+import { GET_ADMIN_DASHBOARD_DATA, GET_RECENT_ACTIVITY, GET_USERS } from "@/lib/graphql/queries";
 
 export default function SuperAdminDashboard() {
   const { user } = useAuth();
+  
+  const { data, loading } = useQuery(GET_ADMIN_DASHBOARD_DATA);
+  const { data: usersData } = useQuery(GET_USERS);
+  const { data: activityData, loading: recentActivityLoading } = useQuery(GET_RECENT_ACTIVITY, {
+    pollInterval: 15000
+  });
+
+  const dashboardData = (data as any)?.adminDashboardData || { 
+      stats: { totalUsers: 0, totalCourses: 0, totalStudents: 0, totalRevenue: 0 },
+      recentEnrollments: [],
+      coursePerformance: []
+  };
+  const liveStats = dashboardData.stats;
+  
+  const allAdmins = ((usersData as any)?.users || []).filter((u: any) => u.role === "admin" || u.role === "super_admin");
+  const recentActivity = (activityData as any)?.recentActivity || [];
+
+  const systemStats = [
+    { label: "Total Users", value: liveStats.totalUsers.toString(), icon: Users },
+    { label: "Active Courses", value: liveStats.totalCourses.toString(), icon: BookOpen },
+    { label: "Total Students", value: liveStats.totalStudents.toString(), icon: GraduationCap },
+    { label: "Total Revenue (RWF)", value: liveStats.totalRevenue.toLocaleString(), icon: DollarSign },
+  ];
 
   return (
     <PortalLayout>
@@ -121,7 +123,7 @@ export default function SuperAdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {adminAccounts.map((admin, index) => (
+                  {allAdmins.slice(0, 5).map((admin: any, index: number) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-4 bg-background/50 rounded-lg"
@@ -135,7 +137,7 @@ export default function SuperAdminDashboard() {
                           }`} />
                         </div>
                         <div>
-                          <p className="font-medium text-card-foreground">{admin.name}</p>
+                          <p className="font-medium text-card-foreground">{admin.username}</p>
                           <p className="text-sm text-card-foreground/60">{admin.email}</p>
                         </div>
                       </div>
@@ -145,7 +147,7 @@ export default function SuperAdminDashboard() {
                         }`}>
                           {admin.role.replace("_", " ").toUpperCase()}
                         </p>
-                        <p className="text-xs text-card-foreground/60">{admin.lastActive}</p>
+                        <p className="text-xs text-card-foreground/60">{new Date(parseInt(admin.createdAt)).toLocaleDateString()}</p>
                       </div>
                     </div>
                   ))}
@@ -153,37 +155,6 @@ export default function SuperAdminDashboard() {
               </CardContent>
             </Card>
 
-            {/* Platform Configuration */}
-            <Card className="border-border/50 mt-6">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-heading flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-accent" />
-                  Platform Configuration
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {platformConfigs.map((config, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 bg-background/50 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium text-card-foreground">{config.name}</p>
-                        <p className="text-sm text-card-foreground/60">{config.description}</p>
-                      </div>
-                      <Button
-                        variant={config.status === "enabled" ? "default" : "outline"}
-                        size="sm"
-                        className={config.status === "enabled" ? "bg-green-500 hover:bg-green-600" : ""}
-                      >
-                        {config.status === "enabled" ? "Enabled" : "Disabled"}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </motion.div>
 
           {/* Sidebar */}
@@ -197,33 +168,30 @@ export default function SuperAdminDashboard() {
               <Card className="border-border/50">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-lg font-heading flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 text-accent" />
-                    System Alerts
+                    <Activity className="w-5 h-5 text-accent" />
+                    System Activity
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  {systemAlerts.map((alert, index) => (
-                    <div
-                      key={index}
-                      className="p-3 bg-background/50 rounded-lg"
-                    >
-                      <div className="flex items-start gap-2">
-                        {alert.type === "success" && (
-                          <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
-                        )}
-                        {alert.type === "warning" && (
-                          <AlertTriangle className="w-4 h-4 text-orange-400 mt-0.5" />
-                        )}
-                        {alert.type === "info" && (
-                          <Activity className="w-4 h-4 text-blue-400 mt-0.5" />
-                        )}
-                        <div>
-                          <p className="text-sm text-card-foreground">{alert.message}</p>
-                          <p className="text-xs text-card-foreground/60 mt-1">{alert.time}</p>
+                <CardContent className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {recentActivityLoading ? (
+                    <div className="text-center py-4 text-xs text-muted-foreground animate-pulse">Loading updates...</div>
+                  ) : recentActivity.length === 0 ? (
+                    <div className="text-center py-4 text-xs text-muted-foreground">No recent activity.</div>
+                  ) : (
+                    recentActivity.map((log: any, i: number) => (
+                      <div key={i} className="flex flex-col p-2 bg-background/30 rounded-md gap-1 border-l-2 border-accent/30">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-card-foreground font-semibold uppercase tracking-wider">{log.username}</span>
+                          <span className="text-card-foreground/40">
+                            {new Date(parseInt(log.timestamp)).toLocaleTimeString()}
+                          </span>
                         </div>
+                        <p className="text-xs text-card-foreground/80 font-medium">
+                          {log.action.replace('_', ' ')}
+                        </p>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </CardContent>
               </Card>
             </motion.div>

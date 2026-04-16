@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_USERS } from "@/lib/graphql/queries";
 import { CREATE_USER, UPDATE_USER, DELETE_USER } from "@/lib/graphql/mutations";
+import { useAuth } from "@/contexts/AuthContext";
 
 const getRoleBadge = (role: string) => {
   const styles: Record<string, string> = {
@@ -63,8 +64,11 @@ const getRoleBadge = (role: string) => {
 };
 
 export default function AdminUsers() {
+  const { user: currentUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterRole, setFilterRole] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   // Dialog states
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -75,14 +79,20 @@ export default function AdminUsers() {
   const [awardUser, setAwardUser] = useState<any | null>(null);
 
   // Queries & Mutations
-  const { data, loading, refetch } = useQuery(GET_USERS);
+  const { data, loading, refetch } = useQuery(GET_USERS, {
+    variables: { page: currentPage, limit: pageSize }
+  });
   const [createUserMutation] = useMutation(CREATE_USER);
   const [updateUserMutation] = useMutation(UPDATE_USER);
   const [deleteUserMutation] = useMutation(DELETE_USER);
 
-  const users = (data as any)?.users || [];
+  const users = (data as any)?.users?.items || [];
+  const pagination = (data as any)?.users?.pagination;
 
   const filteredUsers = users.filter((u: any) => {
+    if (currentUser?.role !== "super_admin" && u.role === "super_admin") {
+      return false;
+    }
     const matchesSearch = (u.username?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
       (u.email?.toLowerCase() || "").includes(searchQuery.toLowerCase());
     const matchesRole = filterRole === "all" || u.role === filterRole;
@@ -177,7 +187,9 @@ export default function AdminUsers() {
             />
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
-            {["all", "student", "trainer", "admin", "super_admin"].map((role) => (
+            {["all", "student", "trainer", "admin", "super_admin"]
+              .filter(role => currentUser?.role === "super_admin" || role !== "super_admin")
+              .map((role) => (
               <Button
                 key={role}
                 variant={filterRole === role ? "gold" : "outline"}
@@ -276,19 +288,51 @@ export default function AdminUsers() {
           </Card>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-6">
-            <p className="text-sm text-muted-foreground">
-              Showing <b>{filteredUsers.length}</b> users
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" disabled>
-                <ChevronLeft className="w-4 h-4 mr-2" /> Previous
-              </Button>
-              <Button variant="outline" size="sm" disabled>
-                Next <ChevronRight className="w-4 h-4 ml-2" />
-              </Button>
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <p className="text-sm text-muted-foreground">
+                Showing page <span className="font-semibold">{pagination.currentPage}</span> of <span className="font-semibold">{pagination.totalPages}</span> ({pagination.totalCount} total)
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={!pagination.hasPreviousPage}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-2" /> Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+                    .map((p, i, arr) => {
+                      const showEllipsis = i > 0 && p - arr[i - 1] > 1;
+                      return (
+                        <div key={p} className="flex items-center">
+                          {showEllipsis && <span className="px-1 text-muted-foreground">...</span>}
+                          <Button
+                            variant={currentPage === p ? "gold" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(p)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {p}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                  disabled={!pagination.hasNextPage}
+                >
+                  Next <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </motion.div>
       </div>
 

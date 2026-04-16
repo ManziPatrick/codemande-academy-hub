@@ -30,7 +30,12 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{
+    token?: string;
+    user?: User;
+    requires2FA?: boolean;
+    requires2FASetup?: boolean;
+  }>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
@@ -119,7 +124,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         variables: { email, password }
       });
 
-      const { token, user: userData } = (data as any).login;
+      const { token, user: userData, requires2FA, requires2FASetup } = (data as any).login;
+
+      if (requires2FA || requires2FASetup) {
+        return { user: userData, requires2FA, requires2FASetup };
+      }
 
       // Store Token
       localStorage.setItem("codemande_token", token);
@@ -141,6 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setUser(appUser);
       localStorage.setItem("codemande_user", JSON.stringify(appUser));
+      return { token, user: appUser };
     } catch (err: any) {
       throw new Error(err.message || "Login failed");
     } finally {

@@ -32,14 +32,15 @@ interface GoogleLoginData {
 }
 
 export function GoogleOneTap() {
-    const { user, loginWithToken } = useAuth();
+    const { user, loginWithToken, isLoading } = useAuth();
     const [googleLogin] = useMutation<GoogleLoginData>(GOOGLE_LOGIN);
     const isPromptActiveRef = useRef(false);
     const isInitializedRef = useRef(false);
 
     useEffect(() => {
         // Don't show if already logged in OR on the auth page (avoid redundancy)
-        if (user || window.location.pathname === '/auth') return;
+        // Also wait for auth to finish loading to be sure of the state
+        if (isLoading || user || window.location.pathname === '/auth') return;
 
         const handleCredentialResponse = async (response: any) => {
             try {

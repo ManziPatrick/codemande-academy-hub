@@ -7,6 +7,8 @@ import { file as tmpFile } from 'tmp-promise';
 import { OAuth2Client } from 'google-auth-library';
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+import * as speakeasy from 'speakeasy';
+import * as QRCode from 'qrcode';
 
 if (!admin.apps.length) {
   const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
@@ -28,6 +30,7 @@ if (!admin.apps.length) {
 }
 import { Message } from '../models/Message';
 import { Conversation } from '../models/Conversation';
+import { sendEmail, sendLoginOTPEmail } from '../services/email.service';
 import { Course } from '../models/Course';
 import AICourse from '../models/AICourse';
 import { Question } from '../models/Question';
@@ -166,35 +169,32 @@ export const resolvers = {
       return await Resource.findById(id).populate('createdBy');
     },
 
-    getAssignmentSubmissions: async (_: any, { courseId, lessonId }: any, context: any) => {
+    getAssignmentSubmissions: async (_: any, { courseId, lessonId, page = 1, limit = 10 }: any, context: any) => {
       if (!context.user) throw new Error('Unauthorized');
 
       const filter: any = {};
       if (courseId) filter.courseId = courseId;
       if (lessonId) filter.lessonId = lessonId;
 
-      // Filter by role
       if (context.user.role === 'student') {
         filter.userId = context.user.id;
-      } else if (context.user.role === 'trainer') {
-        // trainers can now see all submissions based on the request
-        // but let's keep a way to filter or at least mark their own
-        if (filter.courseId) {
-          // No restriction, they can view any course submission
-        } else {
-          // Default: show all submissions, but maybe sort them?
-        }
       }
 
-      const submissions = await AssignmentSubmission.find(filter)
-        .populate('userId')
-        .populate({
-          path: 'courseId',
-          populate: { path: 'instructor' }
-        })
-        .sort({ createdAt: -1 });
+      const skip = (page - 1) * limit;
+      const [submissions, totalCount] = await Promise.all([
+        AssignmentSubmission.find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate('userId')
+          .populate({
+            path: 'courseId',
+            populate: { path: 'instructor' }
+          }),
+        AssignmentSubmission.countDocuments(filter)
+      ]);
 
-      return (submissions as any).map((sub: any) => ({
+      const items = (submissions as any).map((sub: any) => ({
         ...sub._doc,
         id: sub._id,
         user: sub.userId,
@@ -202,6 +202,19 @@ export const resolvers = {
         course: sub.courseId,
         courseId: sub.courseId?._id || sub.courseId
       }));
+
+      const totalPages = Math.ceil(totalCount / limit);
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
     },
 
     myProjects: async (_: any, { status }: { status?: string }, context: any) => {
@@ -412,7 +425,27 @@ export const resolvers = {
       return await Question.find({ courseId });
     },
 
-    users: async () => await User.find({ isDeleted: { $ne: true } }),
+    users: async (_: any, { page = 1, limit = 10 }: any) => {
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        User.find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        User.countDocuments({ isDeleted: { $ne: true } })
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
+    },
 
     conversations: async (_: any, __: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -446,7 +479,7 @@ export const resolvers = {
         .sort({ createdAt: 1 }); // Oldest first for chat history usually, but depends on UI
     },
 
-    courses: async (_: any, __: any, context: any) => {
+    courses: async (_: any, { page = 1, limit = 10 }: any, context: any) => {
       const query: any = { isDeleted: { $ne: true } };
 
       // Filter for students/guests: Only published courses
@@ -454,7 +487,25 @@ export const resolvers = {
         query.status = 'published';
       }
 
-      return await Course.find(query).populate('instructor').populate('studentsEnrolled');
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        Course.find(query).populate('instructor').populate('studentsEnrolled').sort({ createdAt: -1 }).skip(skip).limit(limit),
+        Course.countDocuments(query)
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
     },
 
     course: async (_: any, { id }: { id: string }, context: any) => {
@@ -510,22 +561,43 @@ export const resolvers = {
       if (!context.user || !['admin', 'super_admin'].includes(context.user.role)) {
         throw new Error('Not authorized');
       }
-      const totalUsers = await User.countDocuments();
-      const totalCourses = await Course.countDocuments();
-      const courses = await Course.find();
+      
+      const [
+        totalUsers,
+        standardCoursesCount,
+        internshipProgramsCount,
+        standardPayments,
+        internshipPayments,
+        standardCourses,
+        internshipApps,
+        legacyInternships
+      ] = await Promise.all([
+        User.countDocuments(),
+        Course.countDocuments({ isDeleted: false }),
+        InternshipProgram.countDocuments({ isDeleted: false }),
+        Payment.find({ status: 'completed' }),
+        InternshipPayment.find({ status: 'paid', isDeleted: false }),
+        Course.find({ isDeleted: false }),
+        InternshipApplication.find({ status: 'approved', isDeleted: false }),
+        Internship.find({ status: { $in: ['enrolled', 'in_progress', 'completed', 'graduated'] } })
+      ]);
 
-      // Count unique students across all courses
+      // Calculate total unique students across all programs
       const studentIds = new Set();
-      courses.forEach(c => {
+      standardCourses.forEach(c => {
         c.studentsEnrolled.forEach(s => studentIds.add(s.toString()));
       });
+      internshipApps.forEach(app => studentIds.add(app.userId.toString()));
+      legacyInternships.forEach(intern => studentIds.add(intern.userId.toString()));
 
-      // Simple revenue calculation (price * students count for each course)
-      const totalRevenue = courses.reduce((acc, c) => acc + (c.price * c.studentsEnrolled.length), 0);
+      // Calculate total revenue from actual payments
+      const standardRevenue = standardPayments.reduce((acc, p) => acc + (p.amount || 0), 0);
+      const internshipRevenue = internshipPayments.reduce((acc, p) => acc + (p.amount || 0), 0);
+      const totalRevenue = standardRevenue + internshipRevenue;
 
       return {
         totalUsers,
-        totalCourses,
+        totalCourses: standardCoursesCount + internshipProgramsCount,
         totalStudents: studentIds.size,
         totalRevenue
       };
@@ -583,74 +655,98 @@ export const resolvers = {
       if (lessonId) query.lessonId = lessonId;
       return await Question.find(query).sort({ createdAt: 1 });
     },
-    bookings: async (_: any, __: any, context: any) => {
+    bookings: async (_: any, { page = 1, limit = 10 }: any, context: any) => {
       if (!context.user || (context.user.role !== 'super_admin' && context.user.role !== 'admin')) {
         throw new Error('Not authorized');
       }
-      return await Booking.find().populate('userId').populate('mentorId').sort({ createdAt: -1 });
+
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        Booking.find({ isDeleted: false })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate('userId')
+          .populate('mentorId'),
+        Booking.countDocuments({ isDeleted: false })
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
     },
 
 
-    payments: async (_: any, __: any, context: any) => {
+    payments: async (_: any, { page = 1, limit = 10 }: any, context: any) => {
       if (!context.user || !['admin', 'super_admin'].includes(context.user.role)) {
         throw new Error('Not authorized');
       }
 
-      // 1. Get from new Payment model
-      const actualPayments = await Payment.find().populate('userId').sort({ createdAt: -1 });
-      const transformedActual = actualPayments.map((p: any) => ({
-        id: p.id,
-        studentName: p.userId?.username || 'Unknown',
-        type: p.type,
-        itemTitle: p.itemTitle,
-        amount: p.amount,
-        currency: p.currency,
-        date: p.createdAt.toISOString(),
-        status: p.status,
-        method: p.paymentMethod || 'Mobile Money',
-        proofOfPaymentUrl: p.proofOfPaymentUrl,
-        adminNotes: p.adminNotes
-      }));
+      const skip = (page - 1) * limit;
+      
+      const [standardPayments, internshipPayments, totalStandard, totalInternship] = await Promise.all([
+        Payment.find().populate('userId').sort({ createdAt: -1 }),
+        InternshipPayment.find({ isDeleted: false }).populate('userId').populate('internshipProgramId').sort({ createdAt: -1 }),
+        Payment.countDocuments(),
+        InternshipPayment.countDocuments({ isDeleted: false })
+      ]);
 
-      // 2. Get Internship Payments (Legacy fallback/sync)
-      const internships = await Internship.find({}).populate('userId');
-      const internshipPayments = internships.map((i: any) => ({
-        id: `int_${i.id}`,
-        studentName: i.userId?.username || 'Unknown',
-        type: 'Internship Fee',
-        itemTitle: i.title,
-        amount: i.payment.amount,
-        currency: i.payment.currency || 'RWF',
-        date: i.payment.paidAt ? i.payment.paidAt.toISOString() : i.createdAt.toISOString(),
-        status: i.payment.status === 'paid' ? 'completed' : i.payment.status,
-        method: 'Mobile Money'
-      }));
+      const combined = [
+        ...standardPayments.map(p => ({
+          id: p.id,
+          studentName: (p.userId as any)?.username || 'Unknown',
+          type: p.type || 'Course Enrollment',
+          itemTitle: p.itemTitle,
+          amount: p.amount,
+          currency: p.currency,
+          date: (p as any).createdAt.toISOString(),
+          status: p.status,
+          method: p.paymentMethod || 'Mobile Money',
+          proofOfPaymentUrl: p.proofOfPaymentUrl,
+          adminNotes: p.adminNotes
+        })),
+        ...internshipPayments.map(p => ({
+          id: p.id,
+          studentName: (p.userId as any)?.username || 'Unknown',
+          type: 'Internship Fee',
+          itemTitle: (p.internshipProgramId as any)?.title || 'Internship Program',
+          amount: p.amount,
+          currency: p.currency,
+          date: (p as any).createdAt.toISOString(),
+          status: p.status === 'paid' ? 'completed' : p.status, // Normalize status for UI
+          method: p.paymentMethod || 'Mobile Money',
+          proofOfPaymentUrl: p.paymentProofUrl,
+          adminNotes: p.notes
+        }))
+      ]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      // 3. Get Course Enrollments (Legacy fallback/sync)
-      const students = await User.find({ role: 'student', enrolledCourses: { $exists: true, $not: { $size: 0 } } })
-        .populate('enrolledCourses');
+      const totalCount = totalStandard + totalInternship;
+      const totalPages = Math.ceil(totalCount / limit);
+      const items = combined.slice(skip, skip + limit);
 
-      let courseEnrollmentPayments: any[] = [];
-      students.forEach((student: any) => {
-        student.enrolledCourses.forEach((course: any) => {
-          courseEnrollmentPayments.push({
-            id: `course_${student.id}_${course.id}`,
-            studentName: student.username,
-            type: 'Course Enrollment',
-            itemTitle: course.title,
-            amount: (course.price || 0) * 1000,
-            currency: 'RWF',
-            date: student.createdAt.toISOString(),
-            status: 'completed',
-            method: 'Card'
-          });
-        });
-      });
-
-      // Combine and filter duplicates by ID (if any)
-      const combined = [...transformedActual, ...internshipPayments, ...courseEnrollmentPayments];
-      return combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
     },
+
     myPayments: async (_: any, __: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
 
@@ -673,7 +769,26 @@ export const resolvers = {
       return await Config.find();
     },
 
-    badges: async () => await Badge.find(),
+    badges: async (_: any, { page = 1, limit = 10 }: any) => {
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        Badge.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
+        Badge.countDocuments()
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
+    },
 
     trainerStats: async (_: any, __: any, context: any) => {
       if (!context.user || context.user.role !== 'trainer') throw new Error('Not authorized');
@@ -711,18 +826,33 @@ export const resolvers = {
     adminDashboardData: async (_: any, __: any, context: any) => {
       if (!context.user || !['admin', 'super_admin'].includes(context.user.role)) throw new Error('Not authorized');
 
-      const totalUsers = await User.countDocuments();
-      const totalCourses = await Course.countDocuments();
-      const courses = await Course.find().populate('studentsEnrolled');
+      const [
+        totalUsers,
+        standardCoursesCount,
+        internshipProgramsCount,
+        standardPayments,
+        internshipPayments,
+        standardCourses,
+        internshipApps,
+        legacyInternships
+      ] = await Promise.all([
+        User.countDocuments(),
+        Course.countDocuments({ isDeleted: false }),
+        InternshipProgram.countDocuments({ isDeleted: false }),
+        Payment.find({ status: 'completed' }),
+        InternshipPayment.find({ status: 'paid', isDeleted: false }),
+        Course.find({ isDeleted: false }).populate('studentsEnrolled'),
+        InternshipApplication.find({ status: 'approved', isDeleted: false }),
+        Internship.find({ status: { $in: ['enrolled', 'in_progress', 'completed', 'graduated'] } })
+      ]);
 
       const studentIds = new Set();
-      let totalRevenue = 0;
       const performanceData = [];
 
-      for (const c of courses) {
+      // Process standard courses
+      for (const c of standardCourses) {
         c.studentsEnrolled.forEach((s: any) => studentIds.add(s.toString()));
-        const revenue = (c.price || 0) * c.studentsEnrolled.length;
-        totalRevenue += revenue;
+        const revenue = (c.price || 0) * c.studentsEnrolled.length; // Keeping this for performance display consistency
 
         performanceData.push({
           courseTitle: c.title,
@@ -732,26 +862,52 @@ export const resolvers = {
         });
       }
 
-      // Recent Enrollments (Approximated by User updates for now)
-      const recentStudents = await User.find({ enrolledCourses: { $not: { $size: 0 } } })
-        .sort({ updatedAt: -1 })
-        .limit(5)
-        .populate('enrolledCourses');
+      // Add internship students to unique count
+      internshipApps.forEach(app => studentIds.add(app.userId.toString()));
+      legacyInternships.forEach(intern => studentIds.add(intern.userId.toString()));
 
-      const recentEnrollments = recentStudents.map(s => {
-        const course = (s as any).enrolledCourses[(s as any).enrolledCourses.length - 1];
-        return {
-          studentName: s.username,
-          courseTitle: course?.title || 'Unknown Course',
-          enrolledAt: new Date((s as any).updatedAt).toLocaleDateString(),
-          amount: course?.price || 0
-        };
-      });
+      // Accurate total revenue calculation
+      const standardRevenue = standardPayments.reduce((acc, p) => acc + (p.amount || 0), 0);
+      const internshipRevenue = internshipPayments.reduce((acc, p) => acc + (p.amount || 0), 0);
+      const totalRevenue = standardRevenue + internshipRevenue;
+
+      // Accurate Recent Enrollments logic using successful payments
+      const [recentStandardPayments, recentInternshipPayments] = await Promise.all([
+        Payment.find({ status: 'completed' })
+          .sort({ createdAt: -1 })
+          .limit(10)
+          .populate('courseId')
+          .populate('userId'),
+        InternshipPayment.find({ status: 'paid', isDeleted: false })
+          .sort({ createdAt: -1 })
+          .limit(10)
+          .populate('internshipProgramId')
+          .populate('userId')
+      ]);
+
+      const recentEnrollments = [
+        ...recentStandardPayments.map(p => ({
+          studentName: (p.userId as any)?.username || 'Unknown',
+          courseTitle: (p.courseId as any)?.title || 'Unknown Course',
+          enrolledAt: new Date((p as any).createdAt).toLocaleDateString(),
+          amount: p.amount || 0,
+          timestamp: new Date((p as any).createdAt).getTime()
+        })),
+        ...recentInternshipPayments.map(p => ({
+          studentName: (p.userId as any)?.username || 'Unknown',
+          courseTitle: (p.internshipProgramId as any)?.title || 'Internship Program',
+          enrolledAt: new Date((p as any).createdAt).toLocaleDateString(),
+          amount: p.amount || 0,
+          timestamp: new Date((p as any).createdAt).getTime()
+        }))
+      ]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 5);
 
       return {
         stats: {
           totalUsers,
-          totalCourses,
+          totalCourses: standardCoursesCount + internshipProgramsCount,
           totalStudents: studentIds.size,
           totalRevenue
         },
@@ -777,17 +933,49 @@ export const resolvers = {
         value: c.studentsEnrolled.length
       }));
 
-      // 3. User Growth (Simulated over last 6 months based on createdAt)
-      const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb'];
-      const userGrowth = months.map((month, i) => ({
-        label: month,
-        value: 50 + (i * 15) + Math.floor(Math.random() * 20) // Simulated growth
+      // Generate last 6 months
+      const monthsData = [];
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        monthsData.push({
+          label: d.toLocaleString('default', { month: 'short' }),
+          month: d.getMonth() + 1,
+          year: d.getFullYear(),
+        });
+      }
+
+      // 3. User Growth (Real over last 6 months based on createdAt)
+      const userGrowth = await Promise.all(monthsData.map(async (m) => {
+        const count = await User.countDocuments({
+          createdAt: {
+            $gte: new Date(m.year, m.month - 1, 1),
+            $lt: new Date(m.year, m.month, 1),
+          }
+        });
+        return { label: m.label, value: count };
       }));
 
-      // 4. Revenue Growth (Simulated)
-      const revenueGrowth = months.map((month, i) => ({
-        label: month,
-        value: (i + 1) * 100 + Math.floor(Math.random() * 50)
+      // 4. Revenue Growth (Real over last 6 months)
+      const revenueGrowth = await Promise.all(monthsData.map(async (m) => {
+        const result = await Payment.aggregate([
+          {
+            $match: {
+              status: { $in: ["completed", "paid", "successful"] },
+              createdAt: {
+                $gte: new Date(m.year, m.month - 1, 1),
+                $lt: new Date(m.year, m.month, 1),
+              }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalAmount: { $sum: "$amount" }
+            }
+          }
+        ]);
+        return { label: m.label, value: result[0]?.totalAmount || 0 };
       }));
 
       // 5. Internship Stats
@@ -817,15 +1005,36 @@ export const resolvers = {
     },
 
     // Projects
-    projects: async (_: any, __: any, context: any) => {
+    projects: async (_: any, { page = 1, limit = 10 }: any, context: any) => {
       if (!context.user || (context.user.role !== 'super_admin' && context.user.role !== 'admin' && context.user.role !== 'trainer')) {
         throw new Error('Not authorized');
       }
-      return await Project.find()
-        .populate('userId')
-        .populate('mentors')
-        .populate('team.userId')
-        .sort({ createdAt: -1 });
+
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        Project.find()
+          .populate('userId')
+          .populate('mentors')
+          .populate('team.userId')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        Project.countDocuments()
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
     },
 
     project: async (_: any, { id }: { id: string }, context: any) => {
@@ -882,11 +1091,30 @@ export const resolvers = {
     },
 
     // Internships
-    internships: async (_: any, __: any, context: any) => {
+    internships: async (_: any, { page = 1, limit = 10 }: any, context: any) => {
       if (!context.user || (context.user.role !== 'super_admin' && context.user.role !== 'admin' && context.user.role !== 'trainer')) {
         throw new Error('Not authorized');
       }
-      return await Internship.find().populate('userId mentorId').sort({ createdAt: -1 });
+
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        Internship.find().populate('userId mentorId').sort({ createdAt: -1 }).skip(skip).limit(limit),
+        Internship.countDocuments()
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
     },
     getInternshipStandups: async (_: any, { internshipId }: any, context: any) => {
       if (!context.user) throw new Error('Not authorized');
@@ -984,6 +1212,7 @@ export const resolvers = {
       const siteName = await Config.findOne({ key: 'siteName' });
       const primaryColor = await Config.findOne({ key: 'primaryColor' });
       const portalTitle = await Config.findOne({ key: 'portalTitle' });
+      const maintenanceMode = await Config.findOne({ key: 'maintenanceMode' });
 
       const defaults = {
         primaryColor: '#D4AF37',
@@ -991,7 +1220,8 @@ export const resolvers = {
         accentColor: '#D4AF37',
         logoUrl: '',
         siteName: 'CODEMANDE',
-        portalTitle: 'Academy Hub'
+        portalTitle: 'Academy Hub',
+        maintenanceMode: false
       };
 
       const brandingVal = config?.value || {};
@@ -1002,39 +1232,112 @@ export const resolvers = {
         siteName: siteName?.value || brandingVal.siteName || defaults.siteName,
         primaryColor: primaryColor?.value || brandingVal.primaryColor || defaults.primaryColor,
         portalTitle: portalTitle?.value || brandingVal.portalTitle || defaults.portalTitle,
+        maintenanceMode: maintenanceMode ? (maintenanceMode.value === 'true' || maintenanceMode.value === true) : (brandingVal.maintenanceMode || defaults.maintenanceMode)
       };
     },
     // Internship Module Queries
-    internshipPrograms: async () => await InternshipProgram.find({ isDeleted: false }),
+    internshipPrograms: async (_: any, { page = 1, limit = 10 }: any) => {
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        InternshipProgram.find({ isDeleted: false }).skip(skip).limit(limit),
+        InternshipProgram.countDocuments({ isDeleted: false })
+      ]);
+      const totalPages = Math.ceil(totalCount / limit);
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
+    },
     internshipProgram: async (_: any, { id }: { id: string }) => await InternshipProgram.findById(id),
-    internshipApplications: async (_: any, { programId, status }: { programId?: string, status?: string }, context: any) => {
+    internshipApplications: async (_: any, { programId, status, page = 1, limit = 10 }: any, context: any) => {
       if (!['admin', 'super_admin', 'trainer'].includes(context.user?.role)) throw new Error('Unauthorized');
       const query: any = { isDeleted: false };
       if (programId) query.internshipProgramId = programId;
       if (status) query.status = status;
-      return await InternshipApplication.find(query).sort({ createdAt: -1 });
+      
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        InternshipApplication.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        InternshipApplication.countDocuments(query)
+      ]);
+      const totalPages = Math.ceil(totalCount / limit);
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
     },
     myInternshipApplications: async (_: any, __: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       return await InternshipApplication.find({ userId: context.user.id, isDeleted: false }).sort({ createdAt: -1 });
     },
     internshipProject: async (_: any, { id }: { id: string }) => await InternshipProject.findById(id),
-    internshipProjects: async (_: any, { programId }: { programId?: string }) => {
+    internshipProjects: async (_: any, { programId, page = 1, limit = 10 }: any) => {
       const query: any = { isDeleted: false };
       if (programId) query.internshipProgramId = programId;
-      return await InternshipProject.find(query).sort({ createdAt: -1 });
+      
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        InternshipProject.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        InternshipProject.countDocuments(query)
+      ]);
+      const totalPages = Math.ceil(totalCount / limit);
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
     },
-    internshipTeams: async (_: any, { programId }: { programId?: string }, context: any) => {
+    internshipTeams: async (_: any, { programId, page = 1, limit = 10 }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const query: any = { isDeleted: false };
       if (programId) query.internshipProgramId = programId;
-      if (['admin', 'super_admin'].includes(context.user.role)) {
-        return await InternshipTeam.find(query);
-      } else if (context.user.role === 'trainer') {
-        query.mentorId = context.user.id;
-        return await InternshipTeam.find(query);
+      
+      if (!['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Unauthorized');
       }
-      throw new Error('Unauthorized');
+      
+      if (context.user.role === 'trainer') {
+        query.mentorId = context.user.id;
+      }
+
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        InternshipTeam.find(query).populate('mentorId').skip(skip).limit(limit),
+        InternshipTeam.countDocuments(query)
+      ]);
+
+      const totalPages = Math.ceil(totalCount / limit);
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
     },
     myInternshipTeam: async (_: any, __: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -1058,7 +1361,7 @@ export const resolvers = {
       if (userId) query.userId = userId;
       return await InternshipTimeLog.find(query).sort({ date: -1 });
     },
-    internshipActivityLogs: async (_: any, { programId, targetType, targetId }: any, context: any) => {
+    internshipActivityLogs: async (_: any, { programId, targetType, targetId, page = 1, limit = 10 }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       
       const query: any = { isDeleted: false };
@@ -1066,7 +1369,23 @@ export const resolvers = {
       if (targetType) query.targetType = targetType;
       if (targetId) query.targetId = targetId;
 
-      return await InternshipActivityLog.find(query).sort({ createdAt: -1 }).limit(100);
+      const skip = (page - 1) * limit;
+      const [items, totalCount] = await Promise.all([
+        InternshipActivityLog.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        InternshipActivityLog.countDocuments(query)
+      ]);
+      const totalPages = Math.ceil(totalCount / limit);
+      return {
+        items,
+        pagination: {
+          totalCount,
+          totalPages,
+          currentPage: page,
+          pageSize: limit,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
     },
 
     // Sprint & Task Board Queries
@@ -1907,6 +2226,10 @@ export const resolvers = {
         throw new Error('Not authorized');
       }
 
+      if (context.user.role === 'admin' && (args.role === 'admin' || args.role === 'super_admin')) {
+        throw new Error('Admins cannot create admin or super_admin users');
+      }
+
       const existingUser = await User.findOne({ email: args.email });
       if (existingUser) throw new Error('User already exists');
 
@@ -1946,6 +2269,13 @@ export const resolvers = {
       const user = await User.findById(id);
       if (!user) throw new Error('User not found');
 
+      if (context.user.role === 'admin') {
+        if (user.role === 'super_admin') throw new Error('Admins cannot modify super admin users');
+        if (args.role === 'super_admin' || args.role === 'admin') {
+          throw new Error('Admins cannot assign admin or super_admin roles');
+        }
+      }
+
       // Prevent non-admins from changing roles or sensitive fields
       if (!isAdmin) {
         delete args.role;
@@ -1967,6 +2297,7 @@ export const resolvers = {
       const user = await User.findById(id);
       if (!user) throw new Error('User not found');
       if (user.role === 'super_admin') throw new Error('Cannot delete super admin');
+      if (context.user.role === 'admin' && user.role === 'admin') throw new Error('Admins cannot delete other admins');
 
       // Soft Delete
       (user as any).isDeleted = true;
@@ -2093,6 +2424,19 @@ export const resolvers = {
       const match = await bcrypt.compare(password, user.password);
       if (!match) {
         throw new Error('Wrong credentials');
+      }
+
+      // Check for 2FA requirement
+      const admin2FAConfig = await Config.findOne({ key: 'admin2FA' });
+      const globalAdmin2FA = admin2FAConfig ? (admin2FAConfig.value === true || admin2FAConfig.value === 'true') : false;
+      const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+
+      if (user.twoFactorEnabled) {
+        return { user, requires2FA: true };
+      }
+
+      if (globalAdmin2FA && isAdmin) {
+        return { user, requires2FASetup: true };
       }
 
       // Update Presence & Status
@@ -2397,7 +2741,7 @@ export const resolvers = {
       }
 
       // Update branding mega-config if a relevant key is changed
-      const brandingKeys = ['siteName', 'primaryColor', 'portalTitle'];
+      const brandingKeys = ['siteName', 'primaryColor', 'portalTitle', 'maintenanceMode'];
       if (brandingKeys.includes(key)) {
         let brandingConfig = await Config.findOne({ key: 'branding' });
         if (brandingConfig) {
@@ -2407,6 +2751,136 @@ export const resolvers = {
       }
 
       return config;
+    },
+
+    sendTestEmail: async (_: any, { to }: { to: string }, context: any) => {
+      if (!context.user || context.user.role !== 'super_admin') throw new Error('Not authorized');
+      
+      const success = await sendEmail({
+        to,
+        subject: 'Test Email from CODEMANDE Academy',
+        html: `
+          <h1>SMTP Configuration Test</h1>
+          <p>This is a test email to verify your SMTP settings (Zoho/Gmail/etc.) are working correctly with your App Password.</p>
+          <p>If you received this, your configuration is correct!</p>
+          <br/>
+          <p>Sent at: ${new Date().toLocaleString()}</p>
+        `
+      });
+
+      if (!success) throw new Error('Failed to send test email. Check your SMTP settings and App Password.');
+      return true;
+    },
+
+    setup2FA: async (_: any, __: any, context: any) => {
+      if (!context.user) throw new Error('Not authorized');
+      
+      const user = await User.findById(context.user.id);
+      if (!user) throw new Error('User not found');
+      
+      const secret = speakeasy.generateSecret({
+        name: `CODEMANDE Academy (${user.email})`
+      });
+      
+      user.twoFactorSecret = secret.base32;
+      await user.save();
+      
+      const qrCodeDataUrl = await QRCode.toDataURL(secret.otpauth_url!);
+      
+      return {
+        qrCodeDataUrl,
+        secret: secret.base32
+      };
+    },
+    
+    verify2FA: async (_: any, { code }: { code: string }, context: any) => {
+      if (!context.user) throw new Error('Not authorized');
+      
+      const user = await User.findById(context.user.id);
+      if (!user) throw new Error('User not found');
+      
+      const verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret!,
+        encoding: 'base32',
+        token: code
+      });
+      
+      if (!verified) throw new Error('Invalid 2FA code');
+      
+      user.twoFactorEnabled = true;
+      await user.save();
+      
+      const token = jwt.sign({ id: user._id, email: user.email, role: user.role }, process.env.JWT_SECRET!);
+      
+      return {
+        token,
+        user,
+        requires2FA: false
+      };
+    },
+    
+    disable2FA: async (_: any, { code }: { code: string }, context: any) => {
+      if (!context.user) throw new Error('Not authorized');
+      
+      const user = await User.findById(context.user.id);
+      if (!user) throw new Error('User not found');
+      
+      const verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret!,
+        encoding: 'base32',
+        token: code
+      });
+      
+      if (!verified) throw new Error('Invalid 2FA code');
+      
+      user.twoFactorEnabled = false;
+      user.twoFactorSecret = undefined;
+      await user.save();
+      
+      return true;
+    },
+
+    requestEmailOTP: async (_: any, { email }: { email: string }) => {
+      const user = await User.findOne({ email });
+      if (!user) throw new Error('User not found');
+
+      // Generate 6 digit numeric code
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      user.loginOTP = otp;
+      user.loginOTPExpires = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
+      await user.save();
+
+      await sendLoginOTPEmail(email, otp);
+      return true;
+    },
+
+    verifyEmailOTP: async (_: any, { email, code }: { email: string, code: string }) => {
+      const user = await User.findOne({ email });
+      if (!user) throw new Error('User not found');
+
+      if (!user.loginOTP || user.loginOTP !== code) {
+        throw new Error('Invalid verification code');
+      }
+
+      if (user.loginOTPExpires && user.loginOTPExpires < new Date()) {
+        throw new Error('Verification code has expired');
+      }
+
+      // Clear OTP
+      user.loginOTP = undefined;
+      user.loginOTPExpires = undefined;
+      await user.save();
+
+      const token = jwt.sign(
+        { id: user._id, email: user.email, role: user.role },
+        process.env.JWT_SECRET!
+      );
+
+      return {
+        token,
+        user,
+        requires2FA: false
+      };
     },
 
     // Projects Mutations
@@ -3665,8 +4139,8 @@ export const resolvers = {
     },
 
     updateBranding: async (_: any, args: any, context: any) => {
-      if (!context.user || context.user.role !== 'super_admin') {
-        throw new Error('Not authorized. Only Super Admins can change global branding.');
+      if (!context.user || (context.user.role !== 'admin' && context.user.role !== 'super_admin')) {
+        throw new Error('Not authorized. Only administrators can change global branding.');
       }
 
       let config = await Config.findOne({ key: 'branding' });
@@ -3679,7 +4153,8 @@ export const resolvers = {
             accentColor: '#D4AF37',
             logoUrl: '',
             siteName: 'CODEMANDE',
-            portalTitle: 'Academy Hub'
+            portalTitle: 'Academy Hub',
+            maintenanceMode: false
           }
         });
       }
@@ -3697,6 +4172,14 @@ export const resolvers = {
             { upsert: true }
           );
         }
+      }
+
+      if (args.maintenanceMode !== undefined) {
+        await Config.findOneAndUpdate(
+          { key: 'maintenanceMode' },
+          { value: String(args.maintenanceMode) },
+          { upsert: true }
+        );
       }
 
       return config.value;

@@ -20,6 +20,20 @@ const userSchema = new mongoose.Schema({
     enum: ['student', 'trainer', 'admin', 'super_admin'],
     default: 'student',
   },
+  authProvider: {
+    type: String,
+    enum: ['local', 'google', 'github', 'firebase'],
+    default: 'local'
+  },
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  stripeCustomerId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   enrolledCourses: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Course'
@@ -78,7 +92,14 @@ const userSchema = new mongoose.Schema({
     mode: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
     lightBg: { type: String },
     darkBg: { type: String }
-  }
+  },
+
+  // Two-Factor Authentication
+  twoFactorEnabled: { type: Boolean, default: false },
+  twoFactorSecret: { type: String },
+  twoFactorBackupCodes: [{ type: String }],
+  loginOTP: { type: String },
+  loginOTPExpires: { type: Date }
 }, { timestamps: true });
 
 export const User = mongoose.model('User', userSchema);

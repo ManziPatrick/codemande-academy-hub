@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import {
   Shield,
   Search,
@@ -155,8 +156,7 @@ export default function SuperAdminAdmins() {
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Password</label>
-                  <Input 
-                    type="password" 
+                  <PasswordInput 
                     placeholder="••••••••" 
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}

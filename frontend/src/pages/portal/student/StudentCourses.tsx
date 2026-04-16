@@ -70,7 +70,8 @@ export default function StudentCourses() {
   const enrolledCourses = me?.enrolledCourses || [];
   const completedLessons = me?.completedLessons || [];
   
-  const allCourses = (coursesData as any)?.courses || [];
+  const allCoursesData = (coursesData as any)?.courses;
+  const allCourses = allCoursesData?.items || [];
   const availableCourses = allCourses.filter((c: any) => 
     !enrolledCourses.some((ec: any) => ec.id === c.id)
   );

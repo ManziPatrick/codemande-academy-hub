@@ -5,12 +5,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2, ArrowLeft, GraduationCap, BookOpen, Users, Award } from "lucide-react";
+import { Loader2, ArrowLeft, GraduationCap, BookOpen, Users, Award, Mail } from "lucide-react";
 import { getGraphqlUrl } from "@/lib/env";
 import { GoogleLogin } from "@react-oauth/google";
 import { useMutation } from "@apollo/client/react";
-import { GOOGLE_LOGIN } from "@/lib/graphql/mutations";
+import { GOOGLE_LOGIN, VERIFY_2FA, SETUP_2FA, REQUEST_EMAIL_OTP, VERIFY_EMAIL_OTP } from "@/lib/graphql/mutations";
 
 type AuthMode = "login" | "signup";
 
@@ -24,13 +25,20 @@ const features = [
 export default function Auth() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     fullName: "",
     phone: "",
   });
+
+  // 2FA State
+  const [requires2FA, setRequires2FA] = useState(false);
+  const [requires2FASetup, setRequires2FASetup] = useState(false);
+  const [totpCode, setTotpCode] = useState("");
+  const [twoFactorData, setTwoFactorData] = useState<{ qrCodeDataUrl: string, secret: string } | null>(null);
+  const [useEmailOTP, setUseEmailOTP] = useState(false);
+  const [isSendingOTP, setIsSendingOTP] = useState(false);
 
   // Forgot Password State
   const [isForgotPassword, setIsForgotPassword] = useState(false);
@@ -42,6 +50,10 @@ export default function Auth() {
   const location = useLocation();
 
   const [googleLoginMutation] = useMutation(GOOGLE_LOGIN);
+  const [verify2FAMutation] = useMutation(VERIFY_2FA);
+  const [setup2FAMutation] = useMutation(SETUP_2FA);
+  const [requestEmailOTPMutation] = useMutation(REQUEST_EMAIL_OTP);
+  const [verifyEmailOTPMutation] = useMutation(VERIFY_EMAIL_OTP);
 
   // If already logged in, redirect to portal
   if (user) {
@@ -131,7 +143,27 @@ export default function Auth() {
 
     try {
       if (mode === "login") {
-        await login(formData.email, formData.password);
+        const response = await login(formData.email, formData.password);
+        
+        if (response?.requires2FA) {
+          setRequires2FA(true);
+          toast.info("Two-Factor Authentication Required");
+          setIsLoading(false);
+          return;
+        }
+
+        if (response?.requires2FASetup) {
+          setRequires2FASetup(true);
+          // Auto-trigger setup
+          const { data } = await setup2FAMutation();
+          if ((data as any)?.setup2FA) {
+            setTwoFactorData((data as any).setup2FA);
+          }
+          toast.info("Administrator 2FA Setup Required");
+          setIsLoading(false);
+          return;
+        }
+
         toast.success("Welcome back!");
       } else {
         if (!formData.fullName.trim()) {
@@ -153,6 +185,56 @@ export default function Auth() {
       toast.error(error instanceof Error ? error.message : "Authentication failed");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handle2FAVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (totpCode.length !== 6) {
+      toast.error("Please enter a valid 6-digit code");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      let response;
+      if (useEmailOTP) {
+        const { data } = await verifyEmailOTPMutation({
+          variables: { email: formData.email, code: totpCode }
+        });
+        response = (data as any)?.verifyEmailOTP;
+      } else {
+        const { data } = await verify2FAMutation({
+          variables: { code: totpCode }
+        });
+        response = (data as any)?.verify2FA;
+      }
+
+      if (response?.token) {
+        loginWithToken(response.token, response.user);
+        toast.success("Identity verified successfully!");
+        const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/portal/student";
+        navigate(from, { replace: true });
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Invalid verification code");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRequestEmailOTP = async () => {
+    setIsSendingOTP(true);
+    try {
+      await requestEmailOTPMutation({
+        variables: { email: formData.email }
+      });
+      setUseEmailOTP(true);
+      toast.success("Verification code sent to your email!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send verification code");
+    } finally {
+      setIsSendingOTP(false);
     }
   };
 
@@ -325,6 +407,137 @@ export default function Auth() {
                 </form>
               )}
             </div>
+          ) : requires2FA ? (
+            // 2FA Verification View
+            <div>
+              <div className="mb-6">
+                <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground mb-2">
+                  {useEmailOTP ? "Email Verification" : "Security Verification"}
+                </h2>
+                <p className="text-muted-foreground">
+                  {useEmailOTP 
+                    ? `Enter the 6-digit code sent to ${formData.email}`
+                    : "Enter the 6-digit code from your authenticator app to continue."}
+                </p>
+              </div>
+
+              <form onSubmit={handle2FAVerify} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="totpCode">Verification Code</Label>
+                  <Input
+                    id="totpCode"
+                    type="text"
+                    maxLength={6}
+                    placeholder="000000"
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
+                    required
+                    className="h-14 text-center text-3xl tracking-[0.3em] font-mono bg-accent/5 border-accent/20 focus:border-accent"
+                    autoFocus
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="gold"
+                  size="lg"
+                  className="w-full h-12"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    "Verify & Sign In"
+                  )}
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full text-muted-foreground"
+                  onClick={() => {
+                    setRequires2FA(false);
+                    setTotpCode("");
+                    setUseEmailOTP(false);
+                  }}
+                >
+                  Back to Sign In
+                </Button>
+              </form>
+
+              {!useEmailOTP && (
+                <div className="mt-8 pt-6 border-t border-border text-center">
+                  <p className="text-sm text-muted-foreground mb-4">Can't access your app?</p>
+                  <Button 
+                    variant="outline" 
+                    className="w-full h-12 border-accent/20 hover:bg-accent/5"
+                    onClick={handleRequestEmailOTP}
+                    disabled={isSendingOTP}
+                  >
+                    {isSendingOTP ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin text-accent" />
+                    ) : (
+                      <Mail className="w-4 h-4 mr-2 text-accent" />
+                    )}
+                    Receive code via Email
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : requires2FASetup ? (
+            // 2FA Setup View
+            <div>
+              <div className="mb-6">
+                <h2 className="font-heading text-2xl lg:text-3xl font-medium text-foreground mb-2">
+                  Enable Admin 2FA
+                </h2>
+                <p className="text-muted-foreground text-sm">
+                  Administrator accounts must use Two-Factor Authentication. Scan this QR code with Google Authenticator or Authy.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                {twoFactorData ? (
+                  <div className="flex flex-col items-center gap-6 p-6 bg-accent/5 rounded-2xl border border-accent/10">
+                    <img
+                      src={twoFactorData.qrCodeDataUrl}
+                      alt="2FA QR Code"
+                      className="w-48 h-48 rounded-lg border-4 border-white shadow-xl"
+                    />
+                    <div className="text-center space-y-2">
+                      <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Setup Key</p>
+                      <code className="px-4 py-1.5 bg-background rounded-lg text-accent font-mono text-sm border border-border shadow-sm block">
+                        {twoFactorData.secret}
+                      </code>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-48 flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-accent" />
+                  </div>
+                )}
+
+                <form onSubmit={handle2FAVerify} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Confirm with 6-digit Code</Label>
+                    <Input
+                      type="text"
+                      maxLength={6}
+                      placeholder="000000"
+                      value={totpCode}
+                      onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
+                      required
+                      className="h-12 text-center text-xl tracking-[0.2em] font-mono"
+                    />
+                  </div>
+                  <Button type="submit" variant="gold" className="w-full h-12" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Activate & Continue"}
+                  </Button>
+                </form>
+              </div>
+            </div>
           ) : (
             // Login/Signup View
             <>
@@ -406,25 +619,15 @@ export default function Auth() {
 
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                      minLength={6}
-                      className="h-12 pr-12"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
+                  <PasswordInput
+                    id="password"
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    required
+                    minLength={6}
+                    className="h-12"
+                  />
                 </div>
 
                 {mode === "login" && (

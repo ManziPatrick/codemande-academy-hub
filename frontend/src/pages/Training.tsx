@@ -7,7 +7,7 @@ import { getApiBaseUrl } from "@/lib/env";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AuthAwareLink } from "@/components/AuthAwareLink";
-import { Code, Database, Wifi, Clock, Users, Award, CheckCircle, BookOpen, Target, Briefcase, Calendar, ArrowRight, Brain, Shield, Building2, Stethoscope, GraduationCap, Landmark, ShoppingBag, Factory, BarChart, ChevronRight, User, Tag, ChevronLeft, Share2, Facebook, Twitter, Linkedin, Copy, Check } from "lucide-react";
+import { Code, Database, Wifi, Clock, Users, Award, CheckCircle, BookOpen, Target, Briefcase, Calendar, ArrowRight, Brain, Shield, Building2, Stethoscope, GraduationCap, Landmark, ShoppingBag, Factory, BarChart, ChevronRight, User, Tag, ChevronLeft, Share2, Facebook, Twitter, Linkedin, Copy, Check, Eye } from "lucide-react";
 import heroImage from "@/assets/hero-training.webp";
 import heroImageMobile from "@/assets/hero-training-mobile.webp";
 import aboutImage from "@/assets/about-training.webp";
@@ -15,6 +15,9 @@ import aboutImageMobile from "@/assets/about-training-mobile.webp";
 import { useEffect, useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_COURSES } from "@/lib/graphql/queries";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
+import { EnrollCourseDialog } from "@/components/portal/dialogs";
 
 interface AICourse {
   _id: string;
@@ -75,6 +78,18 @@ const Training = () => {
   const [aiCourses, setAICourses] = useState<AICourse[]>([]);
   const [aiLoading, setAILoading] = useState(true);
   const [filter, setFilter] = useState("ALL");
+  const [enrollCourse, setEnrollCourse] = useState<any>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleEnrollClick = (course: any) => {
+    if (!user) {
+      toast.info("Please login to enroll in courses");
+      navigate(`/auth?redirect=/training`);
+      return;
+    }
+    setEnrollCourse(course);
+  };
 
   const departments = ["ALL", "GENERAL", "HEALTHCARE", "FINANCE", "EDUCATION", "MARKETING", "MANUFACTURING", "HR", "CYBERSECURITY"];
 
@@ -172,7 +187,7 @@ const Training = () => {
             )}
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {courses.map((course: any, index: number) => (
+              {(courses?.items || []).map((course: any, index: number) => (
                 <motion.div
                   key={course.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -203,16 +218,43 @@ const Training = () => {
                       className="text-muted-foreground text-sm mb-6 line-clamp-3 prose prose-sm prose-invert max-w-none"
                       dangerouslySetInnerHTML={{ __html: course.description }}
                     />
-                    <div className="mt-auto pt-6 border-t border-border/30 flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-xs text-muted-foreground">Instructor</span>
-                        <span className="text-sm font-semibold">{course.instructor?.username || 'Expert'}</span>
+                    <div className="mt-auto pt-6 border-t border-border/30 flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] text-muted-foreground uppercase font-medium">Investment</span>
+                          <div className="flex items-baseline gap-2">
+                            {course.discountPrice > 0 ? (
+                              <>
+                                <span className="text-base font-bold text-accent">RWF {course.discountPrice.toLocaleString()}</span>
+                                <span className="text-[10px] text-muted-foreground line-through">RWF {course.price.toLocaleString()}</span>
+                              </>
+                            ) : (
+                              <span className="text-base font-bold text-accent">
+                                {course.price === 0 ? "Scholarship" : `RWF ${course.price.toLocaleString()}`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Link to={`/courses/${course.id}`}>
+                          <Button variant="outline" size="sm" className="rounded-full h-8 px-4 text-xs font-bold border-accent/20 hover:border-accent/50">
+                            Details
+                          </Button>
+                        </Link>
                       </div>
-                      <Link to={`/course/${course.id}`}>
-                        <Button variant="gold" size="sm" className="rounded-full">
-                          Details <ArrowRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </Link>
+                      <div className="flex items-center justify-between pt-2 border-t border-border/10">
+                         <div className="flex flex-col">
+                          <span className="text-[9px] text-muted-foreground uppercase">Instructor</span>
+                          <span className="text-xs font-semibold">{course.instructor?.username || 'Expert'}</span>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="gold" 
+                        size="sm" 
+                        className="w-full rounded-xl font-bold h-10 shadow-lg shadow-gold/20"
+                        onClick={() => handleEnrollClick(course)}
+                      >
+                        Enroll Now <ArrowRight className="w-4 h-4 ml-2" />
+                      </Button>
                     </div>
                   </div>
                 </motion.div>
@@ -337,16 +379,35 @@ const Training = () => {
                             <div className="mt-auto flex items-center justify-between gap-4">
                               <div className="flex flex-col">
                                 <span className="text-[10px] text-muted-foreground uppercase font-medium">Investment</span>
-                                <span className="text-sm font-bold text-accent">
-                                  {course.price === 0 ? "Scholarship" : `RWF ${course.price.toLocaleString()}`}
-                                </span>
+                                <div className="flex items-baseline gap-2">
+                                  {course.discountPrice > 0 ? (
+                                    <>
+                                      <span className="text-sm font-bold text-accent">RWF {course.discountPrice.toLocaleString()}</span>
+                                      <span className="text-[9px] text-muted-foreground line-through">RWF {course.price.toLocaleString()}</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-sm font-bold text-accent">
+                                      {course.price === 0 ? "Scholarship" : `RWF ${course.price.toLocaleString()}`}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
-                              <Link
-                                to={`/courses/${course._id}`}
-                                className="flex items-center justify-center p-2.5 rounded-xl bg-accent text-white shadow-lg shadow-accent/20 hover:shadow-accent/40 active:scale-95 transition-all duration-300"
-                              >
-                                <ChevronRight size={18} />
-                              </Link>
+                              <div className="flex gap-2">
+                                <Link
+                                  to={`/courses/${course._id}`}
+                                  className="flex items-center justify-center p-2.5 rounded-xl bg-card border border-border/50 text-muted-foreground hover:text-accent hover:border-accent/50 transition-all duration-300"
+                                >
+                                  <Eye size={18} />
+                                </Link>
+                                <Button
+                                  variant="gold"
+                                  size="sm"
+                                  className="flex-1 rounded-xl font-bold shadow-lg shadow-gold/20"
+                                  onClick={() => handleEnrollClick(course)}
+                                >
+                                  Enroll Now
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -509,6 +570,11 @@ const Training = () => {
           </div>
         </section>
       </main>
+        <EnrollCourseDialog 
+          open={!!enrollCourse} 
+          onOpenChange={(open) => !open && setEnrollCourse(null)} 
+          course={enrollCourse} 
+        />
       <Footer />
     </div>
   );

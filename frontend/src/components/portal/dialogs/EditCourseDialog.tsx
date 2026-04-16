@@ -849,7 +849,7 @@ export function EditCourseDialog({
           <Button
             variant="outline"
             className="flex-1 font-bold h-11 rounded-xl shadow-sm gap-2"
-            onClick={() => window.open(`/course/${formData.id || course?.id}`, '_blank')}
+            onClick={() => window.open(`/courses/${formData.id || course?.id}`, '_blank')}
           >
             <ExternalLink className="w-4 h-4" /> Preview Public Page
           </Button>

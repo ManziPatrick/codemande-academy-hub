@@ -37,9 +37,9 @@ export function CreateProjectDialog({ open, onOpenChange, refetch }: CreateProje
     const { data: projectsData } = useQuery(GET_ALL_PROJECTS);
     const { data: coursesData } = useQuery(GET_COURSES);
 
-    const users = (usersData as any)?.users || [];
-    const allProjects = (projectsData as any)?.projects || [];
-    const courses = (coursesData as any)?.courses || [];
+    const users = (usersData as any)?.users?.items || (usersData as any)?.users || [];
+    const allProjects = (projectsData as any)?.projects?.items || (projectsData as any)?.projects || [];
+    const courses = (coursesData as any)?.courses?.items || (coursesData as any)?.courses || [];
 
     const students = users.filter((u: any) => u.role === 'student' || u.role === 'user' || u.role === 'intern');
     const trainers = users.filter((u: any) => u.role === 'trainer' || u.role === 'admin' || u.role === 'super_admin');

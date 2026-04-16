@@ -59,8 +59,12 @@ export default function ProgramList() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editState, setEditState] = useState<EditState>({ price: '', discount: '', maxSpots: '' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 12; // Grid layout usually looks better with 3 or 4 columns, so 12 is a good multiple
 
-  const { data, loading, error, refetch } = useQuery(GET_INTERNSHIP_PROGRAMS);
+  const { data, loading, error, refetch } = useQuery(GET_INTERNSHIP_PROGRAMS, {
+    variables: { page: currentPage, limit: pageSize }
+  });
 
   const [updateProgram, { loading: isSaving }] = useMutation(UPDATE_INTERNSHIP_PROGRAM_NEW, {
     onCompleted: () => {
@@ -83,7 +87,8 @@ export default function ProgramList() {
   );
   if (error) return <div className="text-destructive p-4">Error loading programs: {error.message}</div>;
 
-  const programs = (data as any)?.internshipPrograms || [];
+  const programs = (data as any)?.internshipPrograms?.items || [];
+  const pagination = (data as any)?.internshipPrograms?.pagination;
 
   const handleStatusCycle = (program: any) => {
     const config = STATUS_CONFIG[program.status] || STATUS_CONFIG.active;
@@ -325,6 +330,55 @@ export default function ProgramList() {
           );
         })}
       </div>
+
+      {/* Pagination UI */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-2">
+            Page {pagination.currentPage} of {pagination.totalPages} ({pagination.totalCount} programs)
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={!pagination.hasPreviousPage}
+              className="h-9 w-9 p-0 rounded-xl"
+            >
+              <ChevronRight className="w-4 h-4 rotate-180" />
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+                .map((p, i, arr) => {
+                  const showEllipsis = i > 0 && p - arr[i - 1] > 1;
+                  return (
+                    <div key={p} className="flex items-center">
+                      {showEllipsis && <span className="px-1 text-muted-foreground">...</span>}
+                      <Button
+                        variant={currentPage === p ? 'gold' : 'outline'}
+                        size="sm"
+                        onClick={() => setCurrentPage(p)}
+                        className={`h-9 w-9 p-0 rounded-xl ${currentPage === p ? 'pointer-events-none' : ''}`}
+                      >
+                        {p}
+                      </Button>
+                    </div>
+                  );
+                })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+              disabled={!pagination.hasNextPage}
+              className="h-9 w-9 p-0 rounded-xl"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {programs.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 border border-dashed border-border/50 rounded-3xl">

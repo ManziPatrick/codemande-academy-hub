@@ -26,6 +26,7 @@ import aiCourseRoutes from './routes/AICourseRoutes';
 import moduleAccessRoutes from './routes/ModuleAccessRoutes';
 import paymentRoutes from './routes/PaymentRoutes';
 import { authMiddleware } from './middleware/auth';
+import { maintenanceMiddleware } from './middleware/maintenance';
 
 dotenv.config();
 
@@ -121,10 +122,11 @@ const startServer = async () => {
     app.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
 
     // =============================
-    // AUTH MIDDLEWARE
+    // AUTH & MAINTENANCE MIDDLEWARE
     // =============================
 
     app.use(authMiddleware);
+    app.use(maintenanceMiddleware);
 
     // =============================
     // GRAPHQL SCHEMA
@@ -203,7 +205,7 @@ const startServer = async () => {
     app.use('/api/team', teamRoutes);
     app.use('/api/module-access', moduleAccessRoutes);
     app.use('/api/payments', paymentRoutes);
-    // app.use('/api/ai-courses', aiCourseRoutes); // Disabled for deployment
+    app.use('/api/ai-courses', aiCourseRoutes); // Enabled for deployment
 
     // =============================
     // GLOBAL ERROR HANDLER

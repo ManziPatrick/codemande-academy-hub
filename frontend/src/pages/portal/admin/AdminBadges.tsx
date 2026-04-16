@@ -52,8 +52,14 @@ export default function AdminBadges() {
     category: "skill",
   });
 
-  const { data, loading: queryLoading, refetch } = useQuery<{ badges: any[] }>(GET_BADGES);
-  const badges = data?.badges || [];
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 12; // 3x4 grid or similar
+
+  const { data, loading: queryLoading, refetch } = useQuery<{ badges: { items: any[], pagination: any } }>(GET_BADGES, {
+    variables: { page: currentPage, limit: pageSize }
+  });
+  const badges = data?.badges?.items || [];
+  const pagination = data?.badges?.pagination;
 
   const [createBadge] = useMutation(CREATE_BADGE, {
     onCompleted: () => {
@@ -266,6 +272,35 @@ export default function AdminBadges() {
               </div>
             )}
           </div>
+        )}
+
+        {/* Pagination UI */}
+        {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between px-2 py-6 border-t border-border/50 mt-8">
+                <p className="text-sm text-muted-foreground font-medium">
+                    Page <span className="text-foreground font-bold">{pagination.currentPage}</span> of {pagination.totalPages} ({pagination.totalCount} badges)
+                </p>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={!pagination.hasPreviousPage}
+                        className="rounded-xl px-4"
+                    >
+                        Previous
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                        disabled={!pagination.hasNextPage}
+                        className="rounded-xl px-4"
+                    >
+                        Next
+                    </Button>
+                </div>
+            </div>
         )}
 
         {/* Create/Edit Dialog */}

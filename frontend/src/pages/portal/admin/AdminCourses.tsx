@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,6 +29,8 @@ import {
   TrendingUp,
   HelpCircle,
   ExternalLink,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -44,8 +47,10 @@ import { GET_COURSES, GET_STATS, GET_USERS, GET_COURSE } from "@/lib/graphql/que
 import { CREATE_COURSE, UPDATE_COURSE, DELETE_COURSE } from "@/lib/graphql/mutations";
 
 export default function AdminCourses() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   // Dialog states
   const [viewCourse, setViewCourse] = useState<any | null>(null);
@@ -55,7 +60,9 @@ export default function AdminCourses() {
   const [manageQuestionsCourse, setManageQuestionsCourse] = useState<any | null>(null);
 
   // Queries & Mutations
-  const { data, loading, refetch } = useQuery(GET_COURSES);
+  const { data, loading, refetch } = useQuery(GET_COURSES, {
+    variables: { page: currentPage, limit: pageSize }
+  });
   const [loadCourse, { data: fullCourseData, loading: courseLoading }] = useLazyQuery(GET_COURSE);
   const [createCourseMutation] = useMutation(CREATE_COURSE);
   const [updateCourseMutation] = useMutation(UPDATE_COURSE);
@@ -68,57 +75,13 @@ export default function AdminCourses() {
     }
   }, [fullCourseData, editCourse?.id]);
 
-  const courses = (data as any)?.courses || [];
+  const courses = (data as any)?.courses?.items || [];
+  const pagination = (data as any)?.courses?.pagination;
 
   const { data: usersData } = useQuery(GET_USERS);
-  const trainers = (usersData as any)?.users?.filter((u: any) => u.role === 'trainer' || u.role === 'admin' || u.role === 'super_admin') || [];
+  const trainers = (usersData as any)?.users?.items?.filter((u: any) => u.role === 'trainer' || u.role === 'admin' || u.role === 'super_admin') || [];
 
-  // Create course form state
-  const [newCourse, setNewCourse] = useState({
-    title: "",
-    description: "",
-    price: 0,
-    discountPrice: 0,
-    level: "Beginner",
-    category: "Development",
-    instructorId: "",
-    thumbnail: "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
-    isFree: false,
-    status: "draft",
-    submissionRequired: true,
-  });
-
-
-  const handleCreateCourse = async () => {
-    if (!newCourse.title || !newCourse.description) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    try {
-      await createCourseMutation({
-        variables: {
-          title: newCourse.title,
-          description: newCourse.description,
-          price: newCourse.isFree ? 0 : Number(newCourse.price),
-          discountPrice: Number(newCourse.discountPrice) || 0,
-          level: newCourse.level,
-          category: newCourse.category,
-          instructorId: newCourse.instructorId,
-          thumbnail: newCourse.thumbnail,
-          status: newCourse.status,
-          submissionRequired: newCourse.submissionRequired,
-          modules: []
-        }
-      });
-      toast.success("Course created successfully!");
-      refetch();
-      setIsCreateOpen(false);
-      setNewCourse({ title: "", description: "", price: 0, discountPrice: 0, level: "Beginner", category: "Development", instructorId: "", thumbnail: "https://images.unsplash.com/photo-1498050108023-c5249f4df085", isFree: false, status: "draft", submissionRequired: true });
-    } catch (err: any) {
-      toast.error(err.message);
-    }
-  };
+  // Removed handleCreateCourse as it is now in CreateCourse.tsx
 
   const handleDeleteCourse = async () => {
     if (!deleteCourse) return;
@@ -132,8 +95,8 @@ export default function AdminCourses() {
     }
   };
 
-  const { data: statsData } = useQuery(GET_STATS);
-  const liveStats = (statsData as any)?.stats || { totalRevenue: 0 };
+   const { data: statsData } = useQuery(GET_STATS);
+   const liveStats = (statsData as any)?.stats || { totalUsers: 0, totalCourses: 0, totalStudents: 0, totalRevenue: 0 };
 
   const handleSaveCourse = async (updatedCourse: any) => {
     try {
@@ -190,9 +153,9 @@ export default function AdminCourses() {
     });
   };
 
-  const filteredCourses = courses.filter((course: any) =>
-    course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    course.instructor?.username.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredCourses = (courses || []).filter((course: any) =>
+    course.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    course.instructor?.username?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
 
@@ -213,185 +176,10 @@ export default function AdminCourses() {
               Create, manage, and configure courses and pricing
             </p>
           </div>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button variant="gold">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Course
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 overflow-hidden">
-              <DialogHeader className="p-6 pb-2">
-                <DialogTitle>Create New Course</DialogTitle>
-              </DialogHeader>
-              <div className="flex-1 p-6 pt-0 overflow-y-auto custom-scrollbar">
-                <div className="space-y-6 pt-4">
-                  {/* Block 1: General Information */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-accent border-b border-accent/10 pb-2">General Information</h3>
-                    <div>
-                      <label className="text-sm font-medium mb-1.5 block">Course Title *</label>
-                      <Input
-                        placeholder="e.g., Advanced JavaScript Masterclass"
-                        value={newCourse.title}
-                        onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
-                        className="bg-muted/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1.5 block">Description *</label>
-                      <Textarea
-                        placeholder="What will students learn in this course?"
-                        rows={3}
-                        value={newCourse.description}
-                        onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                        className="bg-muted/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1.5 block">Thumbnail Image</label>
-                      {newCourse.thumbnail && !newCourse.thumbnail.includes('unsplash') ? (
-                        <div className="relative aspect-video rounded-xl overflow-hidden border border-accent/20 group">
-                          <img src={newCourse.thumbnail} alt="Thumbnail preview" className="w-full h-full object-cover transition-transform group-hover:scale-105" />
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="sm"
-                              className="h-8 gap-2"
-                              onClick={() => setNewCourse({ ...newCourse, thumbnail: "" })}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" /> Remove
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <FileUpload
-                          folder="courses"
-                          label="Upload Course Thumbnail"
-                          onUploadComplete={(url) => setNewCourse({ ...newCourse, thumbnail: url })}
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Block 2: Pricing & Availability */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-accent border-b border-accent/10 pb-2">Pricing & Availability</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-1.5 block">Base Price ($)</label>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          value={newCourse.price}
-                          onChange={(e) => setNewCourse({ ...newCourse, price: parseFloat(e.target.value) || 0 })}
-                          disabled={newCourse.isFree}
-                          className={newCourse.isFree ? "opacity-50" : "bg-muted/20"}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-1.5 block">Discount Price ($)</label>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          value={newCourse.discountPrice}
-                          onChange={(e) => setNewCourse({ ...newCourse, discountPrice: parseFloat(e.target.value) || 0 })}
-                          className="bg-muted/20"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-xl">
-                      <div>
-                        <p className="font-bold text-sm">Free Course</p>
-                        <p className="text-[10px] text-muted-foreground">Make this course accessible to everyone for free</p>
-                      </div>
-                      <Switch
-                        checked={newCourse.isFree}
-                        onCheckedChange={(checked) => setNewCourse({ ...newCourse, isFree: checked, price: checked ? 0 : newCourse.price })}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-muted/30 border border-border/50 rounded-xl">
-                      <div>
-                        <p className="font-bold text-sm">Course Visibility</p>
-                        <p className="text-[10px] text-muted-foreground">Set to Live to make it visible to students</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] uppercase font-black ${newCourse.status === 'published' ? 'text-green-500' : 'text-amber-500'}`}>
-                          {newCourse.status === 'published' ? 'Live' : 'Draft'}
-                        </span>
-                        <Switch
-                          checked={newCourse.status === 'published'}
-                          onCheckedChange={(checked) => setNewCourse({ ...newCourse, status: checked ? 'published' : 'draft' })}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Block 3: Settings & Requirements */}
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-accent border-b border-accent/10 pb-2">Course Settings & Requirements</h3>
-                    <div className="flex items-center justify-between p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl">
-                      <div className="flex-1 pr-4">
-                        <p className="font-bold text-sm flex items-center gap-2">
-                          Strict Progress Enforcement
-                          <HelpCircle className="w-3 h-3 text-amber-500/50" />
-                        </p>
-                        <p className="text-[10px] text-muted-foreground leading-relaxed">
-                          When enabled, students <b>must submit assignments</b> and wait for trainer approval before they can move to the next unit.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={newCourse.submissionRequired}
-                        onCheckedChange={(checked) => setNewCourse({ ...newCourse, submissionRequired: checked })}
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium mb-1.5 block">Learning Level</label>
-                        <Input
-                          placeholder="e.g., Intermediate"
-                          value={newCourse.level}
-                          onChange={(e) => setNewCourse({ ...newCourse, level: e.target.value })}
-                          className="bg-muted/20"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium mb-1.5 block">Category</label>
-                        <Input
-                          placeholder="e.g., UI/UX Design"
-                          value={newCourse.category}
-                          onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value })}
-                          className="bg-muted/20"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-1.5 block">Assign Primary Instructor</label>
-                      <select
-                        className="w-full h-11 px-3 rounded-md border border-input bg-muted/20 text-sm font-medium outline-none focus:ring-2 focus:ring-accent/20"
-                        value={newCourse.instructorId}
-                        onChange={(e) => setNewCourse({ ...newCourse, instructorId: e.target.value })}
-                      >
-                        <option value="">Select Instructor</option>
-                        {trainers.map((t: any) => (
-                          <option key={t.id} value={t.id}>{t.username} ({t.role})</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2 p-6 border-t">
-                <Button variant="outline" className="flex-1" onClick={() => setIsCreateOpen(false)}>
-                  Cancel
-                </Button>
-                <Button variant="gold" className="flex-1" onClick={handleCreateCourse}>
-                  Create Course
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button variant="gold" onClick={() => navigate("/portal/admin/courses/create")}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Course
+          </Button>
         </motion.div>
 
         {/* Stats */}
@@ -408,7 +196,7 @@ export default function AdminCourses() {
                   <BookOpen className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-card-foreground">{courses.length}</p>
+                  <p className="text-2xl font-bold text-card-foreground">{liveStats.totalCourses}</p>
                   <p className="text-xs text-card-foreground/60">Total Courses</p>
                 </div>
               </div>
@@ -422,7 +210,7 @@ export default function AdminCourses() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-card-foreground">
-                    {courses.reduce((sum: number, c: any) => sum + (c.studentsEnrolled?.length || 0), 0)}
+                    {liveStats.totalStudents}
                   </p>
                   <p className="text-xs text-card-foreground/60">Total Students</p>
                 </div>
@@ -449,7 +237,7 @@ export default function AdminCourses() {
                   <TrendingUp className="w-5 h-5 text-accent" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-card-foreground">62%</p>
+                  <p className="text-2xl font-bold text-card-foreground">0%</p>
                   <p className="text-xs text-card-foreground/60">Avg. Completion</p>
                 </div>
               </div>
@@ -496,103 +284,164 @@ export default function AdminCourses() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredCourses.map((course: any) => (
-                      <tr key={course.id} className="border-b border-border/30 hover:bg-background/50">
-                        <td className="p-4">
-                          <div>
-                            <p className="font-medium text-card-foreground">{course.title}</p>
-                            <p className="text-xs text-card-foreground/60 mt-0.5">
-                              {course.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 0} lessons
+                    {filteredCourses.length > 0 ? (
+                      filteredCourses.map((course: any) => (
+                        <tr key={course.id} className="border-b border-border/30 hover:bg-background/50">
+                          <td className="p-4">
+                            <div>
+                              <p className="font-medium text-card-foreground">{course.title}</p>
+                              <p className="text-xs text-card-foreground/60 mt-0.5">
+                                {course.modules?.reduce((acc: number, m: any) => acc + (m.lessons?.length || 0), 0) || 0} lessons
+                              </p>
+                            </div>
+                          </td>
+                          <td className="p-4 text-sm text-card-foreground/70">{course.instructor?.username || <span className="text-destructive/60 italic">Unknown Instructor</span>}</td>
+                          <td className="p-4 text-center">
+                            <span className="text-sm font-medium text-card-foreground">{course.studentsEnrolled?.length || 0}</span>
+                          </td>
+                          <td className="p-4 text-center">
+                            {course.price === 0 ? (
+                              <Badge className="bg-green-500/20 text-green-400">Free</Badge>
+                            ) : (
+                              <div className="flex flex-col items-center">
+                                {course.discountPrice > 0 ? (
+                                  <>
+                                    <span className="text-xs text-card-foreground/40 line-through">${course.price}</span>
+                                    <span className="text-sm text-accent font-medium">${course.discountPrice}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-sm text-accent font-medium">${course.price}</span>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-4 text-center text-sm text-card-foreground/70">$0</td>
+                          <td className="p-4 text-center">
+                            <Badge
+                              variant={course.status === 'published' ? 'default' : 'secondary'}
+                              className={
+                                course.status === 'draft' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
+                                  course.status === 'archived' ? "bg-red-500/10 text-red-500 border-red-500/20" :
+                                    "bg-green-500/10 text-green-500 border-green-500/20"
+                              }
+                            >
+                              {course.status === 'published' ? 'Live' : course.status === 'draft' ? 'Draft' : 'Archived'}
+                            </Badge>
+                          </td>
+                          <td className="p-4 text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setViewCourse(course)}>
+                                  <Eye className="w-4 h-4 mr-2" /> Quick View
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => window.open(`/courses/${course.id}`, '_blank')}>
+                                  <ExternalLink className="w-4 h-4 mr-2" /> Public Preview
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditClick(course)}>
+                                  <Edit className="w-4 h-4 mr-2" /> Edit Content
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditClick(course)}>
+                                  <DollarSign className="w-4 h-4 mr-2" /> Edit Pricing
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem onClick={() => setManageQuestionsCourse(course)}>
+                                  <HelpCircle className="w-4 h-4 mr-2" /> Manage Questions
+                                </DropdownMenuItem>
+
+                                <div className="h-px bg-border/50 my-1" />
+                                <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase">Set Status</div>
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(course.id, 'published')} disabled={course.status === 'published'}>
+                                  <div className="w-2 h-2 rounded-full bg-green-500 mr-2" /> Go Live
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(course.id, 'draft')} disabled={course.status === 'draft'}>
+                                  <div className="w-2 h-2 rounded-full bg-amber-500 mr-2" /> Back to Draft
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(course.id, 'archived')} disabled={course.status === 'archived'}>
+                                  <div className="w-2 h-2 rounded-full bg-red-500 mr-2" /> Archive
+                                </DropdownMenuItem>
+
+                                <div className="h-px bg-border/50 my-1" />
+                                <DropdownMenuItem
+                                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                  onClick={() => setDeleteCourse(course)}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center">
+                          <div className="flex flex-col items-center justify-center space-y-2">
+                            <BookOpen className="w-8 h-8 text-muted-foreground/20" />
+                            <p className="text-sm text-muted-foreground">No standard academic courses found.</p>
+                            <p className="text-xs text-muted-foreground/60 italic">
+                              Check "Internship Management" for your 9 internship programs.
                             </p>
                           </div>
                         </td>
-                        <td className="p-4 text-sm text-card-foreground/70">{course.instructor?.username}</td>
-                        <td className="p-4 text-center">
-                          <span className="text-sm font-medium text-card-foreground">{course.studentsEnrolled?.length || 0}</span>
-                        </td>
-                        <td className="p-4 text-center">
-                          {course.price === 0 ? (
-                            <Badge className="bg-green-500/20 text-green-400">Free</Badge>
-                          ) : (
-                            <div className="flex flex-col items-center">
-                              {course.discountPrice > 0 ? (
-                                <>
-                                  <span className="text-xs text-card-foreground/40 line-through">${course.price}</span>
-                                  <span className="text-sm text-accent font-medium">${course.discountPrice}</span>
-                                </>
-                              ) : (
-                                <span className="text-sm text-accent font-medium">${course.price}</span>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                        <td className="p-4 text-center text-sm text-card-foreground/70">$0</td>
-                        <td className="p-4 text-center">
-                          <Badge
-                            variant={course.status === 'published' ? 'default' : 'secondary'}
-                            className={
-                              course.status === 'draft' ? "bg-amber-500/10 text-amber-500 border-amber-500/20" :
-                                course.status === 'archived' ? "bg-red-500/10 text-red-500 border-red-500/20" :
-                                  "bg-green-500/10 text-green-500 border-green-500/20"
-                            }
-                          >
-                            {course.status === 'published' ? 'Live' : course.status === 'draft' ? 'Draft' : 'Archived'}
-                          </Badge>
-                        </td>
-                        <td className="p-4 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => setViewCourse(course)}>
-                                <Eye className="w-4 h-4 mr-2" /> Quick View
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => window.open(`/course/${course.id}`, '_blank')}>
-                                <ExternalLink className="w-4 h-4 mr-2" /> Public Preview
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditClick(course)}>
-                                <Edit className="w-4 h-4 mr-2" /> Edit Content
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEditClick(course)}>
-                                <DollarSign className="w-4 h-4 mr-2" /> Edit Pricing
-                              </DropdownMenuItem>
-
-                              <DropdownMenuItem onClick={() => setManageQuestionsCourse(course)}>
-                                <HelpCircle className="w-4 h-4 mr-2" /> Manage Questions
-                              </DropdownMenuItem>
-
-                              <div className="h-px bg-border/50 my-1" />
-                              <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase">Set Status</div>
-                              <DropdownMenuItem onClick={() => handleUpdateStatus(course.id, 'published')} disabled={course.status === 'published'}>
-                                <div className="w-2 h-2 rounded-full bg-green-500 mr-2" /> Go Live
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleUpdateStatus(course.id, 'draft')} disabled={course.status === 'draft'}>
-                                <div className="w-2 h-2 rounded-full bg-amber-500 mr-2" /> Back to Draft
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleUpdateStatus(course.id, 'archived')} disabled={course.status === 'archived'}>
-                                <div className="w-2 h-2 rounded-full bg-red-500 mr-2" /> Archive
-                              </DropdownMenuItem>
-
-                              <div className="h-px bg-border/50 my-1" />
-                              <DropdownMenuItem
-                                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                                onClick={() => setDeleteCourse(course)}
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" /> Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
             </CardContent>
           </Card>
+
+          {/* Pagination UI */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-6">
+              <p className="text-sm text-muted-foreground">
+                Showing page <span className="font-semibold">{pagination.currentPage}</span> of <span className="font-semibold">{pagination.totalPages}</span> ({pagination.totalCount} total)
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={!pagination.hasPreviousPage}
+                >
+                  <ChevronLeft className="w-4 h-4 mr-2" /> Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+                    .map((p, i, arr) => {
+                      const showEllipsis = i > 0 && p - arr[i - 1] > 1;
+                      return (
+                        <div key={p} className="flex items-center">
+                          {showEllipsis && <span className="px-1 text-muted-foreground">...</span>}
+                          <Button
+                            variant={currentPage === p ? "gold" : "outline"}
+                            size="sm"
+                            onClick={() => setCurrentPage(p)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {p}
+                          </Button>
+                        </div>
+                      );
+                    })}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                  disabled={!pagination.hasNextPage}
+                >
+                  Next <ChevronRight className="w-4 h-4 ml-2" />
+                </Button>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
 

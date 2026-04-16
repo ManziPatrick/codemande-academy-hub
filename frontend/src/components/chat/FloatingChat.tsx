@@ -269,7 +269,7 @@ export function FloatingChat() {
                       {searchQuery.length > 1 ? (
                         <div className="py-2">
                           <p className="px-3 text-[10px] font-bold text-accent uppercase tracking-wider mb-2">Results</p>
-                          {(usersData as any)?.users?.filter((u: any) => u.id !== user?.id).map((u: any) => (
+                          {(usersData as any)?.users?.items?.filter((u: any) => u.id !== user?.id).map((u: any) => (
                             <button
                               key={u.id}
                               onClick={() => handleSelectUser(u)}

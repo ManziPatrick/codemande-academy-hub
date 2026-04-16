@@ -198,7 +198,7 @@ export function Chat() {
                             <div>
                                 <p className="px-3 text-[10px] font-bold text-accent uppercase tracking-wider mb-2 mt-4">All Contacts</p>
                                 <div className="space-y-1">
-                                    {(usersData as any)?.users?.filter((u: any) => u.id !== myId).map((u: any) => (
+                                    {(usersData as any)?.users?.items?.filter((u: any) => u.id !== myId).map((u: any) => (
                                         <div
                                             key={u.id}
                                             onClick={() => handleUserSelect(u)}

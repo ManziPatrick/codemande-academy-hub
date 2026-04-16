@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface EditUserDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ interface EditUserDialogProps {
 }
 
 export function EditUserDialog({ open, onOpenChange, user, onSave }: EditUserDialogProps) {
+  const { user: currentUser } = useAuth();
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -86,8 +88,12 @@ export function EditUserDialog({ open, onOpenChange, user, onSave }: EditUserDia
               <SelectContent>
                 <SelectItem value="student">Student</SelectItem>
                 <SelectItem value="trainer">Trainer</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="super_admin">Super Admin</SelectItem>
+                {currentUser?.role === "super_admin" && (
+                  <>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="super_admin">Super Admin</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>

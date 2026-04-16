@@ -5,6 +5,7 @@ import { UPDATE_INTERNSHIP_STAGE } from '@/lib/graphql/mutations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { ViewInternshipDialog } from '@/components/portal/dialogs/ViewInternshipDialog';
@@ -19,7 +20,11 @@ const STAGES = [
 ];
 
 export default function WorkflowBoard() {
-  const { data, loading, refetch } = useQuery(GET_ALL_INTERNSHIPS);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50; // Larger page size for Kanban board usually
+  const { data, loading, refetch } = useQuery(GET_ALL_INTERNSHIPS, {
+    variables: { page: currentPage, limit: pageSize }
+  });
   const [updateStage] = useMutation(UPDATE_INTERNSHIP_STAGE, {
     onCompleted: () => {
       toast.success('Internship stage updated successfully');
@@ -42,7 +47,8 @@ export default function WorkflowBoard() {
     );
   }
 
-  const internships = (data as any)?.internships || [];
+  const internships = (data as any)?.internships?.items || [];
+  const pagination = (data as any)?.internships?.pagination;
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedInternshipId(id);
@@ -144,6 +150,35 @@ export default function WorkflowBoard() {
           </div>
         );
       })}
+
+      {/* Pagination Mini-Controls for Kanban */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="fixed bottom-4 right-8 bg-card border border-border/50 p-2 rounded-2xl shadow-xl flex items-center gap-4 z-50">
+          <p className="text-[10px] font-black uppercase text-muted-foreground pl-2">
+            Page {pagination.currentPage} of {pagination.totalPages}
+          </p>
+          <div className="flex gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={!pagination.hasPreviousPage}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowRight className="h-4 w-4 rotate-180" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+              disabled={!pagination.hasNextPage}
+              className="h-8 w-8 p-0"
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <ViewInternshipDialog
         open={dialogOpen}

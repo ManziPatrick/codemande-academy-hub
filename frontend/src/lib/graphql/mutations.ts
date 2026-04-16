@@ -29,6 +29,8 @@ export const LOGIN_USER = gql`
   mutation Login($email: String!, $password: String!) {
     login(email: $email, password: $password) {
       token
+      requires2FA
+      requires2FASetup
       user {
         id
         username
@@ -808,6 +810,12 @@ export const UPDATE_THEME = gql`
   }
 `;
 
+export const SEND_TEST_EMAIL = gql`
+  mutation SendTestEmail($to: String!) {
+    sendTestEmail(to: $to)
+  }
+`;
+
 export const SEND_MESSAGE_TO_PROJECT = gql`
   mutation SendMessageToProject($projectId: ID!, $content: String!) {
     sendMessageToProject(projectId: $projectId, content: $content) {
@@ -1584,5 +1592,58 @@ export const UPDATE_INTERNSHIP_MEETING = gql`
 export const DELETE_INTERNSHIP_MEETING = gql`
   mutation DeleteInternshipMeeting($id: ID!) {
     deleteInternshipMeeting(id: $id)
+  }
+`;
+
+export const SETUP_2FA = gql`
+  mutation Setup2FA {
+    setup2FA {
+      qrCodeDataUrl
+      secret
+    }
+  }
+`;
+
+export const VERIFY_2FA = gql`
+  mutation Verify2FA($code: String!) {
+    verify2FA(code: $code) {
+      token
+      requires2FA
+      user {
+        id
+        username
+        email
+        role
+        fullName
+        avatar
+      }
+    }
+  }
+`;
+
+export const DISABLE_2FA = gql`
+  mutation Disable2FA($code: String!) {
+    disable2FA(code: $code)
+  }
+`;
+
+export const REQUEST_EMAIL_OTP = gql`
+  mutation RequestEmailOTP($email: String!) {
+    requestEmailOTP(email: $email)
+  }
+`;
+
+export const VERIFY_EMAIL_OTP = gql`
+  mutation VerifyEmailOTP($email: String!, $code: String!) {
+    verifyEmailOTP(email: $email, code: $code) {
+      token
+      user {
+        id
+        username
+        email
+        role
+        fullName
+      }
+    }
   }
 `;

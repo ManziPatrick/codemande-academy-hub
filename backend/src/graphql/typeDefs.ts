@@ -2,8 +2,10 @@ export const typeDefs = `#graphql
   scalar Upload
 
   type AuthPayload {
-    token: String!
-    user: User!
+    token: String
+    user: User
+    requires2FA: Boolean
+    requires2FASetup: Boolean
   }
 
   type CompletedLesson {
@@ -94,9 +96,84 @@ export const typeDefs = `#graphql
     isOnline: Boolean
     totalTimeSpent: Int
     lastPath: String
+    twoFactorEnabled: Boolean
     createdAt: String
     updatedAt: String
     bookings: [Booking]
+  }
+
+  type PaginationInfo {
+    totalCount: Int!
+    totalPages: Int!
+    currentPage: Int!
+    pageSize: Int!
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+  }
+
+  type UserResponse {
+    items: [User]
+    pagination: PaginationInfo
+  }
+
+  type CourseResponse {
+    items: [Course]
+    pagination: PaginationInfo
+  }
+
+  type PaymentResponse {
+    items: [PaymentTransaction]
+    pagination: PaginationInfo
+  }
+
+  type ProjectResponse {
+    items: [Project]
+    pagination: PaginationInfo
+  }
+
+  type InternshipResponse {
+    items: [Internship]
+    pagination: PaginationInfo
+  }
+
+  type InternshipProgramResponse {
+    items: [InternshipProgram]
+    pagination: PaginationInfo
+  }
+
+  type InternshipApplicationResponse {
+    items: [InternshipApplication]
+    pagination: PaginationInfo
+  }
+
+  type InternshipActivityLogResponse {
+    items: [InternshipActivityLog]
+    pagination: PaginationInfo
+  }
+
+  type InternshipTeamResponse {
+    items: [InternshipTeam]
+    pagination: PaginationInfo
+  }
+
+  type InternshipProjectResponse {
+    items: [InternshipProject]
+    pagination: PaginationInfo
+  }
+
+  type AssignmentSubmissionResponse {
+    items: [AssignmentSubmission]
+    pagination: PaginationInfo
+  }
+
+  type BookingResponse {
+    items: [Booking]
+    pagination: PaginationInfo
+  }
+
+  type BadgeResponse {
+    items: [Badge]
+    pagination: PaginationInfo
   }
 
   type Message {
@@ -172,14 +249,14 @@ export const typeDefs = `#graphql
     title: String!
     description: String!
     thumbnail: String
-    instructor: User!
+    instructor: User
     price: Float
     discountPrice: Float
     level: String
     category: String
     status: String
     modules: [Module!]!
-    studentsEnrolled: [User!]!
+    studentsEnrolled: [User]!
     submissionRequired: Boolean
     createdAt: String!
     updatedAt: String!
@@ -560,10 +637,10 @@ export const typeDefs = `#graphql
     getResources(linkedTo: ID, onModel: String): [Resource!]!
     getResource(id: ID!): Resource!
     hello: String
-    users: [User]
+    users(page: Int, limit: Int): UserResponse
     conversations: [Conversation]
     messages(conversationId: ID!): [Message]
-    courses: [Course]
+    courses(page: Int, limit: Int): CourseResponse
     course(id: ID!): Course
     stats: Stats
     me: User
@@ -571,20 +648,20 @@ export const typeDefs = `#graphql
     trainerStudents: [User]
     recentActivity: [ActivityLogEntry]
     questions(courseId: ID!, lessonId: ID): [Question]
-    bookings: [Booking]
-    payments: [PaymentTransaction]
+    bookings(page: Int, limit: Int): BookingResponse
+    payments(page: Int, limit: Int): PaymentResponse
     analytics: AnalyticsData
     branding: BrandingConfig
     configs: [Config]
     myPayments: [PaymentTransaction]
     myCourseProgress(courseId: ID!): CourseProgress
-    badges: [Badge]
+    badges(page: Int, limit: Int): BadgeResponse
     
     trainerStats: TrainerStats
     adminDashboardData: AdminDashboardData
 
     # Projects
-    projects: [Project]
+    projects(page: Int, limit: Int): ProjectResponse
     projectTemplates(category: String, course: String): [Project]
     myProjects(status: String): [Project]
     myInternships(status: String): [Internship]
@@ -603,7 +680,7 @@ export const typeDefs = `#graphql
     getMyInternshipMeetings: [InternshipMeeting]
     
     # Internships
-    internships: [Internship]
+    internships(page: Int, limit: Int): InternshipResponse
     getInternshipStandups(internshipId: ID!): [Standup]
     getMyStandups: [Standup]
     myInternship: Internship
@@ -617,7 +694,7 @@ export const typeDefs = `#graphql
     getUploadSignature(folder: String, resourceType: String): UploadSignature!
     
     # Assignments
-    getAssignmentSubmissions(courseId: ID, lessonId: String): [AssignmentSubmission]
+    getAssignmentSubmissions(courseId: ID, lessonId: String, page: Int, limit: Int): AssignmentSubmissionResponse
   }
 
   type DailyDashboard {
@@ -736,6 +813,7 @@ export const typeDefs = `#graphql
     logoUrl: String
     siteName: String
     portalTitle: String
+    maintenanceMode: Boolean
   }
 
   type ChatResponse {
@@ -743,6 +821,11 @@ export const typeDefs = `#graphql
     role: String!
     action: String
     actionData: String
+  }
+
+  type TwoFactorSetupResponse {
+    qrCodeDataUrl: String!
+    secret: String!
   }
 
   type Mutation {
@@ -757,6 +840,7 @@ export const typeDefs = `#graphql
       logoUrl: String
       siteName: String
       portalTitle: String
+      maintenanceMode: Boolean
     ): BrandingConfig
 
     chatWithAI(message: String!): ChatResponse
@@ -1239,17 +1323,17 @@ export const typeDefs = `#graphql
   }
 
   extend type Query {
-    internshipPrograms: [InternshipProgram]
+    internshipPrograms(page: Int, limit: Int): InternshipProgramResponse
     internshipProgram(id: ID!): InternshipProgram
-    internshipApplications(programId: ID, status: String): [InternshipApplication]
+    internshipApplications(programId: ID, status: String, page: Int, limit: Int): InternshipApplicationResponse
     myInternshipApplications: [InternshipApplication]
     internshipProject(id: ID!): InternshipProject
-    internshipProjects(programId: ID): [InternshipProject]
-    internshipTeams(programId: ID): [InternshipTeam]
+    internshipProjects(programId: ID, page: Int, limit: Int): InternshipProjectResponse
+    internshipTeams(programId: ID, page: Int, limit: Int): InternshipTeamResponse
     myInternshipTeam: InternshipTeam
     internshipSubmissions(teamId: ID!): [InternshipSubmission]
     internshipTimeLogs(teamId: ID!, userId: ID): [InternshipTimeLog]
-    internshipActivityLogs(programId: ID, targetType: String, targetId: ID): [InternshipActivityLog]
+    internshipActivityLogs(programId: ID, targetType: String, targetId: ID, page: Int, limit: Int): InternshipActivityLogResponse
     
     # Sprint & Task Board Queries
     internshipSprints(projectId: ID!, teamId: ID): [InternshipSprint]
@@ -1652,6 +1736,17 @@ export const typeDefs = `#graphql
     ): InternshipMeeting
     
     deleteInternshipMeeting(id: ID!): Boolean
+    
+    sendTestEmail(to: String!): Boolean
+
+    # Two-Factor Authentication
+    setup2FA: TwoFactorSetupResponse!
+    verify2FA(code: String!): AuthPayload!
+    disable2FA(code: String!): Boolean!
+
+    # Email OTP
+    requestEmailOTP(email: String!): Boolean!
+    verifyEmailOTP(email: String!, code: String!): AuthPayload!
   }
 
   type StripePaymentIntent {

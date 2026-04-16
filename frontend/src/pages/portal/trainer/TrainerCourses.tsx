@@ -225,7 +225,7 @@ export default function TrainerCourses() {
                         <Button variant="outline" size="sm" className="h-9 hover:bg-accent hover:text-white" onClick={() => setViewCourse(selectedCourse)}>
                           <Eye className="w-4 h-4 mr-1.5" /> Quick View
                         </Button>
-                        <Button variant="outline" size="sm" className="h-9" onClick={() => window.open(`/course/${selectedCourse.id}`, '_blank')}>
+                        <Button variant="outline" size="sm" className="h-9" onClick={() => window.open(`/courses/${selectedCourse.id}`, '_blank')}>
                           <ExternalLink className="w-4 h-4 mr-1.5" /> Public Preview
                         </Button>
                         <Button

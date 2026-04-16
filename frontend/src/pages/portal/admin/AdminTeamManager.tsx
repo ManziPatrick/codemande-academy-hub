@@ -47,21 +47,25 @@ const AdminTeamManager = () => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [currentMember, setCurrentMember] = useState<Partial<ITeamMember> | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState<any>(null);
+    const limit = 10;
 
     useEffect(() => {
         fetchMembers();
-    }, []);
+    }, [page]);
 
     const fetchMembers = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/api/team`, {
+            const response = await fetch(`${API_BASE_URL}/api/team?page=${page}&limit=${limit}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('codemande_token')}`
                 }
             });
             const data = await response.json();
-            setMembers(Array.isArray(data) ? data : []);
+            setMembers(data.members || []);
+            setPagination(data.pagination);
         } catch (error) {
             console.error("Error fetching team members:", error);
             toast.error("Failed to load team members");
@@ -346,6 +350,34 @@ const AdminTeamManager = () => {
                                 )}
                             </TableBody>
                         </Table>
+                    )}
+
+                    {pagination && pagination.totalPages > 1 && (
+                        <div className="p-4 border-t border-border/50 flex items-center justify-between">
+                            <p className="text-sm text-muted-foreground font-medium">
+                                Page <span className="text-foreground font-bold">{pagination.currentPage}</span> of {pagination.totalPages}
+                            </p>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage(prev => Math.max(1, prev - 1))}
+                                    disabled={!pagination.hasPreviousPage}
+                                    className="rounded-xl px-4"
+                                >
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage(prev => Math.min(pagination.totalPages, prev + 1))}
+                                    disabled={!pagination.hasNextPage}
+                                    className="rounded-xl px-4"
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
                     )}
                 </div>
             </div>

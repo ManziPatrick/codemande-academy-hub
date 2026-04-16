@@ -10,10 +10,12 @@ import { Check, X, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ApplicationReview() {
+  const [currentPage, setCurrentPage] = useState(1);
   const [filter, setFilter] = useState('pending');
+  const pageSize = 10;
   
   const { data, loading, error, refetch } = useQuery(GET_INTERNSHIP_APPLICATIONS, {
-    variables: { status: filter }
+    variables: { status: filter, page: currentPage, limit: pageSize }
   });
   
   const [reviewApplication] = useMutation(REVIEW_INTERNSHIP_APPLICATION);
@@ -42,7 +44,8 @@ export default function ApplicationReview() {
   if (loading) return <div>Loading applications...</div>;
   if (error) return <div>Error loading applications</div>;
 
-  const applications = (data as any)?.internshipApplications || [];
+  const applications = (data as any)?.internshipApplications?.items || [];
+  const pagination = (data as any)?.internshipApplications?.pagination;
 
   return (
     <div className="space-y-6">
@@ -130,6 +133,53 @@ export default function ApplicationReview() {
           </Card>
         ))}
       </div>
+
+      {/* Pagination UI */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between px-2 py-4">
+          <p className="text-sm text-muted-foreground">
+            Showing page <span className="font-medium">{pagination.currentPage}</span> of <span className="font-medium">{pagination.totalPages}</span> ({pagination.totalCount} applications)
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={!pagination.hasPreviousPage}
+            >
+              Previous
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === pagination.totalPages || Math.abs(p - currentPage) <= 1)
+                .map((p, i, arr) => {
+                  const showEllipsis = i > 0 && p - arr[i - 1] > 1;
+                  return (
+                    <div key={p} className="flex items-center">
+                      {showEllipsis && <span className="px-1">...</span>}
+                      <Button
+                        variant={currentPage === p ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setCurrentPage(p)}
+                        className={`h-8 w-8 p-0 ${currentPage === p ? 'pointer-events-none' : ''}`}
+                      >
+                        {p}
+                      </Button>
+                    </div>
+                  );
+                })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(pagination.totalPages, prev + 1))}
+              disabled={!pagination.hasNextPage}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

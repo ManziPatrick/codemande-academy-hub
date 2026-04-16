@@ -68,17 +68,17 @@ export function CreateInternshipTeamDialog({ open, onOpenChange, preSelectedProg
     fetchPolicy: 'network-only'
   });
 
-  const mentors = (usersData as any)?.users?.filter((u: any) => ['trainer', 'admin', 'super_admin'].includes(u.role)) || [];
+  const mentors = (usersData as any)?.users?.items?.filter((u: any) => ['trainer', 'admin', 'super_admin'].includes(u.role)) || [];
   
-  const applications = (applicationsData as any)?.internshipApplications || [];
+  const applications = (applicationsData as any)?.internshipApplications?.items || (applicationsData as any)?.internshipApplications || [];
   const uniqueStudentsMap = new Map();
   applications.forEach((app: any) => {
     if (app.user) uniqueStudentsMap.set(app.user.id, app.user);
   });
   const students = Array.from(uniqueStudentsMap.values());
 
-  const programs = (programsData as any)?.internshipPrograms || [];
-  const projects = (projectsData as any)?.internshipProjects || [];
+  const programs = (programsData as any)?.internshipPrograms?.items || (programsData as any)?.internshipPrograms || [];
+  const projects = (projectsData as any)?.internshipProjects?.items || (projectsData as any)?.internshipProjects || [];
 
   const [addInternToTeam] = useMutation(ADD_INTERN_TO_TEAM_NEW);
 

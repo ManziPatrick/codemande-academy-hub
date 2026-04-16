@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import {
   Cog,
   Shield,
@@ -26,7 +27,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { GET_CONFIGS, GET_BRANDING } from "@/lib/graphql/queries";
-import { UPDATE_CONFIG } from "@/lib/graphql/mutations";
+import { UPDATE_CONFIG, SEND_TEST_EMAIL } from "@/lib/graphql/mutations";
 import { toast } from "sonner";
 
 export default function SuperAdminConfig() {
@@ -35,6 +36,16 @@ export default function SuperAdminConfig() {
   const [updateConfigMutation] = useMutation(UPDATE_CONFIG, {
     refetchQueries: [{ query: GET_CONFIGS }, { query: GET_BRANDING }]
   });
+  const [sendTestEmail, { loading: sendingTest }] = useMutation(SEND_TEST_EMAIL);
+
+  const handleTestEmail = async () => {
+    try {
+      await sendTestEmail({ variables: { to: settings.emailSender } });
+      toast.success(`Test email sent to ${settings.emailSender}. Check your inbox!`);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to send test email");
+    }
+  };
 
   const [settings, setSettings] = useState({
     siteName: "Codemande Academy",
@@ -42,11 +53,14 @@ export default function SuperAdminConfig() {
     contactEmail: "contact@codemande.com",
     maintenanceMode: false,
     registrationEnabled: true,
-    emailServer: "smtp.gmail.com",
-    emailPort: "587",
+    emailServer: "smtp.zoho.com",
+    emailPort: "465",
+    emailSender: "admin@codemande.com",
+    emailAppPassword: "0EN2iaThnZAz",
     paymentGateway: "Mobile Money",
     primaryColor: "#EAB308",
     darkMode: true,
+    admin2FA: false,
   });
 
   useEffect(() => {
@@ -163,8 +177,8 @@ export default function SuperAdminConfig() {
                 <CardContent className="space-y-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Maintenance Mode</Label>
-                      <p className="text-sm text-muted-foreground">Only admins can access the site when on</p>
+                      <Label>Development / Maintenance Mode</Label>
+                      <p className="text-sm text-muted-foreground">When on, only admins and super admins can access the platform</p>
                     </div>
                     <Switch 
                         checked={settings.maintenanceMode}
@@ -209,10 +223,34 @@ export default function SuperAdminConfig() {
                         onChange={(e) => setSettings({...settings, emailPort: e.target.value})}
                     />
                   </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>Sender Email</Label>
+                    <Input 
+                        type="email"
+                        value={settings.emailSender}
+                        onChange={(e) => setSettings({...settings, emailSender: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label>App Password</Label>
+                    <PasswordInput 
+                        placeholder="••••••••••••"
+                        value={settings.emailAppPassword || ""}
+                        onChange={(e) => setSettings({...settings, emailAppPassword: e.target.value})}
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      Use a dedicated app-specific password if you are using Zoho or Gmail.
+                    </p>
+                  </div>
                 </div>
-                <Button variant="outline" className="w-full sm:w-auto">
-                  <Zap className="w-4 h-4 mr-2 text-gold" />
-                  Test Connection
+                <Button 
+                  variant="outline" 
+                  className="w-full sm:w-auto"
+                  onClick={handleTestEmail}
+                  disabled={sendingTest}
+                >
+                  <Zap className={`w-4 h-4 mr-2 ${sendingTest ? "animate-pulse" : "text-gold"}`} />
+                  {sendingTest ? "Sending..." : "Test Connection"}
                 </Button>
               </CardContent>
             </Card>
@@ -248,10 +286,15 @@ export default function SuperAdminConfig() {
                 <CardDescription>Configure platform security</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="p-4 bg-background/50 rounded-lg">
-                  <p className="font-medium">Admin 2FA</p>
-                  <p className="text-sm text-muted-foreground">Require Two-Factor Authentication for all admins</p>
-                  <Switch className="mt-2" />
+                <div className="flex items-center justify-between p-4 bg-background/50 rounded-lg">
+                  <div>
+                    <p className="font-medium">Admin 2FA</p>
+                    <p className="text-sm text-muted-foreground">Require Two-Factor Authentication for all admins</p>
+                  </div>
+                  <Switch 
+                    checked={settings.admin2FA}
+                    onCheckedChange={(v) => setSettings({...settings, admin2FA: v})}
+                  />
                 </div>
               </CardContent>
             </Card>

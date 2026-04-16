@@ -3,8 +3,28 @@ import TeamMember from '../models/TeamMember';
 
 export const getTeamMembers = async (req: Request, res: Response) => {
     try {
-        const members = await TeamMember.find().sort({ createdAt: 1 });
-        res.json(members);
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = parseInt(req.query.limit as string) || 10;
+        const skip = (page - 1) * limit;
+
+        const [members, totalCount] = await Promise.all([
+            TeamMember.find().sort({ createdAt: 1 }).skip(skip).limit(limit),
+            TeamMember.countDocuments()
+        ]);
+
+        const totalPages = Math.ceil(totalCount / limit);
+
+        res.json({
+            members,
+            pagination: {
+                totalCount,
+                totalPages,
+                currentPage: page,
+                pageSize: limit,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1
+            }
+        });
     } catch (error: any) {
         res.status(500).json({ message: error.message });
     }
