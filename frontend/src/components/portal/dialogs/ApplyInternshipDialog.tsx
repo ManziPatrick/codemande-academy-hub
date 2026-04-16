@@ -127,6 +127,10 @@ export function ApplyInternshipDialog({
             toast.error(error.message);
         }
     },
+    refetchQueries: [
+      { query: GET_INTERNSHIP_PROGRAMS },
+      { query: GET_MY_INTERNSHIP_APPLICATIONS }
+    ]
   });
 
   const handleApply = async () => {

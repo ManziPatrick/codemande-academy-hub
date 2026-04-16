@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from "@apollo/client/react";
 import { CREATE_INTERNSHIP_TEAM_NEW, ADD_INTERN_TO_TEAM_NEW } from '@/lib/graphql/mutations';
 import { 
@@ -77,7 +77,7 @@ export function CreateInternshipTeamDialog({ open, onOpenChange, preSelectedProg
   });
   const students = Array.from(uniqueStudentsMap.values());
 
-  const programs = (programsData as any)?.internshipPrograms?.items || (programsData as any)?.internshipPrograms || [];
+  const programs = (programsData as any)?.internshipPrograms?.items || [];
   const projects = (projectsData as any)?.internshipProjects?.items || (projectsData as any)?.internshipProjects || [];
 
   const [addInternToTeam] = useMutation(ADD_INTERN_TO_TEAM_NEW);
@@ -203,7 +203,7 @@ export function CreateInternshipTeamDialog({ open, onOpenChange, preSelectedProg
                 </div>
                 <Select
                   value=""
-                  disabled={students.length === 0}
+                  disabled={students.length === 0 || appsLoading}
                   onValueChange={(val) => {
                     if (val && !selectedStudentIds.includes(val)) {
                         setSelectedStudentIds([...selectedStudentIds, val]);
@@ -211,7 +211,13 @@ export function CreateInternshipTeamDialog({ open, onOpenChange, preSelectedProg
                   }}
                 >
                   <SelectTrigger className="h-10 bg-muted/20 border-border/50 rounded-xl px-4 text-xs">
-                    <SelectValue placeholder={students.length > 0 ? "Add a team member..." : "No approved applicants found for this track."} />
+                    <SelectValue placeholder={
+                      appsLoading 
+                        ? "Loading applicants..." 
+                        : students.length > 0 
+                          ? "Add a team member..." 
+                          : "No approved applicants found."
+                    } />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl border-border/50">
                     {students.filter((s:any) => !selectedStudentIds.includes(s.id)).map((s: any) => (

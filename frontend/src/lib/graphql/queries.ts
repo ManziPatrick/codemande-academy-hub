@@ -1206,6 +1206,10 @@ export const GET_INTERNSHIP_PROJECTS_NEW = gql`
             url
           }
         }
+        internshipProgram {
+          id
+          title
+        }
       }
       pagination {
         ...PaginationFragment
@@ -1232,6 +1236,10 @@ export const GET_INTERNSHIP_PROJECT_NEW = gql`
       teamSizeRange {
         min
         max
+      }
+      internshipProgram {
+        id
+        title
       }
       milestones {
         id

@@ -184,8 +184,8 @@ export default function StudentPayments() {
             </CardContent>
           </Card>
 
-          {/* Payment Methods */}
-          <div className="grid md:grid-cols-2 gap-6">
+          {/* Payment Method */}
+          <div className="max-w-2xl">
             <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-lg font-heading flex items-center gap-2">
@@ -200,7 +200,6 @@ export default function StudentPayments() {
                   </div>
                   <div className="flex-1">
                     <p className="font-bold">MTN Mobile Money</p>
-                    <p className="text-xs text-muted-foreground">**** **** **08</p>
                   </div>
                   <Badge variant="outline" className="border-accent/30 text-accent font-bold text-[10px]">Active</Badge>
                 </div>
@@ -210,29 +209,6 @@ export default function StudentPayments() {
               </CardContent>
             </Card>
 
-            <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-lg font-heading flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-accent" />
-                  Next Billing
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Upcoming Installment</span>
-                    <span className="font-bold">None</span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Current Outstanding</span>
-                    <span className="font-bold text-accent">0 RWF</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg border border-border/30 italic">
-                    You're all caught up! No pending payments for your current enrollments.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

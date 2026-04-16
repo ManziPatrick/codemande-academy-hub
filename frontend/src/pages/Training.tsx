@@ -28,6 +28,7 @@ interface AICourse {
   description: string;
   thumbnail: string;
   price: number;
+  discountPrice: number;
   instructor?: {
     username: string;
   };

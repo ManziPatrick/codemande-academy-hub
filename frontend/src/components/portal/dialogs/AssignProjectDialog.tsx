@@ -23,8 +23,11 @@ export function AssignProjectDialog({ open, onOpenChange, project, refetch }: As
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
   const { data: teamsData, loading: teamsLoading } = useQuery(GET_INTERNSHIP_TEAMS, {
-    variables: { programId: project?.internshipProgramId || project?.internshipProgram?.id },
-    skip: !project,
+    variables: { 
+      programId: project?.internshipProgramId || project?.internshipProgram?.id,
+      limit: 100 // Fetch a larger batch for assignment
+    },
+    skip: !open || !project,
     fetchPolicy: 'network-only'
   });
 
@@ -34,13 +37,13 @@ export function AssignProjectDialog({ open, onOpenChange, project, refetch }: As
       onOpenChange(false);
       refetch?.();
     },
+    refetchQueries: [{ query: GET_INTERNSHIP_TEAMS, variables: { programId: project?.internshipProgramId || project?.internshipProgram?.id } }],
     onError: (err) => toast.error(err.message)
   });
 
-  const teams = (teamsData as any)?.internshipTeams || [];
+  const teams = (teamsData as any)?.internshipTeams?.items || [];
   const filteredTeams = teams.filter((t: any) => 
-    t.name.toLowerCase().includes(search.toLowerCase()) && 
-    !t.internshipProjectId // Only show teams without a project
+    t.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleAssign = () => {
@@ -116,7 +119,14 @@ export function AssignProjectDialog({ open, onOpenChange, project, refetch }: As
                     </div>
                     <div>
                       <p className="font-black text-sm tracking-tight">{team.name}</p>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 mt-0.5">{team.members?.length || 0} Members assigned</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">{team.members?.length || 0} Members</p>
+                        {team.internshipProjectId && (
+                          <Badge variant="outline" className="h-4 px-1.5 text-[8px] font-black uppercase bg-accent/10 border-accent/20 text-accent">
+                            Active: {team.internshipProject?.title || 'Another Project'}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
                   {selectedTeamId === team.id && (

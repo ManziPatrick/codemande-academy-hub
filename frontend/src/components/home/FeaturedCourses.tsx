@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@apollo/client/react";
 import { GET_COURSES } from "@/lib/graphql/queries";
@@ -33,11 +33,11 @@ export function FeaturedCourses() {
         return null;
     }
 
-    const allCourses = (data as any)?.courses || [];
+    const allCourses = (data as any)?.courses?.items || [];
 
     // Filter courses based on active tab
     const filteredCourses = activeTab === "latest"
-        ? [...allCourses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 3)
+        ? [...allCourses].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 3)
         : allCourses.filter((c: any) => c.discountPrice && c.discountPrice < c.price).slice(0, 3);
 
     return (

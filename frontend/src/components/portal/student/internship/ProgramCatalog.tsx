@@ -65,7 +65,7 @@ export function ProgramCatalog() {
   const { data, loading, refetch } = useQuery(GET_INTERNSHIP_PROGRAMS);
   const [applyingToId, setApplyingToId] = useState<string | null>(null);
 
-  const programs = (data as any)?.internshipPrograms || [];
+  const programs = (data as any)?.internshipPrograms?.items || [];
   const myApplications = (data as any)?.myInternshipApplications || [];
 
   const isDeadlinePassed = (deadline: any) => {

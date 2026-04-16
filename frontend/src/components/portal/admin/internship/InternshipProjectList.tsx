@@ -11,6 +11,8 @@ import { CreateInternshipProjectDialog, InternshipProjectDetailsDialog, CreateIn
 import ReactMarkdown from 'react-markdown';
 
 export default function InternshipProjectList() {
+    const [selectedProject, setSelectedProject] = useState<any>(null);
+    const [projectToAssign, setProjectToAssign] = useState<any>(null);
     const [createOpen, setCreateOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [detailsOpen, setDetailsOpen] = useState(false);

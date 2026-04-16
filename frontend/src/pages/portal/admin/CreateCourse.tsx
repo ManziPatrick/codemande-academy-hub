@@ -94,7 +94,7 @@ export default function CreateCourse() {
       toast.error("Identity check failed: Missing title or description.");
       return;
     }
-    if (currentStep === 3 && !formData.instructorId) {
+    if (currentStep === 4 && !formData.instructorId) {
       toast.error("Logistics check failed: Missing instructor.");
       return;
     }
@@ -754,7 +754,7 @@ export default function CreateCourse() {
                                         {[
                                             { label: "Identity", val: formData.title ? "Verified" : "Missing", ok: !!formData.title },
                                             { label: "Visuals", val: formData.thumbnail ? "Optimized" : "Empty", ok: !!formData.thumbnail },
-                                            { label: "Logistics", val: "Assigned", ok: true },
+                                            { label: "Logistics", val: formData.instructorId ? "Assigned" : "Missing", ok: !!formData.instructorId },
                                             { label: "Commercials", val: formData.isFree ? "Standard" : "Paid", ok: true }
                                         ].map(x => (
                                             <div key={x.label} className="p-4 rounded-2xl bg-muted/20 border border-border/40">

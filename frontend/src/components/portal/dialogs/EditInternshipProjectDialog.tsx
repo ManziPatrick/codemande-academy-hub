@@ -53,7 +53,7 @@ export function EditInternshipProjectDialog({ open, onOpenChange, refetch, proje
     }, [open, project]);
 
     const { data: programsData } = useQuery(GET_INTERNSHIP_PROGRAMS);
-    const programs = (programsData as any)?.internshipPrograms || [];
+    const programs = (programsData as any)?.internshipPrograms?.items || [];
 
     const [updateProject, { loading }] = useMutation(UPDATE_INTERNSHIP_PROJECT_NEW, {
         onCompleted: () => {

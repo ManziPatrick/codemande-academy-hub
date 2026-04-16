@@ -1,8 +1,11 @@
+import React, { useState } from "react";
 import { useQuery, useMutation } from "@apollo/client/react";
 import { gql } from "@apollo/client";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, Clock, CheckCircle } from "lucide-react";
 
 // Define query locally if not exported yet, or import from queries.ts
 const GET_ACTIVITY_LOGS = gql`
@@ -38,8 +41,17 @@ export default function InternshipActivityLogs() {
     variables: { page: currentPage, limit: pageSize }
   });
 
-  if (loading) return <div>Loading logs...</div>;
-  if (error) return <div>Error loading logs</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center py-20">
+      <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+  if (error) return (
+    <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm flex items-center gap-2">
+      <AlertCircle className="w-4 h-4" />
+      Error loading activity logs: {error.message}
+    </div>
+  );
 
   const logs = (data as any)?.internshipActivityLogs?.items || [];
   const pagination = (data as any)?.internshipActivityLogs?.pagination;

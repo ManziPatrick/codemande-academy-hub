@@ -289,11 +289,11 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
                     <div className="flex items-center justify-center py-4">
                       <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                     </div>
-                  ) : ((teamsData as any)?.internshipTeams || []).length === 0 ? (
+                  ) : ((teamsData as any)?.internshipTeams?.items || []).length === 0 ? (
                     <p className="text-sm text-muted-foreground py-2 text-center">No teams found</p>
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
-                      {((teamsData as any)?.internshipTeams || []).map((team: any) => (
+                      {((teamsData as any)?.internshipTeams?.items || []).map((team: any) => (
                         <div key={team.id} className="flex items-center gap-2">
                           <Checkbox
                             id={`team-${team.id}`}

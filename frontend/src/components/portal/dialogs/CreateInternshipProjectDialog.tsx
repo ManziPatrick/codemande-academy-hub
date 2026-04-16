@@ -35,7 +35,7 @@ export function CreateInternshipProjectDialog({ open, onOpenChange, refetch }: C
     const [links, setLinks] = useState<{ title: string; url: string }[]>([]);
 
     const { data: programsData } = useQuery(GET_INTERNSHIP_PROGRAMS);
-    const programs = (programsData as any)?.internshipPrograms || [];
+    const programs = (programsData as any)?.internshipPrograms?.items || [];
 
     const [createProject, { loading }] = useMutation(CREATE_INTERNSHIP_PROJECT_NEW, {
         onCompleted: () => {
