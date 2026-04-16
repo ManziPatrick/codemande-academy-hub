@@ -78,6 +78,7 @@ const AdminModuleControlPanel = lazy(() => import("@/pages/portal/admin/AdminMod
 
 // Shared Portal Pages
 const PortalSettings = lazy(() => import("@/pages/portal/shared/PortalSettings"));
+const InternshipMeetings = lazy(() => import("@/pages/portal/shared/InternshipMeetings"));
 const PortalHelp = lazy(() => import("@/pages/portal/shared/PortalHelp"));
 const NotificationsPage = lazy(() => import("@/pages/portal/shared/NotificationsPage"));
 
@@ -161,6 +162,7 @@ export function AnimatedRoutes() {
           <Route path="/portal/admin/courses" element={<ProtectedRoute allowedRoles={["admin"]}><AdminCourses /></ProtectedRoute>} />
           <Route path="/portal/admin/courses/create" element={<ProtectedRoute allowedRoles={["admin"]}><CreateCourse /></ProtectedRoute>} />
           <Route path="/portal/admin/internships" element={<ProtectedRoute allowedRoles={["admin"]}><AdminInternships /></ProtectedRoute>} />
+          <Route path="/portal/internship/meetings" element={<ProtectedRoute allowedRoles={["admin", "trainer", "student"]}><InternshipMeetings /></ProtectedRoute>} />
           <Route path="/portal/admin/projects" element={<ProtectedRoute allowedRoles={["admin"]}><AdminProjects /></ProtectedRoute>} />
           <Route path="/portal/admin/assignment-reviews" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><TrainerProjects /></ProtectedRoute>} />
           <Route path="/portal/admin/payments" element={<ProtectedRoute allowedRoles={["admin"]}><AdminPayments /></ProtectedRoute>} />

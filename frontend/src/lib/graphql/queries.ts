@@ -90,6 +90,32 @@ export const GET_USERS = gql`
   ${PAGINATION_FRAGMENT}
 `;
 
+export const GET_ALL_STUDENTS = gql`
+  query GetAllStudents {
+    getAllStudents {
+      id
+      username
+      fullName
+      email
+      avatar
+      role
+    }
+  }
+`;
+
+export const GET_ALL_TRAINERS = gql`
+  query GetAllTrainers {
+    getAllTrainers {
+      id
+      username
+      fullName
+      email
+      avatar
+      role
+    }
+  }
+`;
+
 export const GET_CONVERSATIONS = gql`
   query GetConversations {
     conversations {
@@ -1437,7 +1463,9 @@ export const GET_INTERNSHIP_SUBMISSIONS = gql`
       user {
         username
       }
+      milestoneId
       milestone {
+        id
         title
       }
     }
@@ -1924,30 +1952,12 @@ export const GET_PROJECT_TEMPLATES = gql`
             url
         }
       }
-      workflow {
-        id
-        label
-        color
-        order
-        type
-      }
       status
       createdAt
     }
   }
 `;
 
-export const GET_ALL_STUDENTS = gql`
-  query GetAllStudents {
-    getAllStudents {
-      id
-      username
-      fullName
-      avatar
-      email
-    }
-  }
-`;
 export const GET_INTERNSHIP_PROGRAM_FOR_APPLY = gql`
   query GetInternshipProgramForApply($id: ID!) {
     internshipProgram(id: $id) {

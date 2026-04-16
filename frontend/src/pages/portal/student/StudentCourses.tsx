@@ -108,15 +108,7 @@ export default function StudentCourses() {
               Track your progress and explore new learning opportunities
             </p>
           </div>
-          <Link to="/portal/student/internships">
-            <Button 
-                variant="gold" 
-                className="shadow-lg shadow-gold/20"
-            >
-                <Briefcase className="w-4 h-4 mr-2" />
-                Apply for Internship
-            </Button>
-          </Link>
+
         </motion.div>
 
         {/* Search & Filters */}

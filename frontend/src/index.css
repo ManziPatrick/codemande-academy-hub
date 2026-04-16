@@ -105,7 +105,7 @@
 
   /* Global Scrollbar */
   html::-webkit-scrollbar {
-    width: 6px;
+    width: 8px;
   }
 
   html::-webkit-scrollbar-track {
@@ -113,12 +113,16 @@
   }
 
   html::-webkit-scrollbar-thumb {
-    background: hsl(var(--accent) / 0.2);
+    background: hsl(var(--accent) / 0.3);
+    border: 2px solid transparent;
+    background-clip: padding-box;
     border-radius: 10px;
   }
 
   html::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--accent) / 0.6);
+    background: hsl(var(--accent) / 0.8);
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 
   body {
@@ -268,7 +272,7 @@
 }
 
 /* Specialized Scrollbar Utility */
-.custom-scrollbar {
+.custom-scrollbar, .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--accent) / 0.3) transparent;
 }

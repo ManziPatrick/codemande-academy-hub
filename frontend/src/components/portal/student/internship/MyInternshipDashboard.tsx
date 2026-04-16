@@ -25,7 +25,7 @@ import {
   Expand
 } from "lucide-react";
 import { useQuery } from "@apollo/client/react";
-import { GET_MY_INTERNSHIP_MEETINGS } from "@/lib/graphql/queries";
+import { GET_MY_INTERNSHIP_MEETINGS, GET_INTERNSHIP_SUBMISSIONS } from "@/lib/graphql/queries";
 import { format } from "date-fns";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -36,6 +36,7 @@ import { TeamChatDialog } from "../../dialogs/TeamChatDialog";
 import { ExplainTaskDialog } from "../../dialogs/ExplainTaskDialog";
 import { ProjectBoard } from '@/components/portal/admin/internship/ProjectBoard';
 import { InternshipProjectDetailsDialog } from '@/components/portal/dialogs';
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface MyInternshipDashboardProps {
   team: any;
@@ -175,6 +176,13 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
    const { data: meetingsData } = useQuery(GET_MY_INTERNSHIP_MEETINGS);
    const meetings = (meetingsData as any)?.getMyInternshipMeetings || [];
 
+   const { data: submissionsData } = useQuery(GET_INTERNSHIP_SUBMISSIONS, {
+      variables: { teamId: team?.id },
+      skip: !team?.id,
+      fetchPolicy: 'network-only' // ensure fresh data after submission
+   });
+   const submissions = (submissionsData as any)?.internshipSubmissions || [];
+
    return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Track Overview Card */}
@@ -311,6 +319,7 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
                         milestones.map((milestone: any, idx: number) => {
                            const isPast = milestone.deadline ? new Date(milestone.deadline) < new Date() : false;
                            const isCompleted = milestone.completed;
+                           const milestoneSubmission = submissions.find((sub: any) => sub.milestoneId === milestone.id);
                            
                            return (
                              <div 
@@ -345,7 +354,7 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
                                    </div>
                                    
                                    <div className="flex items-center gap-2">
-                                      {!isCompleted && (
+                                      {!isCompleted && !milestoneSubmission && (
                                         <>
                                            <Button 
                                              size="sm" 
@@ -377,6 +386,18 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
                                               <Upload className="w-4 h-4" /> Submit
                                            </Button>
                                         </>
+                                      )}
+                                      {!isCompleted && milestoneSubmission && (
+                                         <Badge className={
+                                           milestoneSubmission.status === 'pending' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20 font-black text-[10px] uppercase tracking-widest h-9 px-4 rounded-xl' :
+                                           milestoneSubmission.status === 'revision_requested' ? 'bg-blue-500/10 text-blue-500 border-blue-500/20 font-black text-[10px] uppercase tracking-widest h-9 px-4 rounded-xl' :
+                                           milestoneSubmission.status === 'rejected' ? 'bg-red-500/10 text-red-500 border-red-500/20 font-black text-[10px] uppercase tracking-widest h-9 px-4 rounded-xl' :
+                                           'bg-muted/10 text-muted-foreground border-border/50 font-black text-[10px] uppercase tracking-widest h-9 px-4 rounded-xl'
+                                         }>
+                                           {milestoneSubmission.status === 'pending' ? 'Pending Review' : 
+                                            milestoneSubmission.status === 'revision_requested' ? 'Revision Needed' : 
+                                            milestoneSubmission.status === 'rejected' ? 'Rejected' : 'Submitted'}
+                                         </Badge>
                                       )}
                                       {isCompleted && (
                                          <Badge className="bg-green-500/10 text-green-600 border-green-500/20 font-black text-[10px] uppercase tracking-widest h-9 px-4 rounded-xl">
@@ -540,6 +561,20 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
           teamMembers={team.members.map((m: any) => ({ name: m.user.fullName || m.user.username, role: m.role }))} 
           mentors={team.mentor ? [team.mentor] : []} 
         />
+      )}
+
+      {team.internshipProjectId && (
+        <Dialog open={showBoard} onOpenChange={setShowBoard}>
+          <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-0 overflow-hidden border-border/50 bg-black/40 backdrop-blur-xl">
+            <ProjectBoard 
+              teamId={team.id}
+              projectId={team.internshipProjectId}
+              onBack={() => setShowBoard(false)}
+              teamName={team.name}
+              projectTitle={team.internshipProject?.title}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

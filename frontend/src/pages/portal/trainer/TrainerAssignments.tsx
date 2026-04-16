@@ -312,7 +312,7 @@ export default function TrainerAssignments() {
                         <SelectValue placeholder="Select course context..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {(coursesData as any)?.courses?.map((c: any) => (
+                        {(coursesData as any)?.courses?.items?.map((c: any) => (
                           <SelectItem key={c.id} value={c.title}>{c.title}</SelectItem>
                         ))}
                       </SelectContent>

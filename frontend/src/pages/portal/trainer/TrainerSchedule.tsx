@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { isSameDay } from "date-fns";
+import { useState, useMemo, useEffect } from "react";
+import { isSameDay, format } from "date-fns";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,17 +40,17 @@ import {
 import { CalendarGrid } from "@/components/portal/CalendarGrid";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
-import { GET_MY_BOOKINGS } from "@/lib/graphql/queries";
+import { GET_MY_BOOKINGS, GET_MY_INTERNSHIP_MEETINGS } from "@/lib/graphql/queries";
 import { UPDATE_BOOKING_STATUS, CREATE_BOOKING } from "@/lib/graphql/mutations";
 import { usePusher } from "@/hooks/use-pusher";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect } from "react";
 
 export default function TrainerSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const { data, loading, refetch } = useQuery(GET_MY_BOOKINGS);
+  const { data: meetingsData, loading: meetingsLoading } = useQuery(GET_MY_INTERNSHIP_MEETINGS);
   const [showAllStatus, setShowAllStatus] = useState(false);
   const [updateBookingStatus] = useMutation(UPDATE_BOOKING_STATUS, {
     onCompleted: () => {
@@ -102,11 +102,27 @@ export default function TrainerSchedule() {
   }, [allBookings, showAllStatus]);
 
   const calendarEvents = useMemo(() => {
-    return activeBookings.map((b: any) => ({
+    const bookings = activeBookings.map((b: any) => ({
       ...b,
       title: b.type.replace('-', ' ') + (b.user ? ` - ${b.user.username}` : ""),
+      source: 'booking'
     }));
-  }, [activeBookings]);
+
+    const internshipMeetings = (meetingsData as any)?.getMyInternshipMeetings || [];
+    const meetings = internshipMeetings.map((m: any) => ({
+      ...m,
+      id: m.id,
+      title: m.title,
+      date: format(new Date(m.startTime), "yyyy-MM-dd"),
+      time: format(new Date(m.startTime), "HH:mm"),
+      mentor: m.host,
+      meetingLink: m.meetLink,
+      status: 'confirmed',
+      source: 'internship'
+    }));
+
+    return [...bookings, ...meetings];
+  }, [activeBookings, meetingsData]);
 
   const generateMeetLink = (): string => {
     const chars = "abcdefghijklmnopqrstuvwxyz";
@@ -270,7 +286,7 @@ export default function TrainerSchedule() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {loading ? (
+                {loading || meetingsLoading ? (
                   <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-accent" /></div>
                 ) : activeBookings.length === 0 ? (
                   <div className="text-center py-12">

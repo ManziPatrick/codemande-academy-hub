@@ -15,11 +15,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Video, Loader2, Calendar as CalendarIcon, RefreshCw } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Search, Video, Loader2, Calendar as CalendarIcon, RefreshCw, Users, ShieldCheck, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { CREATE_INTERNSHIP_MEETING } from "@/lib/graphql/mutations";
-import { GET_INTERNSHIP_TEAMS, GET_INTERNSHIP_MEETINGS } from "@/lib/graphql/queries";
+import { GET_INTERNSHIP_TEAMS, GET_INTERNSHIP_MEETINGS, GET_ALL_STUDENTS, GET_ALL_TRAINERS } from "@/lib/graphql/queries";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface CreateInternshipMeetingDialogProps {
   open: boolean;
@@ -54,7 +56,12 @@ const generateMeetLink = (): string => {
 export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }: CreateInternshipMeetingDialogProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedMentors, setSelectedMentors] = useState<string[]>([]);
+  const [searchStudents, setSearchStudents] = useState("");
+  const [searchMentors, setSearchMentors] = useState("");
   const [recurrenceDays, setRecurrenceDays] = useState<number[]>([]);
+  
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -66,9 +73,12 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
   });
 
   const { data: teamsData, loading: teamsLoading } = useQuery(GET_INTERNSHIP_TEAMS, {
-    variables: { programId },
+    variables: { programId, limit: 100 },
     skip: !open,
   });
+
+  const { data: studentsData, loading: studentsLoading } = useQuery(GET_ALL_STUDENTS, { skip: !open });
+  const { data: mentorsData, loading: mentorsLoading } = useQuery(GET_ALL_TRAINERS, { skip: !open });
 
   const [createMeeting, { loading: creating }] = useMutation(CREATE_INTERNSHIP_MEETING, {
     onCompleted: () => {
@@ -93,35 +103,21 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
       type: "ONCE",
     });
     setSelectedTeams([]);
+    setSelectedUsers([]);
+    setSelectedMentors([]);
     setRecurrenceDays([]);
+    setSearchStudents("");
+    setSearchMentors("");
   };
 
-  const handleGenerateMeetLink = async () => {
-    setIsGenerating(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setFormData({ ...formData, meetLink: generateMeetLink() });
-    setIsGenerating(false);
-    toast.success("Google Meet link generated!");
+  const toggleSelection = (id: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+    setter(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  const toggleTeam = (teamId: string) => {
-    setSelectedTeams(prev =>
-      prev.includes(teamId) ? prev.filter(id => id !== teamId) : [...prev, teamId]
-    );
+  const handleDayToggle = (day: number) => {
+    if (formData.type === "WEEKLY") setRecurrenceDays([day]);
+    else setRecurrenceDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort());
   };
-
-  const toggleDay = (day: number) => {
-    if (formData.type === "WEEKLY") {
-      // For weekly, only one day allowed
-      setRecurrenceDays([day]);
-    } else {
-      setRecurrenceDays(prev =>
-        prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort((a, b) => a - b)
-      );
-    }
-  };
-
-  const isRecurring = formData.type === "DAILY" || formData.type === "WEEKLY";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,12 +125,8 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
       toast.error("Please fill in all required fields");
       return;
     }
-    if (selectedTeams.length === 0) {
-      toast.error("Please select at least one team");
-      return;
-    }
-    if (isRecurring && recurrenceDays.length === 0) {
-      toast.error(`Please select at least one day for ${formData.type === "WEEKLY" ? "weekly" : "daily"} recurrence`);
+    if (selectedTeams.length === 0 && selectedUsers.length === 0 && selectedMentors.length === 0) {
+      toast.error("Please select at least one team or individual attendee");
       return;
     }
 
@@ -143,221 +135,229 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
 
     await createMeeting({
       variables: {
-        title: formData.title,
-        description: formData.description,
+        ...formData,
         startTime: startISO,
         endTime: endISO,
-        meetLink: formData.meetLink || generateMeetLink(),
-        type: formData.type,
         teamIds: selectedTeams,
-        recurrenceDays: isRecurring ? recurrenceDays : undefined,
+        userIds: selectedUsers,
+        mentorIds: selectedMentors,
+        recurrenceDays: formData.type !== "ONCE" ? recurrenceDays : undefined,
       }
     });
   };
 
+  const filteredStudents = ((studentsData as any)?.getAllStudents || []).filter((s: any) => 
+    (s.username || "").toLowerCase().includes(searchStudents.toLowerCase()) || 
+    (s.fullName || "").toLowerCase().includes(searchStudents.toLowerCase())
+  );
+
+  const filteredMentors = ((mentorsData as any)?.getAllTrainers || []).filter((s: any) => 
+    (s.username || "").toLowerCase().includes(searchMentors.toLowerCase()) || 
+    (s.fullName || "").toLowerCase().includes(searchMentors.toLowerCase())
+  );
+
+  const isRecurring = formData.type === "DAILY" || formData.type === "WEEKLY";
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 py-4 border-b">
-          <DialogTitle className="flex items-center gap-2">
-            <CalendarIcon className="w-5 h-5 text-gold" />
-            Schedule Internship Meeting
-          </DialogTitle>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background/95 backdrop-blur-xl border-accent/20">
+        <DialogHeader className="px-8 py-6 border-b border-border/10 bg-muted/20">
+          <div className="flex items-center gap-3">
+             <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center text-accent shadow-gold">
+               <CalendarIcon className="w-6 h-6" />
+             </div>
+             <div>
+               <DialogTitle className="text-xl font-black uppercase tracking-tight">Schedule Meeting</DialogTitle>
+               <p className="text-xs text-muted-foreground font-medium">Coordinate with teams and individual experts</p>
+             </div>
+          </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto flex flex-col">
-          <ScrollArea className="flex-1 px-6">
-            <div className="space-y-6 py-6">
-
-              {/* Title */}
-              <div className="grid gap-2">
-                <Label htmlFor="title">Meeting Title *</Label>
-                <Input
-                  id="title"
-                  placeholder="e.g., Weekly Sync — Backend Team"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-              </div>
-
-              {/* Row: Start Date + Frequency */}
-              <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
+          <ScrollArea className="flex-1 h-[calc(90vh-140px)] custom-scrollbar">
+            <div className="p-8 space-y-8">
+              {/* Basic Info */}
+              <div className="space-y-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="date">{isRecurring ? "Starts From *" : "Date *"}</Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    required
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70">Meeting Title</Label>
+                  <Input 
+                    value={formData.title} 
+                    onChange={e => setFormData({...formData, title: e.target.value})}
+                    placeholder="e.g. Technical Sync Session"
+                    className="h-12 text-base rounded-2xl border-accent/10 focus:border-accent"
                   />
-                  {isRecurring && (
-                    <p className="text-[10px] text-muted-foreground">Recurs until end of internship</p>
-                  )}
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="type">Frequency</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) => {
-                      setFormData({ ...formData, type: value });
-                      setRecurrenceDays([]);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FREQUENCIES.map((f) => (
-                        <SelectItem key={f.value} value={f.value}>
-                          {f.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70">Date</Label>
+                    <Input type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="h-12 rounded-2xl" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70">Frequency</Label>
+                    <Select value={formData.type} onValueChange={v => setFormData({...formData, type: v})}>
+                      <SelectTrigger className="h-12 rounded-2xl"><SelectValue /></SelectTrigger>
+                      <SelectContent>{FREQUENCIES.map(f => <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70">Start Time</Label>
+                    <Input type="time" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} className="h-12 rounded-2xl" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70">End Time</Label>
+                    <Input type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} className="h-12 rounded-2xl" />
+                  </div>
                 </div>
               </div>
 
-              {/* Day-of-Week Selector for DAILY / WEEKLY */}
+              {/* Recurrence Days */}
               {isRecurring && (
-                <div className="grid gap-2">
-                  <Label>
-                    {formData.type === "WEEKLY" ? "Repeat Every *" : "Repeat On (select days) *"}
-                  </Label>
-                  <div className="flex flex-wrap gap-2 p-3 rounded-xl border bg-muted/20">
-                    {DAYS_OF_WEEK.map((day) => {
-                      const selected = recurrenceDays.includes(day.value);
-                      return (
-                        <button
-                          key={day.value}
-                          type="button"
-                          onClick={() => toggleDay(day.value)}
-                          className={`w-12 h-10 rounded-lg text-xs font-black uppercase tracking-wider transition-all border ${
-                            selected
-                              ? "bg-gold text-gold-foreground border-gold shadow-sm"
-                              : "bg-background text-muted-foreground border-border hover:border-gold/40 hover:text-foreground"
-                          }`}
-                        >
-                          {day.label}
-                        </button>
-                      );
-                    })}
+                <div className="space-y-3">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70">Repeat On</Label>
+                  <div className="flex gap-2">
+                    {DAYS_OF_WEEK.map(day => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => handleDayToggle(day.value)}
+                        className={cn(
+                          "w-10 h-10 rounded-xl text-[10px] font-black border transition-all",
+                          recurrenceDays.includes(day.value) ? "bg-accent text-accent-foreground border-accent shadow-gold" : "bg-muted/10 border-border/50 hover:border-accent/50"
+                        )}
+                      >
+                        {day.label[0]}
+                      </button>
+                    ))}
                   </div>
-                  {recurrenceDays.length > 0 && (
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                      <RefreshCw className="w-3 h-3 text-gold" />
-                      Repeats every{" "}
-                      {recurrenceDays
-                        .map((d) => DAYS_OF_WEEK[d].label)
-                        .join(", ")}{" "}
-                      from {formData.date || "start date"} until internship ends.
-                    </p>
-                  )}
                 </div>
               )}
 
-              {/* Time Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="startTime">Start Time *</Label>
-                  <Input
-                    id="startTime"
-                    type="time"
-                    value={formData.startTime}
-                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="endTime">End Time *</Label>
-                  <Input
-                    id="endTime"
-                    type="time"
-                    value={formData.endTime}
-                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Assign Teams */}
-              <div className="grid gap-2">
-                <Label>Assign Teams *</Label>
-                <div className="border rounded-md p-3 bg-muted/30">
-                  {teamsLoading ? (
-                    <div className="flex items-center justify-center py-4">
-                      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : ((teamsData as any)?.internshipTeams?.items || []).length === 0 ? (
-                    <p className="text-sm text-muted-foreground py-2 text-center">No teams found</p>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      {((teamsData as any)?.internshipTeams?.items || []).map((team: any) => (
-                        <div key={team.id} className="flex items-center gap-2">
-                          <Checkbox
-                            id={`team-${team.id}`}
-                            checked={selectedTeams.includes(team.id)}
-                            onCheckedChange={() => toggleTeam(team.id)}
-                          />
-                          <Label
-                            htmlFor={`team-${team.id}`}
-                            className="text-sm font-normal cursor-pointer truncate"
-                          >
-                            {team.name}
-                          </Label>
+              {/* Assignments Selection Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                {/* Team Selection */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70 flex items-center gap-2">
+                      <Users className="w-3 h-3" /> Select Teams
+                    </Label>
+                  </div>
+                  <div className="h-[250px] border border-accent/10 rounded-3xl overflow-hidden bg-muted/5 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+                    {teamsLoading ? <Loader2 className="w-4 h-4 animate-spin m-auto mt-20" /> : 
+                      ((teamsData as any)?.internshipTeams?.items || []).map((t: any) => (
+                        <div key={t.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-accent/5 transition-colors group cursor-pointer" onClick={() => toggleSelection(t.id, setSelectedTeams)}>
+                          <Checkbox checked={selectedTeams.includes(t.id)} className="rounded-md border-accent/30 pointer-events-none" />
+                          <div className="flex-1">
+                             <p className="text-xs font-black uppercase tracking-tight leading-none">{t.name}</p>
+                             <p className="text-[9px] text-muted-foreground mt-1">{t.type} Group · {t.members?.length || 0} Members</p>
+                          </div>
                         </div>
-                      ))}
+                      ))
+                    }
+                  </div>
+                </div>
+
+                {/* Trainer/Creator Selection */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70 flex items-center gap-2">
+                      <ShieldCheck className="w-3 h-3 text-gold" /> Select Creators/Trainers
+                    </Label>
+                    <Badge variant="outline" className="text-[8px] font-black uppercase text-gold border-gold/30">{selectedMentors.length} Selected</Badge>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                      <Input placeholder="Search creators..." value={searchMentors} onChange={e => setSearchMentors(e.target.value)} className="pl-8 h-9 rounded-xl text-xs bg-muted/10 border-none" />
                     </div>
-                  )}
+                    <div className="h-[200px] border border-gold/10 rounded-3xl overflow-hidden bg-muted/5 p-3 space-y-1 overflow-y-auto custom-scrollbar">
+                      {mentorsLoading ? <Loader2 className="w-4 h-4 animate-spin m-auto mt-10" /> : 
+                        filteredMentors.map((m: any) => (
+                          <div key={m.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gold/5 transition-colors cursor-pointer" onClick={() => toggleSelection(m.id, setSelectedMentors)}>
+                             <Checkbox checked={selectedMentors.includes(m.id)} className="rounded-md border-gold/30 pointer-events-none" />
+                             <Avatar className="h-6 w-6">
+                               <AvatarImage src={m.avatar} />
+                               <AvatarFallback className="text-[8px]">{m.username?.[0]}</AvatarFallback>
+                             </Avatar>
+                             <div className="flex-1 truncate">
+                               <p className="text-[10px] font-black uppercase">{m.fullName || m.username}</p>
+                               <p className="text-[8px] text-muted-foreground">{m.role}</p>
+                             </div>
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Meet Link */}
-              <div className="grid gap-2">
-                <Label htmlFor="meetLink">Google Meet Link</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="meetLink"
-                    placeholder="https://meet.google.com/..."
-                    value={formData.meetLink}
-                    onChange={(e) => setFormData({ ...formData, meetLink: e.target.value })}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleGenerateMeetLink}
-                    disabled={isGenerating}
-                  >
-                    {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
-                  </Button>
-                </div>
+              {/* Individual Student Selection */}
+              <div className="space-y-4 border-t border-border/10 pt-8">
+                 <div className="flex items-center justify-between">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70 flex items-center gap-2">
+                      <UserIcon className="w-3 h-3" /> Select Individual Users/Students
+                    </Label>
+                    <Badge variant="outline" className="text-[8px] font-black uppercase">{selectedUsers.length} Selected</Badge>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input placeholder="Search users by name or email..." value={searchStudents} onChange={e => setSearchStudents(e.target.value)} className="pl-12 h-12 rounded-2xl bg-muted/10 border-none text-sm" />
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2 h-[200px] overflow-y-auto p-4 border border-accent/10 rounded-3xl bg-muted/5 custom-scrollbar">
+                     {studentsLoading ? <Loader2 className="w-4 h-4 animate-spin m-auto" /> : 
+                        filteredStudents.map((s: any) => (
+                          <div key={s.id} className={cn(
+                            "flex items-center gap-3 p-3 rounded-2xl border transition-all cursor-pointer",
+                            selectedUsers.includes(s.id) ? "bg-accent/10 border-accent/30" : "bg-card border-border/40 hover:border-accent/20"
+                          )} onClick={() => toggleSelection(s.id, setSelectedUsers)}>
+                             <Avatar className="h-8 w-8">
+                               <AvatarImage src={s.avatar} />
+                               <AvatarFallback className="text-xs">{s.username?.[0]}</AvatarFallback>
+                             </Avatar>
+                             <div className="flex-1 truncate">
+                               <p className="text-[10px] font-black uppercase truncate">{s.fullName || s.username}</p>
+                               <p className="text-[8px] text-muted-foreground lowercase truncate">{s.email}</p>
+                             </div>
+                             <Checkbox checked={selectedUsers.includes(s.id)} className="rounded-md border-accent/30 pointer-events-none" />
+                          </div>
+                        ))
+                     }
+                  </div>
               </div>
 
-              {/* Description */}
-              <div className="grid gap-2">
-                <Label htmlFor="description">Description / Agenda</Label>
-                <Textarea
-                  id="description"
-                  placeholder="Agenda or notes for the meeting..."
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                />
+              {/* Description & Link */}
+              <div className="space-y-4 border-t border-border/10 pt-8">
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70">Google Meet Link</Label>
+                  <div className="flex gap-2">
+                    <Input value={formData.meetLink} onChange={e => setFormData({...formData, meetLink: e.target.value})} placeholder="https://meet.google.com/..." className="h-12 rounded-2xl flex-1 border-accent/10" />
+                    <Button type="button" variant="outline" onClick={async () => {
+                        setIsGenerating(true);
+                        await new Promise(r => setTimeout(r, 600));
+                        setFormData({...formData, meetLink: generateMeetLink()});
+                        setIsGenerating(false);
+                    }} disabled={isGenerating} className="h-12 w-12 rounded-2xl border-accent/20">
+                      {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70">Agenda / Notes</Label>
+                  <Textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} rows={3} placeholder="What will be discussed?" className="rounded-2xl border-accent/10" />
+                </div>
               </div>
             </div>
           </ScrollArea>
-
-          <DialogFooter className="px-6 py-4 border-t gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="gold" disabled={creating}>
-              {creating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Schedule Meeting
-            </Button>
-          </DialogFooter>
         </form>
+
+        <DialogFooter className="px-8 py-6 border-t border-border/10 bg-muted/20 gap-3">
+          <Button variant="ghost" className="rounded-2xl h-12 px-8 font-black uppercase tracking-widest text-[10px]" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button type="submit" variant="gold" className="rounded-2xl h-12 px-10 font-black uppercase tracking-widest text-[10px] shadow-gold" onClick={handleSubmit} disabled={creating}>
+             {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CalendarIcon className="w-4 h-4 mr-2" />}
+             Establish Meeting Session
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

@@ -667,6 +667,7 @@ export const typeDefs = `#graphql
     myInternships(status: String): [Internship]
     myBookings(status: String): [Booking]
     getAllStudents: [User]
+    getAllTrainers: [User]
 
     project(id: ID!): Project
     
@@ -1331,7 +1332,7 @@ export const typeDefs = `#graphql
     internshipProjects(programId: ID, page: Int, limit: Int): InternshipProjectResponse
     internshipTeams(programId: ID, page: Int, limit: Int): InternshipTeamResponse
     myInternshipTeam: InternshipTeam
-    internshipSubmissions(teamId: ID!): [InternshipSubmission]
+    internshipSubmissions(teamId: ID): [InternshipSubmission]
     internshipTimeLogs(teamId: ID!, userId: ID): [InternshipTimeLog]
     internshipActivityLogs(programId: ID, targetType: String, targetId: ID, page: Int, limit: Int): InternshipActivityLogResponse
     
@@ -1552,6 +1553,8 @@ export const typeDefs = `#graphql
     endTime: String!
     recurrenceDays: [Int]
     teamIds: [ID!]!
+    userIds: [ID!]
+    mentorIds: [ID!]
     teams: [InternshipTeam]
     hostId: ID!
     host: User
@@ -1732,6 +1735,8 @@ export const typeDefs = `#graphql
       startTime: String
       endTime: String
       teamIds: [ID!]
+      userIds: [ID!]
+      mentorIds: [ID!]
       meetLink: String
     ): InternshipMeeting
     

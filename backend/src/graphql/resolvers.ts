@@ -278,15 +278,13 @@ export const resolvers = {
 
     getMyInternshipMeetings: async (_: any, __: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      // Find teams the user belongs to
-      const teamMemberships = await InternshipTeamMember.find({ userId: context.user.id });
-      const teamIds = teamMemberships.map(tm => tm.teamId);
+
+      const filter: any = { isDeleted: false };
       
-      return await InternshipMeeting.find({
-        teamIds: { $in: teamIds },
-        isDeleted: false,
-        startTime: { $gte: new Date() } // Only upcoming meetings for students
-      }).sort({ startTime: 1 });
+      // Removed role-based restrictions to allow all users to see all meetings as requested
+      // Admins and regular users now have global visibility into internship scheduled events
+
+      return await InternshipMeeting.find(filter).sort({ startTime: 1 });
     },
 
     getAllStudents: async (_: any, __: any, context: any) => {
@@ -294,6 +292,12 @@ export const resolvers = {
         throw new Error('Unauthorized');
       }
       return await User.find({ role: 'student', isDeleted: { $ne: true } });
+    },
+    getAllTrainers: async (_: any, __: any, context: any) => {
+      if (!context.user || !['admin', 'super_admin', 'trainer'].includes(context.user.role)) {
+        throw new Error('Unauthorized');
+      }
+      return await User.find({ role: { $in: ['trainer', 'admin', 'super_admin'] }, isDeleted: { $ne: true } });
     },
 
     getUploadSignature: (_: any, { folder, resourceType }: { folder?: string, resourceType?: string }, context: any) => {
@@ -1345,15 +1349,38 @@ export const resolvers = {
       if (!membership) return null;
       return await InternshipTeam.findById(membership.teamId);
     },
-    internshipSubmissions: async (_: any, { teamId }: { teamId: string }, context: any) => {
+    internshipSubmissions: async (_: any, { teamId }: { teamId?: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
-      const team = await InternshipTeam.findById(teamId);
-      if (!team) throw new Error('Team not found');
-      const isMember = await InternshipTeamMember.findOne({ teamId, userId: context.user.id, isDeleted: false });
+      
+      const filter: any = { isDeleted: false };
       const isAdmin = ['admin', 'super_admin'].includes(context.user.role);
-      const isMentor = team.mentorId?.toString() === context.user.id;
-      if (!isMember && !isAdmin && !isMentor) throw new Error('Unauthorized');
-      return await InternshipSubmission.find({ teamId, isDeleted: false }).sort({ createdAt: -1 });
+      
+      if (teamId) {
+        const team = await InternshipTeam.findById(teamId);
+        if (!team) throw new Error('Team not found');
+        
+        const isMember = await InternshipTeamMember.findOne({ teamId, userId: context.user.id, isDeleted: false });
+        const isMentor = team.mentorId?.toString() === context.user.id;
+        
+        if (!isMember && !isAdmin && !isMentor) throw new Error('Unauthorized');
+        filter.teamId = teamId;
+      } else {
+        // Global view for trainers (all teams they mentor) or admins (everything)
+        if (!isAdmin && context.user.role !== 'trainer') {
+           throw new Error('Unauthorized for global submissions view');
+        }
+        
+        if (context.user.role === 'trainer') {
+          const mentoredTeams = await InternshipTeam.find({ mentorId: context.user.id, isDeleted: false });
+          const teamIds = mentoredTeams.map(t => t._id);
+          filter.teamId = { $in: teamIds };
+        }
+      }
+      
+      return await InternshipSubmission.find(filter)
+        .populate('userId')
+        .populate('milestoneId')
+        .sort({ createdAt: -1 });
     },
     internshipTimeLogs: async (_: any, { teamId, userId }: { teamId: string, userId?: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
@@ -4565,16 +4592,35 @@ export const resolvers = {
 
       // Notify all members of assigned teams
       try {
-        for (const teamId of args.teamIds) {
-          const members = await InternshipTeamMember.find({ teamId, isDeleted: false });
-          for (const member of members) {
-             await sendNotification(member.userId.toString(), {
-               type: 'meeting',
-               title: 'New Meeting Scheduled',
-               message: `A new meeting "${args.title}" has been scheduled for your team.`,
-               link: `/portal/internship/meetings`
-             });
+        const participantIds = new Set<string>();
+
+        // 1. Team Members
+        if (args.teamIds && args.teamIds.length > 0) {
+          for (const teamId of args.teamIds) {
+            const members = await InternshipTeamMember.find({ teamId, isDeleted: false });
+            members.forEach(m => participantIds.add(m.userId.toString()));
           }
+        }
+
+        // 2. Selective Users
+        if (args.userIds && args.userIds.length > 0) {
+          args.userIds.forEach((id: string) => participantIds.add(id));
+        }
+
+        // 3. Selective Mentors
+        if (args.mentorIds && args.mentorIds.length > 0) {
+          args.mentorIds.forEach((id: string) => participantIds.add(id));
+        }
+
+        // Send notifications
+        for (const pid of participantIds) {
+          if (pid === context.user.id) continue; // Don't notify host
+          await sendNotification(pid, {
+            type: 'meeting',
+            title: 'New Meeting Scheduled',
+            message: `A new meeting "${args.title}" has been scheduled.`,
+            link: `/portal/internship/meetings`
+          });
         }
       } catch (err) {
         console.error('Error sending meeting notifications:', err);

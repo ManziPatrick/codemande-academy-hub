@@ -7,10 +7,12 @@ import {
     Users,
     FileText,
     LayoutGrid,
-    Layers
+    Layers,
+    CheckSquare
 } from "lucide-react";
 import ApplicationReview from "@/components/portal/admin/internship/ApplicationReview";
 import TeamManagement from "@/components/portal/admin/internship/TeamManagement";
+import InternshipSubmissionReview from "@/components/portal/admin/internship/InternshipSubmissionReview";
 import ProgramList from "@/components/portal/admin/internship/ProgramList";
 import WorkflowBoard from "@/components/portal/admin/internship/WorkflowBoard";
 import { useAuth } from "@/contexts/AuthContext";
@@ -69,6 +71,10 @@ export default function TrainerInternships() {
                             <LayoutGrid className="w-4 h-4" />
                             My Teams & Projects
                         </TabsTrigger>
+                        <TabsTrigger value="submissions" className="gap-2">
+                            <CheckSquare className="w-4 h-4" />
+                            Work Submissions
+                        </TabsTrigger>
                         <TabsTrigger value="programs" className="gap-2">
                             <Briefcase className="w-4 h-4" />
                             Programs Directory
@@ -118,6 +124,21 @@ export default function TrainerInternships() {
                                 </p>
                             </div>
                             <TeamManagement />
+                        </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="submissions">
+                        <div className="space-y-4">
+                            <div className="bg-emerald-50/50 border border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-900/50 p-4 rounded-lg">
+                                <h3 className="font-medium text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                                    <CheckSquare className="w-4 h-4" />
+                                    Submission Review
+                                </h3>
+                                <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
+                                    Review work submitted by your teams. You can provide feedback and update the status of each milestone.
+                                </p>
+                            </div>
+                            <InternshipSubmissionReview />
                         </div>
                     </TabsContent>
 

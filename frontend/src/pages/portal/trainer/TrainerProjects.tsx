@@ -657,7 +657,7 @@ export default function TrainerProjects() {
                                             <SelectValue placeholder="Select a course" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {(coursesData as any)?.courses?.map((course: any) => (
+                                            {(coursesData as any)?.courses?.items?.map((course: any) => (
                                                 <SelectItem key={course.id} value={course.title}>
                                                     {course.title}
                                                 </SelectItem>

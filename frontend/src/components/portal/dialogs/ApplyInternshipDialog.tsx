@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { APPLY_TO_INTERNSHIP_PROGRAM } from "@/lib/graphql/mutations";
-import { GET_INTERNSHIP_PROGRAM_FOR_APPLY } from "@/lib/graphql/queries";
+import { GET_INTERNSHIP_PROGRAM_FOR_APPLY, GET_INTERNSHIP_PROGRAMS, GET_MY_INTERNSHIP_APPLICATIONS } from "@/lib/graphql/queries";
 import {
   Dialog,
   DialogContent,
@@ -225,9 +225,9 @@ export function ApplyInternshipDialog({
                 </Button>
             </div>
         ) : (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <ScrollArea className="flex-1">
-              <div className="px-6 py-8">
+            <div className="flex-1 flex flex-col overflow-hidden h-[calc(95vh-140px)]">
+              <ScrollArea className="flex-1">
+                <div className="px-6 py-8 custom-scrollbar">
                 {step === "info" ? (
                   <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {/* Candidate Profile */}

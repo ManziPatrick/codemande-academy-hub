@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Upload, Loader2, CheckCircle, Link as LinkIcon } from "lucide-react";
 import { useMutation } from "@apollo/client/react";
 import { SUBMIT_INTERNSHIP_WORK } from "@/lib/graphql/mutations";
+import { GET_INTERNSHIP_SUBMISSIONS } from "@/lib/graphql/queries";
 import { toast } from "sonner";
 
 interface SubmitWorkDialogProps {
@@ -30,7 +31,10 @@ export function SubmitWorkDialog({ open, onOpenChange, teamId, milestoneId, mile
         },
         onError: (err) => {
             toast.error(err.message || "Failed to submit work");
-        }
+        },
+        refetchQueries: [
+            { query: GET_INTERNSHIP_SUBMISSIONS, variables: { teamId } }
+        ]
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -44,7 +48,7 @@ export function SubmitWorkDialog({ open, onOpenChange, teamId, milestoneId, mile
             variables: {
                 teamId,
                 milestoneId,
-                workUrl,
+                contentUrl: workUrl,
                 description
             }
         });

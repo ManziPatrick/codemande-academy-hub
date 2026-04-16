@@ -1560,8 +1560,8 @@ export const ASSIGN_PROJECT_TO_TEAM = gql`
 `;
 
 export const CREATE_INTERNSHIP_MEETING = gql`
-  mutation CreateInternshipMeeting($title: String!, $description: String, $startTime: String!, $endTime: String!, $meetLink: String, $type: String!, $teamIds: [ID!]!, $recurrenceDays: [Int]) {
-    createInternshipMeeting(title: $title, description: $description, startTime: $startTime, endTime: $endTime, meetLink: $meetLink, type: $type, teamIds: $teamIds, recurrenceDays: $recurrenceDays) {
+  mutation CreateInternshipMeeting($title: String!, $description: String, $startTime: String!, $endTime: String!, $meetLink: String, $type: String!, $teamIds: [ID!], $userIds: [ID!], $mentorIds: [ID!], $recurrenceDays: [Int]) {
+    createInternshipMeeting(title: $title, description: $description, startTime: $startTime, endTime: $endTime, meetLink: $meetLink, type: $type, teamIds: $teamIds, userIds: $userIds, mentorIds: $mentorIds, recurrenceDays: $recurrenceDays) {
       id
       title
       type
