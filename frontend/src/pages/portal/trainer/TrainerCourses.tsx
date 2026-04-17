@@ -52,7 +52,7 @@ export default function TrainerCourses() {
 
   // Filter courses assigned to this trainer
   const myCourses = useMemo(() => {
-    const all = (coursesData as any)?.courses || [];
+    const all = (coursesData as any)?.courses?.items || [];
     if (!me) return [];
     return all.filter((c: any) => c.instructor?.id === me.id);
   }, [coursesData, me]);
