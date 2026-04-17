@@ -56,7 +56,10 @@ interface AssignmentSubmission {
 }
 
 interface GetAssignmentSubmissionsData {
-  getAssignmentSubmissions: AssignmentSubmission[];
+  getAssignmentSubmissions: {
+    items: AssignmentSubmission[];
+    pagination: any;
+  };
 }
 
 export default function CourseDetail() {
@@ -88,7 +91,7 @@ export default function CourseDetail() {
     skip: !activeLessonId
   });
 
-  const existingSubmission = submissionsData?.getAssignmentSubmissions?.[0];
+  const existingSubmission = submissionsData?.getAssignmentSubmissions?.items?.[0];
 
   useEffect(() => {
     if (existingSubmission?.content) {
@@ -132,7 +135,7 @@ export default function CourseDetail() {
   const completedCount = allLessons.filter(l => completedLessons.some((cl: any) => cl.courseId === courseId && cl.lessonId === (l.id || l._id))).length;
   const progressPercent = allLessons.length > 0 ? Math.round((completedCount / allLessons.length) * 100) : 0;
   const currentLessonRequiresAssignment = !!(currentLesson?.type === 'assignment' || currentLesson?.isAssignment);
-  const currentLessonSubmission = submissionsData?.getAssignmentSubmissions?.find((submission) => !me?.id || submission.userId === me.id);
+  const currentLessonSubmission = submissionsData?.getAssignmentSubmissions?.items?.find((submission) => !me?.id || submission.userId === me.id);
   const currentLessonSubmissionStatus = currentLessonSubmission?.status;
   const currentLessonCompleted = completedLessons.some((cl: any) => cl.lessonId === (currentLesson?.id || currentLesson?._id));
   const canMarkCurrentLessonComplete = !currentLessonRequiresAssignment || currentLessonCompleted || currentLessonSubmissionStatus === 'approved';

@@ -1347,7 +1347,7 @@ export const resolvers = {
       if (!context.user) throw new Error('Not authenticated');
       const membership = await InternshipTeamMember.findOne({ userId: context.user.id, isDeleted: false });
       if (!membership) return null;
-      return await InternshipTeam.findById(membership.teamId);
+      return await InternshipTeam.findById(membership.teamId).populate('mentorId');
     },
     internshipSubmissions: async (_: any, { teamId }: { teamId?: string }, context: any) => {
       if (!context.user) throw new Error('Not authenticated');

@@ -1348,6 +1348,9 @@ export const GET_MY_INTERNSHIP_TEAM = gql`
       mentor {
         id
         username
+        fullName
+        avatar
+        email
       }
       members {
         id
