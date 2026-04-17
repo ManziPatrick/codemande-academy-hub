@@ -58,6 +58,7 @@ const AdminPayments = lazy(() => import("@/pages/portal/admin/AdminPayments"));
 const AdminBadges = lazy(() => import("@/pages/portal/admin/AdminBadges"));
 const AdminAnalytics = lazy(() => import("@/pages/portal/admin/AdminAnalytics"));
 const AdminBranding = lazy(() => import("@/pages/portal/admin/AdminBranding"));
+const AdminSchedule = lazy(() => import("../pages/portal/admin/AdminSchedule"));
 const AdminTools = lazy(() => import("@/pages/portal/admin/AdminTools"));
 const AdminBlogManager = lazy(() => import("@/pages/portal/admin/AdminBlogManager"));
 const AdminTeamManager = lazy(() => import("@/pages/portal/admin/AdminTeamManager"));
@@ -69,6 +70,8 @@ const SuperAdminAdmins = lazy(() => import("@/pages/portal/super-admin/SuperAdmi
 const SuperAdminUsers = lazy(() => import("@/pages/portal/super-admin/SuperAdminUsers").then(m => ({ default: m.default })));
 const SuperAdminConfig = lazy(() => import("@/pages/portal/super-admin/SuperAdminConfig"));
 const SuperAdminAnalytics = lazy(() => import("@/pages/portal/super-admin/SuperAdminAnalytics"));
+const SystemAuditReport = lazy(() => import("@/pages/portal/super-admin/SystemAuditReport"));
+const SuperAdminPerformance = lazy(() => import("@/pages/portal/super-admin/PerformanceReport"));
 const Maintenance = lazy(() => import("@/pages/Maintenance"));
 
 
@@ -162,6 +165,7 @@ export function AnimatedRoutes() {
           <Route path="/portal/admin/courses" element={<ProtectedRoute allowedRoles={["admin"]}><AdminCourses /></ProtectedRoute>} />
           <Route path="/portal/admin/courses/create" element={<ProtectedRoute allowedRoles={["admin"]}><CreateCourse /></ProtectedRoute>} />
           <Route path="/portal/admin/internships" element={<ProtectedRoute allowedRoles={["admin"]}><AdminInternships /></ProtectedRoute>} />
+          <Route path="/portal/admin/schedule" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><AdminSchedule /></ProtectedRoute>} />
           <Route path="/portal/internship/meetings" element={<ProtectedRoute allowedRoles={["admin", "trainer", "student"]}><InternshipMeetings /></ProtectedRoute>} />
           <Route path="/portal/admin/projects" element={<ProtectedRoute allowedRoles={["admin"]}><AdminProjects /></ProtectedRoute>} />
           <Route path="/portal/admin/assignment-reviews" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><TrainerProjects /></ProtectedRoute>} />
@@ -180,6 +184,8 @@ export function AnimatedRoutes() {
           <Route path="/portal/super-admin/users" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminUsers /></ProtectedRoute>} />
           <Route path="/portal/super-admin/config" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminConfig /></ProtectedRoute>} />
           <Route path="/portal/super-admin/analytics" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminAnalytics /></ProtectedRoute>} />
+          <Route path="/portal/super-admin/system-report" element={<ProtectedRoute allowedRoles={["super_admin"]}><SystemAuditReport /></ProtectedRoute>} />
+          <Route path="/portal/super-admin/performance" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminPerformance /></ProtectedRoute>} />
 
           {/* Shared Portal Routes */}
           <Route path="/portal/settings" element={<ProtectedRoute allowedRoles={["student", "trainer", "admin", "super_admin"]}><PortalSettings /></ProtectedRoute>} />

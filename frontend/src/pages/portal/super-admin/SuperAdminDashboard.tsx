@@ -19,10 +19,14 @@ import {
   BookOpen,
   DollarSign,
   GraduationCap,
+  ClipboardList,
+  Award
 } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { useQuery } from "@apollo/client/react";
-import { GET_ADMIN_DASHBOARD_DATA, GET_RECENT_ACTIVITY, GET_USERS } from "@/lib/graphql/queries";
+import { GET_ADMIN_DASHBOARD_DATA, GET_RECENT_ACTIVITY, GET_USERS, GET_ANALYTICS } from "@/lib/graphql/queries";
+import { format, isValid } from "date-fns";
 
 export default function SuperAdminDashboard() {
   const { user } = useAuth();
@@ -33,6 +37,9 @@ export default function SuperAdminDashboard() {
     pollInterval: 15000
   });
 
+  const { data: analyticsData } = useQuery(GET_ANALYTICS);
+  const analytics = (analyticsData as any)?.analytics;
+
   const dashboardData = (data as any)?.adminDashboardData || { 
       stats: { totalUsers: 0, totalCourses: 0, totalStudents: 0, totalRevenue: 0 },
       recentEnrollments: [],
@@ -42,6 +49,12 @@ export default function SuperAdminDashboard() {
   
   const allAdmins = ((usersData as any)?.users?.items || []).filter((u: any) => u.role === "admin" || u.role === "super_admin");
   const recentActivity = (activityData as any)?.recentActivity || [];
+
+  const parseSafeDate = (timestamp: any) => {
+    if (!timestamp) return new Date();
+    const date = new Date(!isNaN(Number(timestamp)) ? Number(timestamp) : timestamp);
+    return isValid(date) ? date : new Date();
+  };
 
   const systemStats = [
     { label: "Total Users", value: liveStats.totalUsers.toString(), icon: Users },
@@ -147,7 +160,7 @@ export default function SuperAdminDashboard() {
                         }`}>
                           {admin.role.replace("_", " ").toUpperCase()}
                         </p>
-                        <p className="text-xs text-card-foreground/60">{new Date(parseInt(admin.createdAt)).toLocaleDateString()}</p>
+                        <p className="text-xs text-card-foreground/60">{format(parseSafeDate(admin.createdAt), 'MMM dd, yyyy')}</p>
                       </div>
                     </div>
                   ))}
@@ -183,7 +196,7 @@ export default function SuperAdminDashboard() {
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="text-card-foreground font-semibold uppercase tracking-wider">{log.username}</span>
                           <span className="text-card-foreground/40">
-                            {new Date(parseInt(log.timestamp)).toLocaleTimeString()}
+                            {format(parseSafeDate(log.timestamp), 'HH:mm:ss')}
                           </span>
                         </div>
                         <p className="text-xs text-card-foreground/80 font-medium">
@@ -196,7 +209,45 @@ export default function SuperAdminDashboard() {
               </Card>
             </motion.div>
 
-            {/* Quick Actions */}
+            {/* System Snapshot */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35 }}
+            >
+              <Card className="border-border/50 bg-accent/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-lg font-heading flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-accent" />
+                    System Snapshot
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-3 bg-background/50 rounded-xl border border-border/20">
+                      <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Graduates</p>
+                      <p className="text-lg font-black text-accent">{analytics?.internshipStats?.graduated || 0}</p>
+                    </div>
+                    <div className="p-3 bg-background/50 rounded-xl border border-border/20">
+                      <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Enrolled</p>
+                      <p className="text-lg font-black text-blue-400">{analytics?.internshipStats?.enrolled || 0}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Projects Finished</span>
+                      <span className="font-bold">{analytics?.projectStats?.completed || 0}</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-accent/20 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-accent" 
+                        style={{ width: `${(analytics?.projectStats?.completed / analytics?.projectStats?.total * 100) || 0}%` }} 
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -215,13 +266,21 @@ export default function SuperAdminDashboard() {
                     <Lock className="w-4 h-4 mr-2 text-accent" />
                     Security Settings
                   </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <BarChart3 className="w-4 h-4 mr-2 text-accent" />
-                    Full Analytics
+                  <Button variant="ghost" className="w-full justify-start" asChild>
+                    <Link to="/portal/super-admin/system-report">
+                      <ClipboardList className="w-4 h-4 mr-2 text-accent" />
+                      Full System Audit Report
+                    </Link>
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start" asChild>
+                    <Link to="/portal/super-admin/performance">
+                      <Award className="w-4 h-4 mr-2 text-gold" />
+                      Performance Report
+                    </Link>
                   </Button>
                   <Button variant="ghost" className="w-full justify-start">
                     <TrendingUp className="w-4 h-4 mr-2 text-accent" />
-                    Performance Report
+                    Market Growth Data
                   </Button>
                 </CardContent>
               </Card>

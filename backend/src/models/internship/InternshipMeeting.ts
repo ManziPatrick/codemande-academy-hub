@@ -31,6 +31,7 @@ const InternshipMeetingSchema: Schema = new Schema(
     startTime: { type: Date, required: true },
     endTime: { type: Date, required: true },
     recurrenceDays: [{ type: Number, min: 0, max: 6 }], // 0=Sun,1=Mon...6=Sat
+    recurrenceEndDate: { type: Date },
     teamIds: [{ type: Schema.Types.ObjectId, ref: 'InternshipTeam', index: true }],
     userIds: [{ type: Schema.Types.ObjectId, ref: 'User', index: true }],
     mentorIds: [{ type: Schema.Types.ObjectId, ref: 'User', index: true }],

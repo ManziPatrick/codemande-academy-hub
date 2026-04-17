@@ -948,6 +948,12 @@ export const ADD_INTERN_TO_TEAM_NEW = gql`
   }
 `;
 
+export const REMOVE_INTERN_FROM_TEAM_NEW = gql`
+  mutation RemoveInternFromTeam($teamMemberId: ID!) {
+    removeInternFromTeam(teamMemberId: $teamMemberId)
+  }
+`;
+
 export const CREATE_INTERNSHIP_MILESTONE_NEW = gql`
   mutation CreateInternshipMilestone($internshipProjectId: ID!, $title: String!, $deadline: String!, $order: Int!) {
     createInternshipMilestone(internshipProjectId: $internshipProjectId, title: $title, deadline: $deadline, order: $order) {
@@ -1560,12 +1566,13 @@ export const ASSIGN_PROJECT_TO_TEAM = gql`
 `;
 
 export const CREATE_INTERNSHIP_MEETING = gql`
-  mutation CreateInternshipMeeting($title: String!, $description: String, $startTime: String!, $endTime: String!, $meetLink: String, $type: String!, $teamIds: [ID!], $userIds: [ID!], $mentorIds: [ID!], $recurrenceDays: [Int]) {
-    createInternshipMeeting(title: $title, description: $description, startTime: $startTime, endTime: $endTime, meetLink: $meetLink, type: $type, teamIds: $teamIds, userIds: $userIds, mentorIds: $mentorIds, recurrenceDays: $recurrenceDays) {
+  mutation CreateInternshipMeeting($title: String!, $description: String, $startTime: String!, $endTime: String!, $meetLink: String, $type: String!, $teamIds: [ID!], $userIds: [ID!], $mentorIds: [ID!], $recurrenceDays: [Int], $recurrenceEndDate: String) {
+    createInternshipMeeting(title: $title, description: $description, startTime: $startTime, endTime: $endTime, meetLink: $meetLink, type: $type, teamIds: $teamIds, userIds: $userIds, mentorIds: $mentorIds, recurrenceDays: $recurrenceDays, recurrenceEndDate: $recurrenceEndDate) {
       id
       title
       type
       recurrenceDays
+      recurrenceEndDate
       startTime
       endTime
       meetLink
@@ -1578,11 +1585,13 @@ export const CREATE_INTERNSHIP_MEETING = gql`
 `;
 
 export const UPDATE_INTERNSHIP_MEETING = gql`
-  mutation UpdateInternshipMeeting($id: ID!, $title: String, $description: String, $startTime: String, $endTime: String, $meetLink: String, $type: String, $teamIds: [ID!]) {
-    updateInternshipMeeting(id: $id, title: $title, description: $description, startTime: $startTime, endTime: $endTime, meetLink: $meetLink, type: $type, teamIds: $teamIds) {
+  mutation UpdateInternshipMeeting($id: ID!, $title: String, $description: String, $startTime: String, $endTime: String, $meetLink: String, $type: String, $teamIds: [ID!], $recurrenceDays: [Int], $recurrenceEndDate: String) {
+    updateInternshipMeeting(id: $id, title: $title, description: $description, startTime: $startTime, endTime: $endTime, meetLink: $meetLink, type: $type, teamIds: $teamIds, recurrenceDays: $recurrenceDays, recurrenceEndDate: $recurrenceEndDate) {
       id
       title
       type
+      recurrenceDays
+      recurrenceEndDate
       startTime
       endTime
     }

@@ -618,9 +618,18 @@ export const resolvers = {
       return Array.from(categories);
     },
     trainerStudents: async (_: any, __: any, context: any) => {
-      if (!context.user || context.user.role !== 'trainer') throw new Error('Not authorized');
+      if (!context.user || !['trainer', 'admin', 'super_admin'].includes(context.user.role)) {
+        throw new Error('Not authorized');
+      }
 
-      const courses = await Course.find({ instructor: context.user.id }).populate('studentsEnrolled');
+      const query = context.user.role === 'trainer' ? { instructor: context.user.id } : {};
+      const courses = await Course.find(query).populate({
+        path: 'studentsEnrolled',
+        populate: [
+          { path: 'enrolledCourses' }
+        ]
+      });
+      
       const studentsMap = new Map();
 
       courses.forEach(course => {

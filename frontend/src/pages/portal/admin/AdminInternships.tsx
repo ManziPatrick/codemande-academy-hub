@@ -16,7 +16,8 @@ import {
   Clock,
   LayoutGrid,
   BarChart3,
-  Code
+  Code,
+  Trello
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import TeamManagement from "@/components/portal/admin/internship/TeamManagement"
 import InternshipProjectList from "@/components/portal/admin/internship/InternshipProjectList";
 import InternshipActivityLogs from "@/components/portal/admin/internship/InternshipActivityLogs";
 import EngagementDashboard from "@/components/portal/admin/internship/EngagementDashboard";
+import WorkflowBoard from "@/components/portal/admin/internship/WorkflowBoard";
 
 export default function AdminInternships() {
   const [activeTab, setActiveTab] = useState("programs");
@@ -77,6 +79,10 @@ export default function AdminInternships() {
               <BarChart3 className="w-4 h-4" />
               Engagement
             </TabsTrigger>
+            <TabsTrigger value="workflow" className="gap-2">
+              <Trello className="w-4 h-4" />
+              Workflow Board
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="programs">
@@ -101,6 +107,10 @@ export default function AdminInternships() {
 
           <TabsContent value="engagement">
             <EngagementDashboard />
+          </TabsContent>
+
+          <TabsContent value="workflow">
+            <WorkflowBoard />
           </TabsContent>
         </Tabs>
       </div>

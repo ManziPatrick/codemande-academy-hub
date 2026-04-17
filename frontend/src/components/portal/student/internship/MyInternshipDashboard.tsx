@@ -24,9 +24,9 @@ import {
   ArrowRight,
   Expand
 } from "lucide-react";
+import { format, addDays, isBefore, isSameDay, getDay, isToday, startOfToday } from "date-fns";
 import { useQuery } from "@apollo/client/react";
 import { GET_MY_INTERNSHIP_MEETINGS, GET_INTERNSHIP_SUBMISSIONS } from "@/lib/graphql/queries";
-import { format } from "date-fns";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -182,6 +182,53 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
       fetchPolicy: 'network-only' // ensure fresh data after submission
    });
    const submissions = (submissionsData as any)?.internshipSubmissions || [];
+
+   const expandedMeetings = meetings.flatMap((m: any) => {
+      const instances: any[] = [];
+      const startTimestamp = Number(m.startTime);
+      const isTimestamp = !isNaN(startTimestamp);
+      const startDateObj = new Date(isTimestamp ? startTimestamp : m.startTime);
+      if (isNaN(startDateObj.getTime())) return [];
+
+      const now = new Date();
+      const rangeStart = addDays(now, -7); 
+      let rangeEnd = addDays(now, 60);
+
+      const recurrenceEnd = m.recurrenceEndDate ? new Date(isNaN(Number(m.recurrenceEndDate)) ? m.recurrenceEndDate : Number(m.recurrenceEndDate)) : null;
+      if (recurrenceEnd && !isNaN(recurrenceEnd.getTime())) {
+        rangeEnd = recurrenceEnd;
+      }
+
+      const baseEvent = { ...m, host: m.host };
+
+      if (m.type === 'DAILY') {
+        let current = startDateObj;
+        if (isBefore(current, rangeStart)) current = rangeStart;
+        while (isBefore(current, rangeEnd) || isSameDay(current, rangeEnd)) {
+          instances.push({ ...baseEvent, id: `${m.id}-${format(current, "yyyy-MM-dd")}`, startTime: `${format(current, "yyyy-MM-dd")}T${format(startDateObj, "HH:mm")}:00` });
+          current = addDays(current, 1);
+          if (instances.length > 100) break;
+        }
+      } else if (m.type === 'WEEKLY' && m.recurrenceDays?.length > 0) {
+        let current = startDateObj;
+        if (isBefore(current, rangeStart)) current = rangeStart;
+        while (isBefore(current, rangeEnd) || isSameDay(current, rangeEnd)) {
+          if (m.recurrenceDays.includes(getDay(current))) {
+            instances.push({ ...baseEvent, id: `${m.id}-${format(current, "yyyy-MM-dd")}`, startTime: `${format(current, "yyyy-MM-dd")}T${format(startDateObj, "HH:mm")}:00` });
+          }
+          current = addDays(current, 1);
+          if (instances.length > 100) break;
+        }
+      } else {
+        instances.push(baseEvent);
+      }
+      return instances;
+   }).sort((a: any, b: any) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+   .filter((m: any) => {
+      const eventDate = new Date(m.startTime);
+      // Show today and future on sidebar (delect after that day)
+      return eventDate >= startOfToday();
+   });
 
    return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -477,34 +524,45 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
                        <p className="text-xs font-bold text-muted-foreground">No syncs scheduled yet.</p>
                     </div>
                   ) : (
-                    meetings
-                      .filter((meeting: any) => meeting.startTime && !isNaN(new Date(meeting.startTime).getTime()))
-                      .map((meeting: any) => (
-                      <div key={meeting.id} className="group p-5 rounded-3xl bg-background border border-border/50 hover:border-gold/30 hover:shadow-xl transition-all duration-300 relative overflow-hidden">
-                         <div className="absolute top-0 left-0 w-1 h-full bg-gold/30" />
-                         <div className="flex justify-between items-start mb-2">
-                            <h4 className="font-black text-sm text-foreground leading-tight line-clamp-2">{meeting.title}</h4>
-                         </div>
-                         <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
-                            <Clock className="w-3 h-3 text-gold" />
-                            {format(new Date(meeting.startTime), "MMM dd, HH:mm")}
-                         </div>
-                         <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/40">
-                            <div className="flex items-center gap-2">
-                               <Avatar className="w-6 h-6 rounded-lg ring-1 ring-border/50">
-                                  <AvatarImage src={meeting.host?.avatar} />
-                                  <AvatarFallback className="bg-gold/10 text-gold text-[8px] font-black">{meeting.host?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                               </Avatar>
-                               <span className="text-[10px] font-bold truncate max-w-[80px]">{meeting.host?.fullName || 'Mentor'}</span>
-                            </div>
-                            {meeting.meetLink && (
-                               <Button variant="ghost" size="sm" className="h-8 rounded-xl bg-gold text-gold-foreground hover:bg-gold/90 font-black text-[9px] uppercase tracking-wider px-3" onClick={() => window.open(meeting.meetLink, '_blank')}>
-                                  Join Now <ArrowRight className="w-3 h-3 ml-1" />
-                               </Button>
+                    expandedMeetings
+                      .map((meeting: any) => {
+                        const activeToday = isToday(new Date(meeting.startTime));
+                        return (
+                          <div key={meeting.id} className={`group p-5 rounded-3xl bg-background border transition-all duration-300 relative overflow-hidden ${
+                            activeToday ? 'border-gold shadow-2xl shadow-gold/10' : 'border-border/50 hover:border-gold/30 hover:shadow-xl'
+                          }`}>
+                            {activeToday && (
+                               <div className="absolute top-0 right-0 p-3">
+                                  <Badge className="bg-gold text-black font-black text-[8px] uppercase tracking-tighter shadow-lg">Active Today</Badge>
+                               </div>
                             )}
-                         </div>
-                      </div>
-                    ))
+                            <div className={`absolute top-0 left-0 w-1 h-full ${activeToday ? 'bg-gold' : 'bg-gold/30'}`} />
+                            <div className="flex justify-between items-start mb-2 pr-12">
+                               <h4 className={`font-black text-sm leading-tight line-clamp-2 ${activeToday ? 'text-gold' : 'text-foreground'}`}>{meeting.title}</h4>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
+                               <Clock className={`w-3 h-3 ${activeToday ? 'text-gold' : 'text-gold/60'}`} />
+                               {format(new Date(meeting.startTime), "MMM dd, HH:mm")}
+                            </div>
+                            <div className={`flex items-center justify-between mt-4 pt-4 border-t ${activeToday ? 'border-gold/20' : 'border-border/40'}`}>
+                               <div className="flex items-center gap-2">
+                                  <Avatar className={`w-6 h-6 rounded-lg ring-1 ${activeToday ? 'ring-gold/30' : 'ring-border/50'}`}>
+                                     <AvatarImage src={meeting.host?.avatar} />
+                                     <AvatarFallback className="bg-gold/10 text-gold text-[8px] font-black">{meeting.host?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  <span className={`text-[10px] font-bold truncate max-w-[80px] ${activeToday ? 'text-gold' : 'text-foreground'}`}>{meeting.host?.fullName || 'Mentor'}</span>
+                               </div>
+                               {meeting.meetLink && (
+                                  <Button variant="ghost" size="sm" className={`h-8 rounded-xl font-black text-[9px] uppercase tracking-wider px-3 ${
+                                    activeToday ? 'bg-gold text-black hover:bg-gold/90' : 'bg-gold/20 text-gold hover:bg-gold/30'
+                                  }`} onClick={() => window.open(meeting.meetLink, '_blank')}>
+                                     Join Now <ArrowRight className="w-3 h-3 ml-1" />
+                                  </Button>
+                               )}
+                            </div>
+                          </div>
+                        );
+                      })
                   )}
                </CardContent>
             </Card>

@@ -15,6 +15,24 @@ import {
   Server,
   Zap,
 } from "lucide-react";
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
+} from 'recharts';
+import { format, isValid } from "date-fns";
+
+const COLORS = ['#D4AF37', '#3B82F6', '#10B981', '#F59E0B', '#6366F1', '#EC4899'];
 
 import { useQuery } from "@apollo/client/react";
 import { GET_ANALYTICS, GET_ADMIN_DASHBOARD_DATA, GET_RECENT_ACTIVITY } from "@/lib/graphql/queries";
@@ -42,8 +60,14 @@ export default function SuperAdminAnalytics() {
     { label: "Total Revenue", value: liveStats.totalRevenue.toLocaleString() + " RWF", icon: DollarSign },
     { label: "Total Users", value: liveStats.totalUsers.toString(), icon: Users },
     { label: "Active Courses", value: liveStats.totalCourses.toString(), icon: BookOpen },
-    { label: "Server Status", value: "Operational", icon: Activity },
+    { label: "Platform Health", value: "99.9%", icon: Activity },
   ];
+
+  const parseSafeDate = (timestamp: any) => {
+    if (!timestamp) return new Date();
+    const date = new Date(!isNaN(Number(timestamp)) ? Number(timestamp) : timestamp);
+    return isValid(date) ? date : new Date();
+  };
 
   return (
     <PortalLayout>
@@ -95,53 +119,89 @@ export default function SuperAdminAnalytics() {
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Growth Chart */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="lg:col-span-3"
+            className="lg:col-span-2"
           >
-            <Card className="border-border/50">
+            <Card className="border-border/50 bg-card/30 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-lg font-heading flex items-center gap-2">
                   <TrendingUp className="w-5 h-5 text-accent" />
-                  Platform Growth
+                  Growth Trajectory (Users & Revenue)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {monthlyGrowth.map((month: any, index: number) => (
-                    <div key={month.month} className="flex items-center gap-4">
-                      <span className="w-12 text-sm text-card-foreground/70">{month.month}</span>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div 
-                            className="h-4 bg-accent/80 rounded"
-                            style={{ width: `${(month.users / maxUsers) * 100}%` }}
-                          />
-                          <span className="text-xs text-card-foreground/60">{month.users} users</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="h-4 bg-green-500/60 rounded"
-                            style={{ width: `${(month.revenue / maxRevenue) * 100}%` }}
-                          />
-                          <span className="text-xs text-card-foreground/60">{month.revenue.toLocaleString()} RWF</span>
-                        </div>
+                <div className="h-[350px] w-full mt-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={monthlyGrowth}>
+                      <defs>
+                        <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" />
+                      <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9CA3AF', fontSize: 12 }} />
+                      <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '12px' }} />
+                      <Legend verticalAlign="top" height={36}/>
+                      <Area type="monotone" dataKey="users" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" />
+                      <Area type="monotone" dataKey="revenue" stroke="#3B82F6" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="lg:col-span-1"
+          >
+            <Card className="border-border/50 h-full">
+              <CardHeader>
+                <CardTitle className="text-lg font-heading flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-accent" />
+                  Global Role Hub
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center justify-center pt-4">
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={analytics?.roleDistribution}
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {analytics?.roleDistribution?.map((_: any, index: number) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '12px' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="w-full mt-6 space-y-3">
+                  {analytics?.roleDistribution?.map((role: any, index: number) => (
+                    <div key={role.name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                        <span className="text-muted-foreground font-medium">{role.name}</span>
                       </div>
+                      <span className="font-black text-foreground">{role.value}</span>
                     </div>
                   ))}
-                </div>
-                <div className="flex items-center gap-6 mt-4 pt-4 border-t border-border/30">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-accent/80" />
-                    <span className="text-xs text-card-foreground/60">Users</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-green-500/60" />
-                    <span className="text-xs text-card-foreground/60">Revenue</span>
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -176,7 +236,7 @@ export default function SuperAdminAnalytics() {
                         <p className="text-xs text-card-foreground/60">{activity.username}</p>
                       </div>
                     </div>
-                    <span className="text-xs text-card-foreground/50">{new Date(parseInt(activity.timestamp)).toLocaleString()}</span>
+                    <span className="text-xs text-card-foreground/50">{format(parseSafeDate(activity.timestamp), 'MMM dd, HH:mm')}</span>
                   </div>
                 ))}
               </div>

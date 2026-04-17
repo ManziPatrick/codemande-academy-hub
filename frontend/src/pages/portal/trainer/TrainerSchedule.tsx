@@ -1,5 +1,17 @@
 import { useState, useMemo, useEffect } from "react";
-import { isSameDay, format } from "date-fns";
+import { 
+  isSameDay, 
+  format, 
+  addDays, 
+  isBefore, 
+  isAfter, 
+  getDay, 
+  isToday, 
+  isSameWeek, 
+  isSameMonth, 
+  isSameYear, 
+  startOfToday 
+} from "date-fns";
 import { motion } from "framer-motion";
 import { PortalLayout } from "@/components/portal/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +52,7 @@ import {
 import { CalendarGrid } from "@/components/portal/CalendarGrid";
 import { toast } from "sonner";
 import { useQuery, useMutation } from "@apollo/client/react";
-import { GET_MY_BOOKINGS, GET_MY_INTERNSHIP_MEETINGS } from "@/lib/graphql/queries";
+import { GET_MY_BOOKINGS, GET_MY_INTERNSHIP_MEETINGS, GET_MY_MENTEES } from "@/lib/graphql/queries";
 import { UPDATE_BOOKING_STATUS, CREATE_BOOKING } from "@/lib/graphql/mutations";
 import { usePusher } from "@/hooks/use-pusher";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,9 +60,11 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function TrainerSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().getDate());
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year' | 'all'>('month');
 
   const { data, loading, refetch } = useQuery(GET_MY_BOOKINGS);
   const { data: meetingsData, loading: meetingsLoading } = useQuery(GET_MY_INTERNSHIP_MEETINGS);
+  const { data: menteesData, loading: menteesLoading } = useQuery(GET_MY_MENTEES);
   const [showAllStatus, setShowAllStatus] = useState(false);
   const [updateBookingStatus] = useMutation(UPDATE_BOOKING_STATUS, {
     onCompleted: () => {
@@ -109,20 +123,141 @@ export default function TrainerSchedule() {
     }));
 
     const internshipMeetings = (meetingsData as any)?.getMyInternshipMeetings || [];
-    const meetings = internshipMeetings.map((m: any) => ({
-      ...m,
-      id: m.id,
-      title: m.title,
-      date: format(new Date(m.startTime), "yyyy-MM-dd"),
-      time: format(new Date(m.startTime), "HH:mm"),
-      mentor: m.host,
-      meetingLink: m.meetLink,
-      status: 'confirmed',
-      source: 'internship'
-    }));
+    
+    // Helper to expand recurring meetings
+    const expandMeeting = (m: any) => {
+      const instances: any[] = [];
+      const startTimestamp = Number(m.startTime);
+      const isTimestamp = !isNaN(startTimestamp);
+      const startDateObj = new Date(isTimestamp ? startTimestamp : m.startTime);
+      
+      if (isNaN(startDateObj.getTime())) return [];
 
-    return [...bookings, ...meetings];
-  }, [activeBookings, meetingsData]);
+      const now = new Date();
+      const rangeStart = addDays(now, -30); // Show up to 30 days in the past
+      let rangeEnd = addDays(now, 90);    // Show up to 90 days in the future by default
+
+      const recurrenceEnd = m.recurrenceEndDate ? new Date(isNaN(Number(m.recurrenceEndDate)) ? m.recurrenceEndDate : Number(m.recurrenceEndDate)) : null;
+      if (recurrenceEnd && !isNaN(recurrenceEnd.getTime())) {
+        rangeEnd = recurrenceEnd;
+      }
+
+      const baseEvent = {
+        ...m,
+        id: m.id,
+        title: m.title,
+        mentor: m.host,
+        meetingLink: m.meetLink,
+        status: 'confirmed',
+        source: 'internship'
+      };
+
+      if (m.type === 'DAILY') {
+        let current = startDateObj;
+        if (isBefore(current, rangeStart)) current = rangeStart;
+        
+        while (isBefore(current, rangeEnd) || isSameDay(current, rangeEnd)) {
+          // If recurrenceDays is specified for a DAILY meeting, honor it (e.g. workdays only)
+          // Otherwise, show it every day
+          if (m.recurrenceDays?.length === 0 || m.recurrenceDays?.includes(getDay(current))) {
+            instances.push({
+              ...baseEvent,
+              id: `${m.id}-${format(current, "yyyy-MM-dd")}`,
+              date: format(current, "yyyy-MM-dd"),
+              time: format(startDateObj, "HH:mm"),
+            });
+          }
+          current = addDays(current, 1);
+          if (instances.length > 365) break; // Safety break
+        }
+      } else if (m.type === 'WEEKLY' && m.recurrenceDays?.length > 0) {
+        let current = startDateObj;
+        if (isBefore(current, rangeStart)) current = rangeStart;
+
+        while (isBefore(current, rangeEnd) || isSameDay(current, rangeEnd)) {
+          if (m.recurrenceDays.includes(getDay(current))) {
+            instances.push({
+              ...baseEvent,
+              id: `${m.id}-${format(current, "yyyy-MM-dd")}`,
+              date: format(current, "yyyy-MM-dd"),
+              time: format(startDateObj, "HH:mm"),
+            });
+          }
+          current = addDays(current, 1);
+          if (instances.length > 365) break; // Safety break
+        }
+      } else {
+        // ONCE or fallback
+        instances.push({
+          ...baseEvent,
+          date: format(startDateObj, "yyyy-MM-dd"),
+          time: format(startDateObj, "HH:mm"),
+        });
+      }
+      return instances;
+    };
+
+    const expandedMeetings = internshipMeetings.flatMap((m: any) => expandMeeting(m));
+
+    const mentees = (menteesData as any)?.myMentees || [];
+    const milestoneEvents = mentees.flatMap((m: any) => 
+      (m.milestones || []).map((milestone: any, idx: number) => {
+        const dateObj = new Date(isNaN(Number(milestone.date)) ? milestone.date : Number(milestone.date));
+        return {
+          id: `milestone-${m.id}-${idx}`,
+          title: `Milestone: ${milestone.title}`,
+          date: !isNaN(dateObj.getTime()) ? format(dateObj, "yyyy-MM-dd") : "N/A",
+          time: "09:00",
+          status: milestone.completed ? 'completed' : 'pending',
+          source: 'milestone',
+          mentor: m.user, 
+          meetingLink: ""
+        };
+      })
+    );
+
+    const reviewEvents = mentees.flatMap((m: any) => 
+      (m.sprintReviews || []).map((review: any, idx: number) => {
+        const dateObj = new Date(isNaN(Number(review.date)) ? review.date : Number(review.date));
+        return {
+          id: `review-${m.id}-${idx}`,
+          title: `Sprint Review W${review.week} - ${m.user?.username}`,
+          date: !isNaN(dateObj.getTime()) ? format(dateObj, "yyyy-MM-dd") : "N/A",
+          time: "17:00",
+          status: 'confirmed',
+          source: 'review',
+          mentor: m.user,
+          meetingLink: ""
+        };
+      })
+    );
+
+    return [...bookings, ...expandedMeetings, ...milestoneEvents, ...reviewEvents];
+  }, [activeBookings, meetingsData, menteesData]);
+
+  const filteredEvents = useMemo(() => {
+    const today = startOfToday();
+    const now = new Date();
+
+    return calendarEvents.filter((event: any) => {
+      const eventDate = new Date(event.date + "T12:00:00");
+      
+      // Rule: Hide past events
+      if (isBefore(eventDate, today)) return false;
+
+      if (timeFilter === 'all') return true;
+      if (timeFilter === 'today') return isToday(eventDate);
+      if (timeFilter === 'week') return isSameWeek(eventDate, now);
+      if (timeFilter === 'month') return isSameMonth(eventDate, now);
+      if (timeFilter === 'year') return isSameYear(eventDate, now);
+      
+      return true;
+    }).sort((a: any, b: any) => {
+      const aTime = new Date(`${a.date}T${a.time}:00`).getTime();
+      const bTime = new Date(`${b.date}T${b.time}:00`).getTime();
+      return aTime - bTime;
+    });
+  }, [calendarEvents, timeFilter]);
 
   const generateMeetLink = (): string => {
     const chars = "abcdefghijklmnopqrstuvwxyz";
@@ -243,12 +378,35 @@ export default function TrainerSchedule() {
             <p className="text-muted-foreground mt-1">
               Manage student mentorship requests and your live classes
             </p>
+            <Button variant="gold" size="sm" className="ml-2 gap-2" onClick={() => setIsCreateOpen(true)}>
+              <Plus className="w-4 h-4" />
+              Schedule Session
+            </Button>
           </div>
-          <Button variant="gold" onClick={() => setIsCreateOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Schedule Live Class
-          </Button>
         </motion.div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2 mb-8 bg-muted/30 p-1.5 rounded-2xl w-fit border border-border/50">
+          {[
+            { id: 'today', label: 'Today' },
+            { id: 'week', label: 'This Week' },
+            { id: 'month', label: 'This Month' },
+            { id: 'year', label: 'This Year' },
+            { id: 'all', label: 'Show All' },
+          ].map((filter) => (
+            <Button
+              key={filter.id}
+              onClick={() => setTimeFilter(filter.id as any)}
+              variant={timeFilter === filter.id ? 'gold' : 'ghost'}
+              size="sm"
+              className={`rounded-[14px] px-6 text-xs font-bold transition-all duration-300 ${
+                timeFilter === filter.id ? 'shadow-lg shadow-gold/20' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {filter.label}
+            </Button>
+          ))}
+        </div>
 
         <div className="grid lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3 space-y-6">
@@ -280,46 +438,94 @@ export default function TrainerSchedule() {
 
             <Card className="border-border/50">
               <CardHeader className="pb-3 border-b border-border/20">
-                <CardTitle className="text-lg font-heading flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-accent" />
-                  Upcoming Requests Queue
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-heading flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-accent" />
+                    Session Queue
+                  </CardTitle>
+                  <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest bg-muted/50">
+                    {filteredEvents.length} {timeFilter} sessions
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 {loading || meetingsLoading ? (
                   <div className="flex justify-center p-12"><Loader2 className="w-8 h-8 animate-spin text-accent" /></div>
-                ) : activeBookings.length === 0 ? (
+                ) : filteredEvents.length === 0 ? (
                   <div className="text-center py-12">
-                    <p className="text-muted-foreground">No active mentorship bookings found.</p>
+                    <p className="text-muted-foreground">No sessions found for this timeframe.</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-border/20">
-                    {activeBookings.filter((b: any) => b.status === 'pending').map((booking: any) => (
-                      <div
-                        key={booking.id}
-                        className="p-4 bg-muted/5 hover:bg-muted/10 transition-colors flex items-center justify-between"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center font-bold text-accent">
-                            {booking.user?.username?.[0] || "S"}
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-sm capitalize">{booking.type.replace('-', ' ')}</h4>
-                            <p className="text-xs text-muted-foreground">{booking.user?.username} • {booking.date} at {booking.time}</p>
+                    {filteredEvents.map((booking: any) => {
+                      const activeToday = isToday(new Date(booking.date + "T12:00:00"));
+                      return (
+                        <div
+                          key={booking.id}
+                          className={`p-5 transition-all duration-300 relative overflow-hidden group ${
+                            activeToday ? 'bg-gold/5' : 'hover:bg-muted/5'
+                          }`}
+                        >
+                          {activeToday && (
+                            <div className="absolute top-0 left-0 w-1 h-full bg-gold" />
+                          )}
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-start gap-4">
+                              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors duration-300 ${
+                                activeToday ? 'bg-gold/20' : (booking.status === 'confirmed' ? 'bg-accent/20' : 'bg-muted')
+                              }`}>
+                                <Video className={`w-6 h-6 ${activeToday ? 'text-gold' : (booking.status === 'confirmed' ? 'text-accent' : 'text-muted-foreground')}`} />
+                              </div>
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <h4 className={`font-bold text-base capitalize ${activeToday ? 'text-gold' : 'text-foreground'}`}>
+                                    {booking.title}
+                                  </h4>
+                                  {activeToday && (
+                                    <Badge className="bg-gold text-black hover:bg-gold/90 font-black text-[9px] h-5 uppercase tracking-tighter">Happening Today</Badge>
+                                  )}
+                                  {!activeToday && (
+                                    <Badge variant="outline" className={`text-[10px] h-5 ${
+                                      booking.status === 'confirmed' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                                      booking.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                      'bg-red-500/10 text-red-500 border-red-500/20'
+                                    }`}>
+                                      {booking.status}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                  <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" />{booking.date}</span>
+                                  <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" />{booking.time}</span>
+                                  <span className="flex items-center gap-1.5">
+                                    <Users className="w-3.5 h-3.5" />
+                                    {booking.source === 'internship' ? 'Hub Class' : (booking.user?.username || 'Student')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              {booking.status === 'pending' && (
+                                <Button size="sm" variant="outline" className="text-green-400 border-green-500/20 hover:bg-green-500/10 h-8" onClick={() => handleAcceptClick(booking)}>
+                                  <Check className="w-3.5 h-3.5 mr-1" />
+                                  Accept
+                                </Button>
+                              )}
+                              {(booking.status === 'confirmed' || booking.source === 'internship') && booking.meetingLink && (
+                                <Button size="sm" variant="gold" className="h-8" onClick={() => window.open(booking.meetingLink, "_blank")}>
+                                  <Video className="w-3.5 h-3.5 mr-1.5" />
+                                  Join
+                                </Button>
+                              )}
+                              <Button size="sm" variant="outline" className="h-8" onClick={() => setViewSession(booking)}>
+                                <Eye className="w-3.5 h-3.5 mr-1.5" />
+                                Details
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="text-green-400 border-green-500/20 hover:bg-green-500/10 h-8" onClick={() => handleAcceptClick(booking)}>
-                            <Check className="w-3.5 h-3.5 mr-1" />
-                            Accept
-                          </Button>
-                          <Button size="sm" variant="outline" className="text-red-400 border-red-500/20 hover:bg-red-500/10 h-8" onClick={() => handleStatusUpdate(booking.id, 'cancelled')}>
-                            <X className="w-3.5 h-3.5 mr-1" />
-                            Reject
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

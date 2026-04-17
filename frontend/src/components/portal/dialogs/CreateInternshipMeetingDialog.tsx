@@ -16,7 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Video, Loader2, Calendar as CalendarIcon, RefreshCw, Users, ShieldCheck, User as UserIcon } from "lucide-react";
+import { Search, Video, Loader2, Calendar as CalendarIcon, RefreshCw, Users, ShieldCheck, User as UserIcon, Check } from "lucide-react";
 import { toast } from "sonner";
 import { CREATE_INTERNSHIP_MEETING } from "@/lib/graphql/mutations";
 import { GET_INTERNSHIP_TEAMS, GET_INTERNSHIP_MEETINGS, GET_ALL_STUDENTS, GET_ALL_TRAINERS } from "@/lib/graphql/queries";
@@ -70,6 +70,7 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
     endTime: "11:00",
     meetLink: "",
     type: "ONCE",
+    recurrenceEndDate: "",
   });
 
   const { data: teamsData, loading: teamsLoading } = useQuery(GET_INTERNSHIP_TEAMS, {
@@ -101,6 +102,7 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
       endTime: "11:00",
       meetLink: "",
       type: "ONCE",
+      recurrenceEndDate: "",
     });
     setSelectedTeams([]);
     setSelectedUsers([]);
@@ -142,6 +144,7 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
         userIds: selectedUsers,
         mentorIds: selectedMentors,
         recurrenceDays: formData.type !== "ONCE" ? recurrenceDays : undefined,
+        recurrenceEndDate: (formData.type !== "ONCE" && formData.recurrenceEndDate) ? `${formData.recurrenceEndDate}T${formData.endTime}:00` : undefined,
       }
     });
   };
@@ -174,7 +177,7 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-hidden flex flex-col">
-          <ScrollArea className="flex-1 h-[calc(90vh-140px)] custom-scrollbar">
+          <div className="flex-1 overflow-y-auto h-[calc(90vh-140px)] custom-scrollbar">
             <div className="p-8 space-y-8">
               {/* Basic Info */}
               <div className="space-y-4">
@@ -210,6 +213,21 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
                     <Input type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} className="h-12 rounded-2xl" />
                   </div>
                 </div>
+
+                {isRecurring && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-accent/70">Repeat Until (End Date)</Label>
+                      <Input 
+                        type="date" 
+                        value={formData.recurrenceEndDate} 
+                        onChange={e => setFormData({...formData, recurrenceEndDate: e.target.value})} 
+                        className="h-12 rounded-2xl border-accent/20" 
+                        min={formData.date}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Recurrence Days */}
@@ -247,7 +265,9 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
                     {teamsLoading ? <Loader2 className="w-4 h-4 animate-spin m-auto mt-20" /> : 
                       ((teamsData as any)?.internshipTeams?.items || []).map((t: any) => (
                         <div key={t.id} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-accent/5 transition-colors group cursor-pointer" onClick={() => toggleSelection(t.id, setSelectedTeams)}>
-                          <Checkbox checked={selectedTeams.includes(t.id)} className="rounded-md border-accent/30 pointer-events-none" />
+                          <div className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0", selectedTeams.includes(t.id) ? "bg-accent border-accent text-accent-foreground" : "border-border/50")}>
+                             {selectedTeams.includes(t.id) && <Check className="w-3 h-3" />}
+                          </div>
                           <div className="flex-1">
                              <p className="text-xs font-black uppercase tracking-tight leading-none">{t.name}</p>
                              <p className="text-[9px] text-muted-foreground mt-1">{t.type} Group · {t.members?.length || 0} Members</p>
@@ -275,7 +295,9 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
                       {mentorsLoading ? <Loader2 className="w-4 h-4 animate-spin m-auto mt-10" /> : 
                         filteredMentors.map((m: any) => (
                           <div key={m.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gold/5 transition-colors cursor-pointer" onClick={() => toggleSelection(m.id, setSelectedMentors)}>
-                             <Checkbox checked={selectedMentors.includes(m.id)} className="rounded-md border-gold/30 pointer-events-none" />
+                             <div className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0", selectedMentors.includes(m.id) ? "bg-accent border-accent text-accent-foreground" : "border-border/50")}>
+                                {selectedMentors.includes(m.id) && <Check className="w-3 h-3" />}
+                             </div>
                              <Avatar className="h-6 w-6">
                                <AvatarImage src={m.avatar} />
                                <AvatarFallback className="text-[8px]">{m.username?.[0]}</AvatarFallback>
@@ -319,7 +341,9 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
                                <p className="text-[10px] font-black uppercase truncate">{s.fullName || s.username}</p>
                                <p className="text-[8px] text-muted-foreground lowercase truncate">{s.email}</p>
                              </div>
-                             <Checkbox checked={selectedUsers.includes(s.id)} className="rounded-md border-accent/30 pointer-events-none" />
+                             <div className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0", selectedUsers.includes(s.id) ? "bg-accent border-accent text-accent-foreground" : "border-border/50")}>
+                                {selectedUsers.includes(s.id) && <Check className="w-3 h-3" />}
+                             </div>
                           </div>
                         ))
                      }
@@ -348,7 +372,7 @@ export function CreateInternshipMeetingDialog({ open, onOpenChange, programId }:
                 </div>
               </div>
             </div>
-          </ScrollArea>
+          </div>
         </form>
 
         <DialogFooter className="px-8 py-6 border-t border-border/10 bg-muted/20 gap-3">

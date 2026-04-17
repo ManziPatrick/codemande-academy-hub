@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { ProjectBoard } from './ProjectBoard';
 import { toast } from 'sonner';
-import { CreateInternshipTeamDialog, InternshipProjectDetailsDialog, CreateInternshipMeetingDialog } from '@/components/portal/dialogs';
+import { CreateInternshipTeamDialog, InternshipProjectDetailsDialog, CreateInternshipMeetingDialog, ManageTeamMembersDialog } from '@/components/portal/dialogs';
 import { TextEditor } from '@/components/ui/text-editor';
 import {
   Dialog,
@@ -78,6 +78,8 @@ export default function TeamManagement() {
   const [createOpen, setCreateOpen] = useState(false);
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [assignmentOpen, setAssignmentOpen] = useState(false);
+  const [manageMembersOpen, setManageMembersOpen] = useState(false);
+  const [selectedTeamForManage, setSelectedTeamForManage] = useState<any>(null);
   const [selectedTeam, setSelectedTeam] = useState<any>(null);
   const [boardTeam, setBoardTeam] = useState<any>(null);
   const [selectedProject, setSelectedProject] = useState<any>(null);
@@ -244,6 +246,12 @@ export default function TeamManagement() {
         onOpenChange={setMeetingOpen}
       />
 
+      <ManageTeamMembersDialog
+        open={manageMembersOpen}
+        onOpenChange={setManageMembersOpen}
+        team={selectedTeamForManage}
+      />
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -312,6 +320,9 @@ export default function TeamManagement() {
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-[11px] font-bold uppercase gap-2" onClick={() => handleStatusUpdate(team.id, 'on_hold')}>
                         <Clock className="w-3.5 h-3.5 text-yellow-500" /> Place On Hold
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-[11px] font-bold uppercase gap-2" onClick={() => { setSelectedTeamForManage(team); setManageMembersOpen(true); }}>
+                        <Users className="w-3.5 h-3.5 text-accent" /> Manage Members
                       </DropdownMenuItem>
                       <div className="h-px bg-border/50 my-1" />
                       <DropdownMenuItem className="text-[11px] font-bold uppercase gap-2 text-destructive" onClick={() => handleDeleteTeam(team.id, team.name)}>
@@ -382,14 +393,21 @@ export default function TeamManagement() {
                   </div>
                 </div>
 
-                {/* Interns List */}
-                <div className="space-y-3 flex-1">
-                   <div className="flex justify-between items-center px-1">
-                    <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
-                      {isIndividual ? 'Assigned Intern' : `Team Members (${team.members?.length || 0})`}
-                    </p>
-                    {isIndividual ? <User className="w-3 h-3 text-purple-500" /> : <Users className="w-3 h-3 text-accent" />}
-                  </div>
+                 {/* Interns List */}
+                 <div className="space-y-3 flex-1">
+                    <div className="flex justify-between items-center px-1">
+                     <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                       {isIndividual ? 'Assigned Intern' : `Team Members (${team.members?.length || 0})`}
+                     </p>
+                     <Button 
+                       variant="ghost" 
+                       size="icon" 
+                       className="h-6 w-6 hover:bg-accent/10 rounded-full cursor-pointer" 
+                       onClick={() => { setSelectedTeamForManage(team); setManageMembersOpen(true); }}
+                     >
+                       {isIndividual ? <Edit className="w-3 h-3 text-purple-500" /> : <Edit className="w-3 h-3 text-accent" />}
+                     </Button>
+                   </div>
                   <div className="grid grid-cols-1 gap-2">
                     {team.members?.slice(0, 3).map((member: any) => (
                       <div key={member.id} className="flex items-center gap-3 p-2.5 rounded-2xl bg-muted/10 border border-border/20 hover:bg-muted/20 transition-colors">

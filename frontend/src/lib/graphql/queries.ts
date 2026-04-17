@@ -1302,6 +1302,7 @@ export const GET_INTERNSHIP_TEAMS = gql`
           }
           role
         }
+        internshipProgramId
         internshipProjectId
         internshipProject {
           id
@@ -1572,80 +1573,21 @@ export const GET_MY_MENTEES = gql`
           details
           timestamp
         }
-        badges {
-          badge {
-            id
-            title
-            description
-            icon
-            category
-          }
-          awardedAt
-        }
-        bookings {
-          id
-          type
-          date
-          time
-          topic
-          notes
-          status
-          meetingLink
-          mentor {
-            id
-            username
-          }
-          createdAt
-        }
-      }
-      mentors {
-        id
-        username
-      }
-      progress
-      tasks {
-        id
-        title
-        status
-        priority
       }
       milestones {
         title
         completed
         date
       }
-      payment {
-        status
-        amount
-        currency
-      }
-      projects {
-        id
-        title
-        status
+      sprintReviews {
+        week
         grade
         feedback
-        conversationId
-        team {
-          userId
-          name
-          role
-          user {
-            id
-            username
-          }
-        }
-        mentors {
-          id
-          username
-        }
+        date
       }
-      createdAt
-      updatedAt
     }
   }
 `;
-
 
 
 // ========== STUDENT PROFILE QUERIES ==========
@@ -2006,6 +1948,8 @@ export const GET_INTERNSHIP_MEETINGS = gql`
         username
         fullName
       }
+      recurrenceDays
+      recurrenceEndDate
     }
   }
 `;
@@ -2020,6 +1964,8 @@ export const GET_MY_INTERNSHIP_MEETINGS = gql`
       meetLink
       startTime
       endTime
+      recurrenceDays
+      recurrenceEndDate
       host {
         id
         username

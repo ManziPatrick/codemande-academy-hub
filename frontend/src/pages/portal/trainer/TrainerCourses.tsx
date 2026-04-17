@@ -67,7 +67,7 @@ export default function TrainerCourses() {
   );
 
   const courseProjects = useMemo(() => {
-    const all = (projectsData as any)?.projects || [];
+    const all = (projectsData as any)?.projects?.items || [];
     if (!selectedCourse) return [];
     return all.filter((p: any) => p.course === selectedCourse.title);
   }, [projectsData, selectedCourse]);

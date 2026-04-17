@@ -44,8 +44,17 @@ export function CalendarGrid({ events, onEventClick }: CalendarGridProps) {
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
 
   const getEventsForDay = (day: Date) => {
-    return events.filter(event => isSameDay(new Date(event.date), day));
+    const dateStr = format(day, "yyyy-MM-dd");
+    return events.filter(event => event.date === dateStr);
   };
+
+  const monthEventsCount = useMemo(() => {
+    return events.filter(event => {
+      // Use mid-day to avoid timezone shifts during month comparison
+      const eventDate = new Date(event.date + "T12:00:00");
+      return isSameMonth(eventDate, currentMonth);
+    }).length;
+  }, [events, currentMonth]);
 
   return (
     <div className="bg-card border border-border/50 rounded-xl overflow-hidden shadow-2xl">
@@ -56,7 +65,7 @@ export function CalendarGrid({ events, onEventClick }: CalendarGridProps) {
             {format(currentMonth, "MMMM yyyy")}
           </h2>
           <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mt-0.5">
-            {events.length} Active Sessions This Month
+            {monthEventsCount} Active Sessions This Month
           </p>
         </div>
         <div className="flex items-center gap-2">

@@ -1552,6 +1552,7 @@ export const typeDefs = `#graphql
     startTime: String!
     endTime: String!
     recurrenceDays: [Int]
+    recurrenceEndDate: String
     teamIds: [ID!]!
     userIds: [ID!]
     mentorIds: [ID!]
@@ -1722,9 +1723,12 @@ export const typeDefs = `#graphql
       type: String!
       startTime: String!
       endTime: String!
-      teamIds: [ID!]!
+      teamIds: [ID!]
+      userIds: [ID!]
+      mentorIds: [ID!]
       meetLink: String
       recurrenceDays: [Int]
+      recurrenceEndDate: String
     ): InternshipMeeting
     
     updateInternshipMeeting(
@@ -1738,6 +1742,8 @@ export const typeDefs = `#graphql
       userIds: [ID!]
       mentorIds: [ID!]
       meetLink: String
+      recurrenceDays: [Int]
+      recurrenceEndDate: String
     ): InternshipMeeting
     
     deleteInternshipMeeting(id: ID!): Boolean

@@ -96,7 +96,7 @@ export default function TrainerAssignments() {
     links: [{ title: "", url: "" }]
   });
 
-  const projects = (data as any)?.projects || [];
+  const projects = (data as any)?.projects?.items || [];
 
   // Filter pending and reviewed
   // Assuming a project is "pending" if it has been submitted (submittedAt is set) but not graded (grade is null)
