@@ -68,7 +68,7 @@ export default function SuperAdminAdmins() {
   const [createUserMutation] = useMutation(CREATE_USER);
   const [deleteUserMutation] = useMutation(DELETE_USER);
 
-  const allAdmins = ((data as any)?.users || []).filter((u: any) => u.role === "admin" || u.role === "super_admin");
+  const allAdmins = ((data as any)?.users?.items || []).filter((u: any) => u.role === "admin" || u.role === "super_admin");
 
   const getInitials = (name: string) => (name || "A").split(" ").map(n => n[0]).join("").toUpperCase();
 

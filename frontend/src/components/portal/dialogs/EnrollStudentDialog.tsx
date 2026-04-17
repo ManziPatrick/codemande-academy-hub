@@ -17,7 +17,7 @@ interface EnrollStudentDialogProps {
 
 export function EnrollStudentDialog({ open, onOpenChange, course }: EnrollStudentDialogProps) {
     const [searchTerm, setSearchTerm] = useState("");
-    const { data: usersData, loading: usersLoading } = useQuery(GET_USERS);
+    const { data: usersData, loading: usersLoading } = useQuery(GET_USERS, { variables: { limit: 200 } });
 
     const [enrollStudent, { loading: enrolling }] = useMutation(ENROLL_STUDENT_IN_COURSE, {
         refetchQueries: [{ query: GET_COURSES }],
@@ -30,7 +30,7 @@ export function EnrollStudentDialog({ open, onOpenChange, course }: EnrollStuden
     });
 
     const students = useMemo(() => {
-        const allUsers = (usersData as any)?.users || [];
+        const allUsers = (usersData as any)?.users?.items || [];
         return allUsers.filter((u: any) => u.role === 'student' || u.role === 'user' || u.role === 'intern');
     }, [usersData]);
 

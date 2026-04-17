@@ -24,7 +24,7 @@ export function StartProjectDialog({ open, onOpenChange, template }: StartProjec
 
     // Fetch users for team selection
     const { data: usersData, loading: usersLoading } = useQuery(GET_USERS);
-    const users = (usersData as any)?.users || [];
+    const users = (usersData as any)?.users?.items || [];
 
     const [requestProjectStart, { loading: submitting }] = useMutation(REQUEST_PROJECT_START, {
         refetchQueries: [{ query: GET_MY_PROJECTS }],

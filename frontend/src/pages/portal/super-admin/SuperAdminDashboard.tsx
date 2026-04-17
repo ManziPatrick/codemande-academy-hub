@@ -40,7 +40,7 @@ export default function SuperAdminDashboard() {
   };
   const liveStats = dashboardData.stats;
   
-  const allAdmins = ((usersData as any)?.users || []).filter((u: any) => u.role === "admin" || u.role === "super_admin");
+  const allAdmins = ((usersData as any)?.users?.items || []).filter((u: any) => u.role === "admin" || u.role === "super_admin");
   const recentActivity = (activityData as any)?.recentActivity || [];
 
   const systemStats = [

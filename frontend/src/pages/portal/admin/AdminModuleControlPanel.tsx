@@ -26,7 +26,7 @@ export default function AdminModuleControlPanel() {
 
   const { data: usersData, loading: loadingUsers } = useQuery(GET_USERS);
 
-  const students = ((usersData as any)?.users || []).filter((user: any) => user.role === 'student');
+  const students = ((usersData as any)?.users?.items || []).filter((user: any) => user.role === 'student');
 
   const runAction = async (action: () => Promise<any>, successMessage: string) => {
     try {
