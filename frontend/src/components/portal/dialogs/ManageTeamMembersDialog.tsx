@@ -19,7 +19,7 @@ export function ManageTeamMembersDialog({ open, onOpenChange, team }: ManageTeam
   const [selectedUserId, setSelectedUserId] = useState("");
 
   const { data: applicationsData, loading: appsLoading } = useQuery(GET_INTERNSHIP_APPLICATIONS, {
-    variables: { programId: team?.internshipProgramId, status: "approved" },
+    variables: { programId: team?.internshipProgramId },
     skip: !open || !team?.internshipProgramId,
     fetchPolicy: 'network-only'
   });
@@ -44,7 +44,9 @@ export function ManageTeamMembersDialog({ open, onOpenChange, team }: ManageTeam
   const applications = (applicationsData as any)?.internshipApplications?.items || (applicationsData as any)?.internshipApplications || [];
   const uniqueStudentsMap = new Map();
   applications.forEach((app: any) => {
-    if (app.user) uniqueStudentsMap.set(app.user.id, app.user);
+    if (app.user && !uniqueStudentsMap.has(app.user.id)) {
+        uniqueStudentsMap.set(app.user.id, { ...app.user, applicationStatus: app.status });
+    }
   });
   const allApprovedStudents = Array.from(uniqueStudentsMap.values());
 
@@ -127,7 +129,7 @@ export function ManageTeamMembersDialog({ open, onOpenChange, team }: ManageTeam
                 <SelectContent className="rounded-xl border-border/50">
                   {availableStudents.map((s: any) => (
                     <SelectItem key={s.id} value={s.id} className="rounded-lg">
-                      {s.fullName || s.username}
+                      {s.fullName || s.username} — [{String(s.applicationStatus || 'unknown').toUpperCase()}]
                     </SelectItem>
                   ))}
                 </SelectContent>

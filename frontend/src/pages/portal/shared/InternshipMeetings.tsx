@@ -99,6 +99,25 @@ export default function InternshipMeetings() {
         current = addDays(current, 1);
         if (instances.length > 365) break;
       }
+    } else if (m.type === 'MONTHLY') {
+      let current = startDateObj;
+      if (isBefore(current, rangeStart)) {
+        // Find first occurrence after rangeStart
+        while (isBefore(current, rangeStart)) {
+          current = new Date(current.setMonth(current.getMonth() + 1));
+        }
+      }
+
+      while (isBefore(current, rangeEnd) || isSameDay(current, rangeEnd)) {
+        instances.push({
+          ...baseEvent,
+          id: `${m.id}-${format(current, "yyyy-MM-dd")}`,
+          date: format(current, "yyyy-MM-dd"),
+          time: format(startDateObj, "HH:mm"),
+        });
+        current = new Date(current.setMonth(current.getMonth() + 1));
+        if (instances.length > 365) break;
+      }
     } else {
       instances.push({
         ...baseEvent,
@@ -117,6 +136,7 @@ export default function InternshipMeetings() {
     const now = new Date();
 
     return allEvents.filter((event: any) => {
+      if (event.status && event.status !== 'confirmed') return false;
       const eventDate = new Date(event.date + "T12:00:00");
       
       // Rule: Hide past events

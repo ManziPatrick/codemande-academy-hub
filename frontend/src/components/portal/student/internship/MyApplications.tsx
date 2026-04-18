@@ -30,7 +30,8 @@ export function MyApplications({ onGoToDashboard }: MyApplicationsProps) {
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
-    const date = new Date(dateString);
+    const ts = Number(dateString);
+    const date = isNaN(ts) ? new Date(dateString) : new Date(ts);
     if (isNaN(date.getTime())) return "N/A";
     return date.toLocaleDateString('en-US', { 
         year: 'numeric', 

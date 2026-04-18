@@ -10,6 +10,7 @@ const bookingSchema = new mongoose.Schema({
   notes: { type: String },
   status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
   meetingLink: { type: String },
+  isDeleted: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export const Booking = mongoose.model('Booking', bookingSchema);

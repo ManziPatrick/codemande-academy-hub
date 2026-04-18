@@ -69,7 +69,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function AdminSchedule() {
-  const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year' | 'all'>('month');
+  const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'year' | 'all' | 'pending'>('month');
   const [sessionTypeFilter, setSessionTypeFilter] = useState<'all' | 'mentorship' | 'internship'>('all');
   
   // Queries
@@ -92,6 +92,7 @@ export default function AdminSchedule() {
     onCompleted: () => {
       toast.success("Meeting updated successfully");
       refetchMeetings();
+      refetchBookings();
     },
     onError: (err) => toast.error(`Failed to update: ${err.message}`)
   });
@@ -107,6 +108,8 @@ export default function AdminSchedule() {
   const [viewSession, setViewSession] = useState<any | null>(null);
   const [editSession, setEditSession] = useState<any | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<any | null>(null);
+  const [confirmingBooking, setConfirmingBooking] = useState<any | null>(null);
+  const [manualLink, setManualLink] = useState("");
 
   const allBookings = (bookingsData as any)?.bookings?.items || [];
   const allInternshipMeetings = (meetingsData as any)?.getInternshipMeetings || [];
@@ -143,7 +146,7 @@ export default function AdminSchedule() {
         title: m.title,
         mentor: m.host,
         meetingLink: m.meetLink,
-        status: 'confirmed',
+        status: m.status || 'confirmed',
         source: 'internship'
       };
 
@@ -177,6 +180,24 @@ export default function AdminSchedule() {
           current = addDays(current, 1);
           if (instances.length > 365) break;
         }
+      } else if (m.type === 'MONTHLY') {
+        let current = startDateObj;
+        if (isBefore(current, rangeStart)) {
+          while (isBefore(current, rangeStart)) {
+            current = new Date(current.setMonth(current.getMonth() + 1));
+          }
+        }
+
+        while (isBefore(current, rangeEnd) || isSameDay(current, rangeEnd)) {
+          instances.push({
+            ...baseEvent,
+            id: `${m.id}-${format(current, "yyyy-MM-dd")}`,
+            date: format(current, "yyyy-MM-dd"),
+            time: format(startDateObj, "HH:mm"),
+          });
+          current = new Date(current.setMonth(current.getMonth() + 1));
+          if (instances.length > 365) break;
+        }
       } else {
         instances.push({
           ...baseEvent,
@@ -197,22 +218,24 @@ export default function AdminSchedule() {
     const now = new Date();
 
     return calendarEvents.filter((event: any) => {
-      // Filter by type
+      // 1. Approval Filter (Priority)
+      if (timeFilter === 'pending') return event.status === 'pending';
+
+      // 2. Type Filter
       if (sessionTypeFilter === 'mentorship' && event.source !== 'booking') return false;
       if (sessionTypeFilter === 'internship' && event.source !== 'internship') return false;
 
       const eventDate = new Date(event.date + "T12:00:00");
       
-      // Admin might want to see past events too, but let's hide older than 1 day by default
-      if (isBefore(eventDate, addDays(today, -1))) return false;
-
-      if (timeFilter === 'all') return true;
+      // 3. Date Filters
       if (timeFilter === 'today') return isToday(eventDate);
       if (timeFilter === 'week') return isSameWeek(eventDate, now);
       if (timeFilter === 'month') return isSameMonth(eventDate, now);
       if (timeFilter === 'year') return isSameYear(eventDate, now);
+      if (timeFilter === 'all') return true;
       
-      return true;
+      // Default: show everything from yesterday onwards if no specific time filter
+      return !isBefore(eventDate, addDays(today, -1));
     }).sort((a: any, b: any) => {
       const aTime = new Date(`${a.date}T${a.time}:00`).getTime();
       const bTime = new Date(`${b.date}T${b.time}:00`).getTime();
@@ -260,6 +283,24 @@ export default function AdminSchedule() {
     setDeleteConfirm(null);
   };
 
+  const handleStatusUpdate = async (id: string, status: string, providedLink?: string, source?: string) => {
+    let meetingLink = providedLink || "";
+    if (source === 'internship') {
+      await updateInternshipMeeting({
+        variables: { id, status, meetLink: meetingLink }
+      });
+    } else {
+      await updateBookingStatus({
+        variables: { id, status, meetingLink }
+      });
+    }
+  };
+
+  const handleAcceptClick = (booking: any) => {
+    setConfirmingBooking(booking);
+    setManualLink(booking.meetingLink || "");
+  };
+
   return (
     <PortalLayout>
       <div className="space-y-6">
@@ -291,7 +332,7 @@ export default function AdminSchedule() {
               { id: 'today', label: 'Today' },
               { id: 'week', label: 'Week' },
               { id: 'month', label: 'Month' },
-              { id: 'year', label: 'Year' },
+              { id: 'pending', label: 'To Approve' },
               { id: 'all', label: 'All Time' },
             ].map((filter) => (
               <Button
@@ -332,7 +373,7 @@ export default function AdminSchedule() {
         <div className="grid lg:grid-cols-4 gap-6">
           <div className="lg:col-span-3 space-y-6">
             <CalendarGrid
-              events={calendarEvents}
+              events={filteredEvents}
               onEventClick={(event) => setViewSession(event)}
             />
 
@@ -405,7 +446,12 @@ export default function AdminSchedule() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              {session.meetingLink && (
+                              {session.status === 'pending' && (
+                                <Button size="sm" variant="outline" className="text-green-500 border-green-500/20 hover:bg-green-500/10 h-8" onClick={() => handleAcceptClick(session)}>
+                                  Accept
+                                </Button>
+                              )}
+                              {session.meetingLink && session.status !== 'pending' && (
                                 <Button size="sm" variant="gold" className="h-8" onClick={() => window.open(session.meetingLink, "_blank")}>
                                   Join
                                 </Button>
@@ -516,6 +562,53 @@ export default function AdminSchedule() {
         title={deleteConfirm?.source === 'booking' ? "Cancel Mentorship Booking" : "Delete Internship Sync"}
         description="This action cannot be undone. Notifications will be sent to the host and attendees."
       />
+
+      {/* Confirmation Dialog for Approvals */}
+      <Dialog open={!!confirmingBooking} onOpenChange={(open) => !open && setConfirmingBooking(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Check className="w-5 h-5 text-green-500" />
+              Approve Session
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="p-3 bg-accent/5 rounded-lg border border-accent/10">
+              <p className="text-sm font-medium">{confirmingBooking?.title}</p>
+              <p className="text-xs text-muted-foreground">{confirmingBooking?.date} at {confirmingBooking?.time}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="meeting-link" className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                Meeting Link
+              </Label>
+              <Input
+                id="meeting-link"
+                value={manualLink}
+                onChange={(e) => setManualLink(e.target.value)}
+                placeholder="https://meet.google.com/xxx-yyyy-zzz"
+                className="bg-background border-border focus:border-accent"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Enter the meeting link to confirm this session.
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConfirmingBooking(null)} className="flex-1">
+              Cancel
+            </Button>
+            <Button variant="gold" onClick={() => {
+              handleStatusUpdate(confirmingBooking.id.split('-')[0], 'confirmed', manualLink, confirmingBooking.source);
+              setConfirmingBooking(null);
+            }}
+              disabled={!manualLink || manualLink.length < 5}
+              className="flex-1">
+              Approve & Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PortalLayout>
   );
 }

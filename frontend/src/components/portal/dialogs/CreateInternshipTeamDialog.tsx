@@ -63,7 +63,7 @@ export function CreateInternshipTeamDialog({ open, onOpenChange, preSelectedProg
   });
   const { data: usersData } = useQuery(GET_USERS);
   const { data: applicationsData, loading: appsLoading } = useQuery(GET_INTERNSHIP_APPLICATIONS, {
-    variables: { programId: formData.internshipProgramId, status: "approved" },
+    variables: { programId: formData.internshipProgramId },
     skip: !formData.internshipProgramId,
     fetchPolicy: 'network-only'
   });
@@ -73,7 +73,9 @@ export function CreateInternshipTeamDialog({ open, onOpenChange, preSelectedProg
   const applications = (applicationsData as any)?.internshipApplications?.items || (applicationsData as any)?.internshipApplications || [];
   const uniqueStudentsMap = new Map();
   applications.forEach((app: any) => {
-    if (app.user) uniqueStudentsMap.set(app.user.id, app.user);
+    if (app.user && !uniqueStudentsMap.has(app.user.id)) {
+        uniqueStudentsMap.set(app.user.id, { ...app.user, applicationStatus: app.status });
+    }
   });
   const students = Array.from(uniqueStudentsMap.values());
 
@@ -222,7 +224,7 @@ export function CreateInternshipTeamDialog({ open, onOpenChange, preSelectedProg
                   <SelectContent className="rounded-xl border-border/50">
                     {students.filter((s:any) => !selectedStudentIds.includes(s.id)).map((s: any) => (
                       <SelectItem key={s.id} value={s.id} className="rounded-lg text-xs">
-                        {s.fullName || s.username}
+                        {s.fullName || s.username} — [{String(s.applicationStatus || 'unknown').toUpperCase()}]
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -242,7 +244,7 @@ export function CreateInternshipTeamDialog({ open, onOpenChange, preSelectedProg
                 <SelectContent className="rounded-xl border-border/50">
                   {students.map((s: any) => (
                     <SelectItem key={s.id} value={s.id} className="rounded-lg">
-                      {s.fullName || s.username}
+                      {s.fullName || s.username} — [{String(s.applicationStatus || 'unknown').toUpperCase()}]
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { APPLY_TO_INTERNSHIP_PROGRAM } from "@/lib/graphql/mutations";
-import { GET_INTERNSHIP_PROGRAM_FOR_APPLY, GET_INTERNSHIP_PROGRAMS, GET_MY_INTERNSHIP_APPLICATIONS } from "@/lib/graphql/queries";
+import { GET_INTERNSHIP_PROGRAM, GET_INTERNSHIP_PROGRAMS, GET_MY_INTERNSHIP_APPLICATIONS } from "@/lib/graphql/queries";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,14 +30,12 @@ import {
   AlertCircle,
   ArrowRight,
   History,
-  FileText,
   Target,
   Sparkles,
   Info,
   ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { InternshipPaymentDialog } from "../student/internship/InternshipPaymentDialog";
 
 type Step = "info" | "success";
@@ -64,13 +63,20 @@ export function ApplyInternshipDialog({
   const [availability, setAvailability] = useState<string>("");
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
-  const { data: programData, loading: isLoadingProgram } = useQuery(GET_INTERNSHIP_PROGRAM_FOR_APPLY, {
+  // Fetch program details (no auth required)
+  const { data: programData, loading: isLoadingProgram } = useQuery(GET_INTERNSHIP_PROGRAM, {
     variables: { id: internshipProgramId },
     skip: !internshipProgramId || !open,
   });
 
+  // Read myApplications from the already-cached programs query
+  const { data: catalogData } = useQuery(GET_INTERNSHIP_PROGRAMS, {
+    skip: !open,
+    fetchPolicy: 'cache-first',
+  });
+
   const program = (programData as any)?.internshipProgram;
-  const myApplications = (programData as any)?.myInternshipApplications || [];
+  const myApplications = (catalogData as any)?.myInternshipApplications || [];
   const hasAlreadyApplied = myApplications.some((app: any) => app.internshipProgramId === internshipProgramId);
 
   // Persistence (Memo) Logic
@@ -183,7 +189,7 @@ export function ApplyInternshipDialog({
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="w-[95vw] sm:max-w-xl max-h-[95vh] flex flex-col p-0 overflow-hidden border-border/50 rounded-3xl shadow-2xl">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b bg-muted/5">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b bg-muted/5 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <DialogTitle className="flex items-center gap-2">
@@ -225,9 +231,8 @@ export function ApplyInternshipDialog({
                 </Button>
             </div>
         ) : (
-            <div className="flex-1 flex flex-col overflow-hidden h-[calc(95vh-140px)]">
-              <ScrollArea className="flex-1">
-                <div className="px-6 py-8 custom-scrollbar">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 overflow-y-auto px-6 py-6">
                 {step === "info" ? (
                   <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {/* Candidate Profile */}
@@ -403,7 +408,6 @@ export function ApplyInternshipDialog({
                         className="w-full h-12 rounded-xl text-sm font-bold shadow-premium flex items-center gap-2 group" 
                         onClick={() => {
                             if (paymentData) {
-                                // Close this and handled automatically via useEffect or manually here
                                 handleClose();
                             } else {
                                 handleClose();
@@ -420,35 +424,34 @@ export function ApplyInternshipDialog({
                   </div>
                 )}
               </div>
-            </ScrollArea>
 
-            {/* ACTION FOOTER */}
-            {step === "info" && (
-                <div className="px-6 py-5 border-t bg-muted/5 flex items-center justify-between gap-3">
-                    <Button variant="ghost" className="text-muted-foreground font-bold hover:bg-muted/10 rounded-xl h-12 px-6" onClick={handleClose}>
-                        Cancel
-                    </Button>
-                    <Button
-                        variant="gold"
-                        className="px-10 h-12 rounded-xl gap-2 shadow-premium hover:-translate-y-0.5 transition-all text-sm font-bold flex items-center justify-center min-w-[180px]"
-                        onClick={handleApply}
-                        disabled={isSubmitting}
-                    >
-                        {isSubmitting ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Processing...
-                            </>
-                        ) : (
-                            <>
-                                {program?.price > 0 ? "Submit & Pay" : "Submit Application"}
-                                <ArrowRight className="w-4 h-4" />
-                            </>
-                        )}
-                    </Button>
-                </div>
-            )}
-          </div>
+              {/* ACTION FOOTER */}
+              {step === "info" && (
+                  <div className="px-6 py-5 border-t bg-muted/5 flex items-center justify-between gap-3 flex-shrink-0">
+                      <Button variant="ghost" className="text-muted-foreground font-bold hover:bg-muted/10 rounded-xl h-12 px-6" onClick={handleClose}>
+                          Cancel
+                      </Button>
+                      <Button
+                          variant="gold"
+                          className="px-10 h-12 rounded-xl gap-2 shadow-premium hover:-translate-y-0.5 transition-all text-sm font-bold flex items-center justify-center min-w-[180px]"
+                          onClick={handleApply}
+                          disabled={isSubmitting}
+                      >
+                          {isSubmitting ? (
+                              <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  Processing...
+                              </>
+                          ) : (
+                              <>
+                                  {program?.price > 0 ? "Submit & Pay" : "Submit Application"}
+                                  <ArrowRight className="w-4 h-4" />
+                              </>
+                          )}
+                      </Button>
+                  </div>
+              )}
+            </div>
         )}
       </DialogContent>
 

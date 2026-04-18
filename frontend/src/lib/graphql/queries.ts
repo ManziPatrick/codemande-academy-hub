@@ -1156,6 +1156,12 @@ export const GET_INTERNSHIP_PROGRAM = gql`
       currency
       eligibility
       rules
+      applicationQuestions {
+        label
+        type
+        required
+        options
+      }
     }
   }
 `;
@@ -1912,7 +1918,6 @@ export const GET_INTERNSHIP_PROGRAM_FOR_APPLY = gql`
       price
       currency
       applicationQuestions {
-        id
         label
         type
         required
@@ -1950,6 +1955,7 @@ export const GET_INTERNSHIP_MEETINGS = gql`
       }
       recurrenceDays
       recurrenceEndDate
+      status
     }
   }
 `;
@@ -1971,6 +1977,7 @@ export const GET_MY_INTERNSHIP_MEETINGS = gql`
         username
         fullName
       }
+      status
     }
   }
 `;

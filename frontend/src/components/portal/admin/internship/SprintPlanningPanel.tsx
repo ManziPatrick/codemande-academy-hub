@@ -177,13 +177,13 @@ export function SprintPlanningPanel({
 
                       <div className="flex items-center gap-4 text-[10px] font-bold text-muted-foreground">
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(sprint.startDate).toLocaleDateString()}
+                          <Calendar className="w-4 h-4 mr-1 text-muted-foreground" />
+                          {new Date(!isNaN(Number(sprint.startDate)) ? Number(sprint.startDate) : sprint.startDate).toLocaleDateString()}
                         </div>
                         <ChevronRight className="w-3 h-3" />
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {new Date(sprint.endDate).toLocaleDateString()}
+                          <Calendar className="w-4 h-4 mr-1 text-muted-foreground" />
+                          {new Date(!isNaN(Number(sprint.endDate)) ? Number(sprint.endDate) : sprint.endDate).toLocaleDateString()}
                         </div>
                       </div>
 

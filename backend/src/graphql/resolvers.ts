@@ -254,18 +254,30 @@ export const resolvers = {
           return [...acc, ...course.studentsEnrolled];
         }, []);
 
+        // Broaden: allow trainers to see unassigned pending sessions GLOBALLY, 
+        // OR sessions for their specific students
+        filter.$or = [
+          { userId: context.user.id }, 
+          { mentorId: context.user.id }
+        ];
+
         if (studentIds.length > 0) {
           filter.$or.push({ userId: { $in: studentIds }, mentorId: null });
         }
+        
+        // Add Global Queue: Unassigned pending sessions
+        filter.$or.push({ mentorId: null, status: 'pending' });
       }
 
       if (status) filter.status = status;
+      filter.isDeleted = { $ne: true };
       return await Booking.find(filter).populate('userId mentorId').sort({ createdAt: -1 });
     },
 
-    getInternshipMeetings: async (_: any, { teamId, programId }: any, context: any) => {
+    getInternshipMeetings: async (_: any, { teamId, programId, status }: any, context: any) => {
       if (!context.user) throw new Error('Not authenticated');
       const filter: any = { isDeleted: false };
+      if (status) filter.status = status;
       if (teamId) filter.teamIds = teamId;
       if (programId) {
         // Find teams in this program first
@@ -675,13 +687,13 @@ export const resolvers = {
 
       const skip = (page - 1) * limit;
       const [items, totalCount] = await Promise.all([
-        Booking.find({ isDeleted: false })
+        Booking.find({ isDeleted: { $ne: true } })
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit)
           .populate('userId')
           .populate('mentorId'),
-        Booking.countDocuments({ isDeleted: false })
+        Booking.countDocuments({ isDeleted: { $ne: true } })
       ]);
 
       const totalPages = Math.ceil(totalCount / limit);

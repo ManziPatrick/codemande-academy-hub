@@ -677,7 +677,7 @@ export const typeDefs = `#graphql
     certificate(id: ID!): Certificate
     
     # Meetings
-    getInternshipMeetings(teamId: ID, programId: ID): [InternshipMeeting]
+    getInternshipMeetings(teamId: ID, programId: ID, status: String): [InternshipMeeting]
     getMyInternshipMeetings: [InternshipMeeting]
     
     # Internships
@@ -1541,6 +1541,7 @@ export const typeDefs = `#graphql
     DAILY
     WEEKLY
     MONTHLY
+    WORKSHOP
   }
 
   type InternshipMeeting {
@@ -1559,6 +1560,7 @@ export const typeDefs = `#graphql
     teams: [InternshipTeam]
     hostId: ID!
     host: User
+    status: String
     createdAt: String
     updatedAt: String
   }

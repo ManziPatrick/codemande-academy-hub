@@ -223,9 +223,9 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
         instances.push(baseEvent);
       }
       return instances;
-   }).sort((a: any, b: any) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
+   }).sort((a: any, b: any) => new Date(!isNaN(Number(a.startTime)) ? Number(a.startTime) : a.startTime).getTime() - new Date(!isNaN(Number(b.startTime)) ? Number(b.startTime) : b.startTime).getTime())
    .filter((m: any) => {
-      const eventDate = new Date(m.startTime);
+      const eventDate = new Date(!isNaN(Number(m.startTime)) ? Number(m.startTime) : m.startTime);
       // Show today and future on sidebar (delect after that day)
       return eventDate >= startOfToday();
    });
@@ -364,7 +364,7 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
                         </div>
                       ) : (
                         milestones.map((milestone: any, idx: number) => {
-                           const isPast = milestone.deadline ? new Date(milestone.deadline) < new Date() : false;
+                           const isPast = milestone.deadline ? new Date(!isNaN(Number(milestone.deadline)) ? Number(milestone.deadline) : milestone.deadline) < new Date() : false;
                            const isCompleted = milestone.completed;
                            const milestoneSubmission = submissions.find((sub: any) => sub.milestoneId === milestone.id);
                            
@@ -391,7 +391,7 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
                                          <div className="flex items-center gap-3 mt-1.5">
                                             <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                                                <Calendar className="w-3.5 h-3.5 text-accent" />
-                                               Target: {milestone.deadline ? new Date(milestone.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD'}
+                                               Target: {milestone.deadline ? new Date(!isNaN(Number(milestone.deadline)) ? Number(milestone.deadline) : milestone.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD'}
                                             </div>
                                             {isPast && !isCompleted && (
                                               <Badge variant="destructive" className="text-[9px] font-black tracking-widest uppercase">Overdue</Badge>
@@ -526,7 +526,7 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
                   ) : (
                     expandedMeetings
                       .map((meeting: any) => {
-                        const activeToday = isToday(new Date(meeting.startTime));
+                        const activeToday = isToday(new Date(!isNaN(Number(meeting.startTime)) ? Number(meeting.startTime) : meeting.startTime));
                         return (
                           <div key={meeting.id} className={`group p-5 rounded-3xl bg-background border transition-all duration-300 relative overflow-hidden ${
                             activeToday ? 'border-gold shadow-2xl shadow-gold/10' : 'border-border/50 hover:border-gold/30 hover:shadow-xl'
@@ -542,7 +542,7 @@ export function MyInternshipDashboard({ team, loading, enrolledCount = 0, onBrow
                             </div>
                             <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-3">
                                <Clock className={`w-3 h-3 ${activeToday ? 'text-gold' : 'text-gold/60'}`} />
-                               {format(new Date(meeting.startTime), "MMM dd, HH:mm")}
+                               {format(new Date(!isNaN(Number(meeting.startTime)) ? Number(meeting.startTime) : meeting.startTime), "MMM dd, HH:mm")}
                             </div>
                             <div className={`flex items-center justify-between mt-4 pt-4 border-t ${activeToday ? 'border-gold/20' : 'border-border/40'}`}>
                                <div className="flex items-center gap-2">

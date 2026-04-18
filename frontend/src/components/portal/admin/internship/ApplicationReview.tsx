@@ -88,8 +88,10 @@ export default function ApplicationReview() {
                   </div>
                   <p className="text-sm text-muted-foreground">Applying for: {app.internshipProgram?.title}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="outline">{app.user?.studentProfile?.school || 'Unknown School'}</Badge>
-                    <span className="text-xs text-muted-foreground">Applied: {new Date(app.createdAt).toLocaleDateString()}</span>
+                    {app.user?.studentProfile?.school && (
+                        <Badge variant="outline">{app.user.studentProfile.school}</Badge>
+                    )}
+                    <span className="text-xs text-muted-foreground">Applied: {new Date(!isNaN(Number(app.createdAt)) ? Number(app.createdAt) : app.createdAt).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>

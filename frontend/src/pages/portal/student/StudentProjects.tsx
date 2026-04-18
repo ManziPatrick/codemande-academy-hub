@@ -328,7 +328,7 @@ export default function StudentProjects() {
                                   <AlertCircle className="w-5 h-5 text-blue-400" />
                                   <div>
                                     <p className="font-medium text-card-foreground">Submitted for Review</p>
-                                    <p className="text-xs text-card-foreground/60">Submitted on {project.submittedAt}</p>
+                                    <p className="text-xs text-card-foreground/60">Submitted on {project.submittedAt ? new Date(!isNaN(Number(project.submittedAt)) ? Number(project.submittedAt) : project.submittedAt).toLocaleDateString() : 'N/A'}</p>
                                   </div>
                                 </div>
                               </div>
@@ -357,7 +357,9 @@ export default function StudentProjects() {
                                   <Calendar className="w-4 h-4 text-accent" />
                                   <span className="text-sm font-medium text-card-foreground">Deadline</span>
                                 </div>
-                                <p className="text-lg font-semibold text-card-foreground">{project.deadline}</p>
+                                <p className="text-lg font-semibold text-card-foreground">
+                                  {new Date(!isNaN(Number(project.deadline)) ? Number(project.deadline) : project.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </p>
                                 <p className="text-xs text-accent">{project.daysLeft} days remaining</p>
                               </div>
                             )}

@@ -13,6 +13,7 @@ export interface IInternshipMeeting extends Document {
   userIds: mongoose.Types.ObjectId[]; // Selective users
   mentorIds: mongoose.Types.ObjectId[]; // Selective trainers/mentors
   hostId: mongoose.Types.ObjectId; // Trainer/Admin who created it
+  status: 'pending' | 'confirmed' | 'cancelled';
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -36,6 +37,7 @@ const InternshipMeetingSchema: Schema = new Schema(
     userIds: [{ type: Schema.Types.ObjectId, ref: 'User', index: true }],
     mentorIds: [{ type: Schema.Types.ObjectId, ref: 'User', index: true }],
     hostId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    status: { type: String, enum: ['pending', 'confirmed', 'cancelled'], default: 'confirmed', index: true },
     isDeleted: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }

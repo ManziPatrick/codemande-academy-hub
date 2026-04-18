@@ -161,7 +161,7 @@ export default function InternshipSubmissionReview() {
                                     <div className="flex items-center justify-between text-[10px] text-muted-foreground font-medium border-t border-border/10 pt-4">
                                         <div className="flex items-center gap-1.5">
                                             <Clock className="w-3 h-3 text-gold" />
-                                            {format(new Date(submission.createdAt), "MMM dd, yyyy")}
+                                            {format(new Date(!isNaN(Number(submission.createdAt)) ? Number(submission.createdAt) : submission.createdAt), "MMM dd, yyyy")}
                                         </div>
                                         <div className="text-gold uppercase font-black cursor-pointer hover:underline flex items-center gap-1">
                                             Review Work <RefreshCw className="w-3 h-3" />

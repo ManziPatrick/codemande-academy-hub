@@ -24,7 +24,8 @@ import { format } from "date-fns";
 
 const safeFormatDate = (dateString: any, formatStr: string = 'HH:mm') => {
     if (!dateString) return '';
-    const date = new Date(dateString);
+    const ts = Number(dateString);
+    const date = isNaN(ts) ? new Date(dateString) : new Date(ts);
     if (isNaN(date.getTime())) return '';
     return format(date, formatStr);
 };

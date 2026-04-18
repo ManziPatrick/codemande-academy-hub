@@ -67,7 +67,7 @@ export default function InternshipActivityLogs() {
             {logs.map((log: any) => (
               <div key={log.id} className="flex gap-4 border-b pb-4 last:border-0">
                 <div className="min-w-[100px] text-xs text-muted-foreground">
-                  {new Date(log.createdAt).toLocaleString()}
+                  {new Date(!isNaN(Number(log.createdAt)) ? Number(log.createdAt) : log.createdAt).toLocaleString()}
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
