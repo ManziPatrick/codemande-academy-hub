@@ -146,6 +146,26 @@ const calculateInternshipProgress = async (internship: any) => {
   return Math.min(100, Math.round(baseProgress + stageContribution));
 }
 
+const toGraphQLId = (value: any): string | null => {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'bigint') return String(value);
+  if (Buffer.isBuffer(value)) return value.toString('hex');
+
+  if (typeof value === 'object') {
+    if (value._id !== undefined) return toGraphQLId(value._id);
+    if (value.id !== undefined && typeof value.id !== 'function') return toGraphQLId(value.id);
+    if (value.type === 'Buffer' && Array.isArray(value.data)) return Buffer.from(value.data).toString('hex');
+    if (typeof value.toHexString === 'function') return value.toHexString();
+    if (typeof value.toString === 'function') {
+      const str = value.toString();
+      if (str && str !== '[object Object]') return str;
+    }
+  }
+
+  return null;
+};
+
 export const resolvers = {
   Upload: GraphQLUpload,
   Query: {
@@ -194,14 +214,22 @@ export const resolvers = {
         AssignmentSubmission.countDocuments(filter)
       ]);
 
-      const items = (submissions as any).map((sub: any) => ({
-        ...sub._doc,
-        id: sub._id,
-        user: sub.userId,
-        userId: sub.userId?._id || sub.userId,
-        course: sub.courseId,
-        courseId: sub.courseId?._id || sub.courseId
-      }));
+      const items = (submissions as any)
+        .map((sub: any) => {
+          const userId = toGraphQLId(sub.userId?._id || sub.userId);
+          const courseId = toGraphQLId(sub.courseId?._id || sub.courseId);
+          if (!userId || !courseId) return null;
+
+          return {
+            ...sub._doc,
+            id: toGraphQLId(sub._id) || sub._id,
+            user: sub.userId,
+            userId,
+            course: sub.courseId,
+            courseId
+          };
+        })
+        .filter(Boolean);
 
       const totalPages = Math.ceil(totalCount / limit);
       return {
@@ -5567,7 +5595,7 @@ export const resolvers = {
     },
   },
   User: {
-    id: (parent: any) => parent.id || parent._id || parent.toString(),
+    id: (parent: any) => toGraphQLId(parent.id || parent._id || parent) || '',
     streak: async (parent: any) => {
       if (parent.academicStatus === 'active' || parent.role === 'student') {
         return Math.min((parent.level || 1) * 3 + Math.floor(Math.random() * 3), 100);
@@ -5710,7 +5738,7 @@ export const resolvers = {
     }
   },
   Course: {
-    id: (parent: any) => parent.id || parent._id || parent.toString(),
+    id: (parent: any) => toGraphQLId(parent.id || parent._id || parent) || '',
   },
   Module: {
     id: (parent: any) => parent.id || parent._id || parent.toString(),
@@ -5802,6 +5830,9 @@ export const resolvers = {
     revokedByUser: async (parent: any) => parent.revokedBy ? await User.findById(parent.revokedBy) : null,
   },
   AssignmentSubmission: {
+    id: (parent: any) => toGraphQLId(parent.id || parent._id || parent) || '',
+    userId: (parent: any) => toGraphQLId(parent.userId?._id || parent.userId) || '',
+    courseId: (parent: any) => toGraphQLId(parent.courseId?._id || parent.courseId) || '',
     user: async (parent: any) => {
       if (parent.userId && (parent.userId as any).username) return parent.userId;
       return await User.findById(parent.userId);
@@ -5854,4 +5885,3 @@ export const resolvers = {
     }
   }
 };
-
